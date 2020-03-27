@@ -59,5 +59,14 @@
 (package! vlf)
 ;; HELM related
 (package! helm-ag)
-(package! helm-descbinds)
+;; For RSS and Atom feeds
 (package! elfeed-goodies)
+
+;; Org related
+(package! org-ref)
+(package! org-noter)
+(package! org-clock-convenience)
+(package! org-roam
+  :recipe (:host github :repo "jethrokuan/org-roam"))
+(package! company-org-roam
+  :recipe (:host github :repo "jethrokuan/company-org-roam"))

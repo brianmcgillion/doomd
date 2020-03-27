@@ -106,12 +106,15 @@
 ;; Store some more frequently used files in the
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?d '(file . "~/Documents/org/decrypt.org"))
-(set-register ?e '(file . "~/.emacs.d/personal/general_mods.org"))
+(set-register ?e '(file . "~/.doom.d/config.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
 ;; Improve garbage collection to 20MB of allocation to reduce time spent cleaning up
 (setq gc-cons-threshold 20000000)
 
+(global-auto-revert-mode t)
+
+(setq projectile-project-serch-path '("~/code" "~/tools"))
 ;;;
 ;;;
 ;;; END_General
@@ -129,8 +132,9 @@
 ;;;
 
 ;; check emacs version to stop helm hanging with tool tips, fixed in emacs 27
-(if (version< emacs-version "27")
+(if (< emacs-major-version 27)
      (setq x-wait-for-event-timeout nil))
+
 (use-package! helm
   :init
   ;; recent changes to helm have removed the left and right arrow keys
@@ -160,6 +164,9 @@
 
 (use-package! helm-config)
 (use-package! helm-ag)
+
+(helm-mode 1)
+(helm-projectile-on)
 
 ;; recent changes to helm have removed the left and right arrow keys
 ;; returning to that functionality
@@ -194,6 +201,8 @@
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/Documents/org/")
 
+(setq org-ellipsis " ▾ ")
+
 ;;;
 ;;;
 ;;; END_ORG
@@ -206,7 +215,114 @@
 - Items taken from the prelude configuration
 
 * Literature
-;; Add google-translate ???
+- Add google-translate ???
+
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_literature
+;;;
+;;;
+
+(setq reftex-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib"))
+
+(use-package! helm-bibtex
+  :no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
+  :config
+  (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
+        bibtex-completion-library-path "~/Documents/Papers/"
+        bibtex-completion-notes-path "~/Documents/org/roam/" ;; Using a directory enables a note per document
+        bibtex-completion-notes-extension ".org"
+        bibtex-completion-additional-search-fields '(journal) ;; TODO should extend this with a list of the fields that are of interest
+        bibtex-completion-pdf-field "file");; This tell bibtex-completion to look at the File field of the bibtex to figure out which pdf to open
+
+
+  (setq bibtex-completion-notes-template-multiple-files
+       "#+TITLE: Notes on: ${author-or-editor} (${year}) (${=key=}): ${title}
+
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE:\n  :END:\n\n")
+
+
+  (setq bibtex-completion-notes-template-one-file
+        "\n** ${author} (${year}): ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: ${file}\n  :END:\n\n")
+
+
+  ;; Override the bibtex complete function to add parsing of the file name and removing the : :pdf parts of the string
+  (defun bibtex-completion-apa-get-value (field entry &optional default)
+  "Return FIELD or ENTRY formatted following the APA
+guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
+  ;; Virtual fields:
+  (cond
+    ((string= field "author-or-editor")
+     (let ((value (bibtex-completion-get-value "author" entry)))
+       (if value
+           (bibtex-completion-apa-format-authors value)
+         (bibtex-completion-apa-format-editors
+          (bibtex-completion-get-value "editor" entry)))))
+    ((string= field "author-abbrev")
+     (let ((value (bibtex-completion-get-value "author" entry)))
+       (bibtex-completion-apa-format-authors-abbrev value)))
+    (t
+     ;; Real fields:
+     (let ((value (bibtex-completion-get-value field entry)))
+       (if value
+           (pcase field
+             ;; https://owl.english.purdue.edu/owl/resource/560/06/
+             ("author" (bibtex-completion-apa-format-authors value))
+             ("editor" (bibtex-completion-apa-format-editors value))
+             ;; When referring to books, chapters, articles, or Web pages,
+             ;; capitalize only the first letter of the first word of a
+             ;; title and subtitle, the first word after a colon or a dash
+             ;; in the title, and proper nouns. Do not capitalize the first
+             ;; letter of the second word in a hyphenated compound word.
+             ("title" (replace-regexp-in-string ; remove braces
+                       "[{}]"
+                       ""
+                       (replace-regexp-in-string ; remove macros
+                        "\\\\[[:alpha:]]+{"
+                        ""
+                        (replace-regexp-in-string ; upcase initial letter
+                         "^[[:alpha:]]"
+                         'upcase
+                         (replace-regexp-in-string ; preserve stuff in braces from being downcased
+                          "\\(^[^{]*{\\)\\|\\(}[^{]*{\\)\\|\\(}.*$\\)\\|\\(^[^{}]*$\\)"
+                          (lambda (x) (downcase (s-replace "\\" "\\\\" x)))
+                          value)))))
+             ("booktitle" value)
+             ;; Maintain the punctuation and capitalization that is used by
+             ;; the journal in its title.
+             ("pages" (s-join "–" (s-split "[^0-9]+" value t)))
+             ("doi" (s-concat " http://dx.doi.org/" value))
+             ("year" (or value
+                         (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
+             ("file" (nth 1 (s-split ":" value)))
+             (_ value))
+         ""))))))
+
+(use-package! org-ref
+  :after (org helm-bibtex)
+  :init
+  (setq org-ref-open-pdf-function 'org-ref-get-pdf-filename-helm-bibtex
+        org-ref-bibliography-notes "~/Documents/org/roam"
+        org-ref-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
+        org-ref-pdf-directory "~/Documents/Papers"))
+
+;; org-noter
+(use-package! org-noter
+  :ensure t
+  :config
+  (setq org-noter-auto-save-last-location t
+        org-noter-notes-search-path '("~/Documents/org/roam/")
+        org-noter-separate-notes-from-heading t))
+
+;;;
+;;;
+;;; END_Literature
+;;;
+;;;
+
+#+END_SRC
+
 * RSS
 - Setup elfeed to read RSS and Atom feeds
 
