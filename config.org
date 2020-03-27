@@ -309,7 +309,7 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
 
 ;; org-noter
 (use-package! org-noter
-  :ensure t
+  :after (org)
   :config
   (setq org-noter-auto-save-last-location t
         org-noter-notes-search-path '("~/Documents/org/roam/")
