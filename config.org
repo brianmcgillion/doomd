@@ -1,0 +1,229 @@
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+* Repos
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_REPOS
+;;;
+;;;
+
+;; Enable the debugger when needed
+;;(setq debug-on-error t)
+
+;;;
+;;;
+;;; END_REPOS
+;;;
+;;;
+#+END_SRC
+* Interface Tweeks
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Interface_Tweaks
+;;;
+;;;
+
+;; When starting a new frame make it maximized
+(add-to-list 'initial-frame-alist '(fullscreen . maximized))
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
+;; are the three important ones:
+;;
+;; + `doom-font'
+;; + `doom-variable-pitch-font'
+;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;;
+;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
+;; font string. You generally only need these two:
+;;(setq doom-font (font-spec :family "monospace" :size 14))
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq doom-theme 'doom-dracula)
+
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq display-line-numbers-type t)
+
+;;;
+;;;
+;;; END_Interface_Tweaks
+;;;
+;;;
+
+#+END_SRC
+
+* Code
+#+BEGIN_SRC emacs-lisp
+
+;;;
+;;;
+;;; BEGIN_code
+;;;
+;;;
+
+;; use python3 by default
+;;(setq python-shell-interpreter "python3")
+;;(setq anaconda-mode-localhost-address "localhost")
+;;(require 'py-autopep8)
+;;(add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
+;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+
+
+;; Add handlers for certain extensions
+(add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
+
+;; make a shell script executable automatically on save
+(add-hook 'after-save-hook
+          'executable-make-buffer-file-executable-if-script-p)
+
+;;;
+;;;
+;;; END_code
+;;;
+;;;
+
+#+END_SRC
+* General
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_General
+;;;
+;;;
+
+;; Some functionality uses this to identify you, e.g. GPG configuration, email
+;; clients, file templates and snippets.
+(setq user-full-name "Brian McGillion"
+      user-mail-address "brian@ssrc.tii.ae")
+
+(use-package! vlf)
+
+;; Store some more frequently used files in the
+(set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
+(set-register ?d '(file . "~/Documents/org/decrypt.org"))
+(set-register ?e '(file . "~/.emacs.d/personal/general_mods.org"))
+(set-register ?l '(file . "~/Documents/org/library.bib"))
+
+;; Improve garbage collection to 20MB of allocation to reduce time spent cleaning up
+(setq gc-cons-threshold 20000000)
+
+;;;
+;;;
+;;; END_General
+;;;
+;;;
+
+#+END_SRC
+
+* Helm
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Helm
+;;;
+;;;
+
+;; check emacs version to stop helm hanging with tool tips, fixed in emacs 27
+(if (version< emacs-version "27")
+     (setq x-wait-for-event-timeout nil))
+(use-package! helm
+  :init
+  ;; recent changes to helm have removed the left and right arrow keys
+  ;; returning to that functionality
+  ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+  (map! :map helm-map
+        "<left>" #'helm-previous-source
+        "<right>" #'helm-next-source)
+  (map! :leader
+        "r" #'helm-recentf)
+  (map! :map minibuffer-local-map
+        "C-c C-l" #'helm-minibuffer-history)
+  (map! :map isearch-mode-map
+        "C-o" #'helm-occur-from-isearch)
+  (map! :map shell-mode-map
+        "C-c C-l" #'helm-comint-input-ring)
+  (map! [remap switch-to-buffer] #'helm-mini)
+  (map! [remap occur] #'helm-occur)
+  (setq helm-google-suggest-use-curl-p        t
+        helm-split-window-inside-p            t
+        helm-buffers-fuzzy-matching           t
+        helm-move-to-line-cycle-in-source     t
+        helm-ff-search-library-in-sexp        t
+        helm-ff-file-name-history-use-recentf t)
+  :hook (eshell-mode . (lambda ()
+                         (substitute-key-definition 'eshell-list-history 'helm-eshell-history eshell-mode-map))))
+
+(use-package! helm-config)
+(use-package! helm-ag)
+
+;; recent changes to helm have removed the left and right arrow keys
+;; returning to that functionality
+;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+;; for helm-find-files
+(customize-set-variable 'helm-ff-lynx-style-map t)
+;; for helm-imenu
+(customize-set-variable 'helm-imenu-lynx-style-map t)
+;; for semantic
+(customize-set-variable 'helm-semantic-lynx-style-map t)
+;; for helm-occur
+(customize-set-variable 'helm-occur-use-ioccur-style-keys t)
+;; for helm-grep
+(customize-set-variable 'helm-grep-use-ioccur-style-keys t)
+
+;;;
+;;;
+;;; END_Helm
+;;;
+;;;
+
+#+END_SRC
+* Org
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_ORG
+;;;
+;;;
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!
+(setq org-directory "~/Documents/org/")
+
+;;;
+;;;
+;;; END_ORG
+;;;
+;;;
+
+#+END_SRC
+
+* Prelude
+- Items taken from the prelude configuration
+
+* Literature
+;; Add google-translate ???
+* RSS
+- Setup elfeed to read RSS and Atom feeds
+
+#+BEGIN_SRC emacs-lisp
+
+;;;
+;;;
+;;; BEGIN_RSS
+;;;
+;;;
+(use-package! elfeed-goodies)
+
+(setq elfeed-db-directory "~/Documents/org/elfeed_db")
+;;;
+;;;
+;;; END_RSS
+;;;
+;;;
+
+#+END_SRC
