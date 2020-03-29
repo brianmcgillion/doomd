@@ -16,7 +16,7 @@
 ;;;
 ;;;
 #+END_SRC
-* Interface Tweeks
+* Interface Tweaks
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -103,6 +103,16 @@
 
 (use-package! vlf)
 
+;; (use-package! super-save
+;;   :ensure t
+;;   :config
+;;   (super-save-mode +1)
+;;   (setq super-save-auto-save-when-idle t)
+;;   (setq auto-save-default nil)
+;;   (setq super-save-exclude '(".gpg"))
+;;   (add-to-list 'super-save-triggers 'ace-window)
+;;   (add-to-list 'super-save-hook-triggers 'find-file-hook))
+
 ;; Store some more frequently used files in the
 (set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
 (set-register ?d '(file . "~/Documents/org/decrypt.org"))
@@ -110,12 +120,31 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
-;; Improve garbage collection to 20MB of allocation to reduce time spent cleaning up
-;;(setq gc-cons-threshold 20000000)
-
 (global-auto-revert-mode t)
 
 (setq projectile-project-serch-path '("~/code" "~/tools"))
+
+
+(defadvice server-visit-files (before parse-numbers-in-lines (files proc &optional nowait) activate)
+  "Open file with emacsclient with cursors positioned on requested line.
+Most of console-based utilities prints filename in format
+'filename:linenumber'.  So you may wish to open filename in that format.
+Just call:
+
+  emacsclient filename:linenumber
+
+and file 'filename' will be opened and cursor set on line 'linenumber'"
+  (ad-set-arg 0
+              (mapcar (lambda (fn)
+                        (let ((name (car fn)))
+                          (if (string-match "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$" name)
+                              (cons
+                               (match-string 1 name)
+                               (cons (string-to-number (match-string 2 name))
+                                     (string-to-number (or (match-string 3 name) ""))))
+                            fn))) files)))
+
+
 ;;;
 ;;;
 ;;; END_General
@@ -414,8 +443,9 @@
         org-journal-date-format "%A, %d %B %Y"))
 
 
-(use-package org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
+(use-package! org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
   :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
+  :after helm
   :hook
   (after-init . org-roam-mode)
   :bind (:map org-roam-mode-map
@@ -426,7 +456,6 @@
               :map org-mode-map
               (("C-c z i" . org-roam-insert)))
   :init
-  (require 'helm)
   (setq org-roam-directory (expand-file-name "~/Documents/org/roam/")
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
@@ -434,7 +463,7 @@
   :config
   (org-roam-mode +1))
 
-(use-package company-org-roam
+(use-package! company-org-roam
   :when (featurep! :completion company)
   :after org-roam
   :config
@@ -449,11 +478,38 @@
 #+END_SRC
 
 * Prelude
-- Items taken from the prelude configuration
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_prelude
+;;;
+;;;
+
+(use-package! crux)
+(use-package! imenu-anywhere)
+
+(map! :leader
+      ;;; <leader> b --- prelude
+      (:prefix-map ("b" . "prelude")
+        :desc "crux-open-with"                         "o" #'crux-open-with
+        :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
+        :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
+        :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
+        :desc "crux-view-url"                          "u" #'crux-view-url
+        :desc "crux-swap-windows"                      "s" #'crux-swap-windows
+        :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+        :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+        :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+        :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+        :desc "imenu-anywhere"                         "i" #'imenu-anywhere))
+;;;
+;;;
+;;; END_prelude
+;;;
+;;;
+#+END_SRC
 
 * Literature
-- Add google-translate ???
-
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -561,7 +617,6 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
 #+END_SRC
 
 * RSS
-- Setup elfeed to read RSS and Atom feeds
 
 #+BEGIN_SRC emacs-lisp
 
@@ -570,9 +625,9 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
 ;;; BEGIN_RSS
 ;;;
 ;;;
+
 (use-package! elfeed-goodies)
 
-(setq elfeed-db-directory "~/Documents/org/elfeed_db")
 ;;;
 ;;;
 ;;; END_RSS
