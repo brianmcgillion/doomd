@@ -67,8 +67,8 @@
 ;;;
 
 ;; use python3 by default
-;;(setq python-shell-interpreter "python3")
-;;(setq anaconda-mode-localhost-address "localhost")
+(setq python-shell-interpreter "python3")
+(setq anaconda-mode-localhost-address "localhost")
 ;;(require 'py-autopep8)
 ;;(add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
 ;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
@@ -110,7 +110,7 @@
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
 ;; Improve garbage collection to 20MB of allocation to reduce time spent cleaning up
-(setq gc-cons-threshold 20000000)
+;;(setq gc-cons-threshold 20000000)
 
 (global-auto-revert-mode t)
 
@@ -349,7 +349,7 @@
 
 (add-hook 'org-clock-in-hook 'bmg/set-todo-state-next 'append)
 
-(use-package org-clock-convenience
+(use-package! org-clock-convenience
   :bind (:map org-agenda-mode-map
               ("<S-up>" . org-clock-convenience-timestamp-up)
               ("<S-down>" . org-clock-convenience-timestamp-down)
@@ -414,8 +414,6 @@
 
 
 (use-package org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
-  :after (org-mode)
-  :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
   :hook
   (after-init . org-roam-mode)
   :bind (:map org-roam-mode-map
@@ -425,11 +423,11 @@
                ("C-c z g" . org-roam-show-graph))
               :map org-mode-map
               (("C-c z i" . org-roam-insert)))
-  :custom
-  (setq org-roam-directory (expand-file-name "/roam/" org-directory)
-        (org-roam-link-title-format "R:%s") ;;Distinguish internal Roam links from external links
-        (setq org-roam-graphviz-executable "/usr/bin/dot") ;; Visualize the relationships with notes
-        (setq org-roam-completion-system 'helm))) ;; use helm completion for org-roam
+  :init
+  (setq org-roam-directory (expand-file-name "~/Documents/org/roam/")
+        org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
+        org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
+        org-roam-completion-system 'helm)) ;; use helm completion for org-roam
 
 (use-package company-org-roam
   :when (featurep! :completion company)
@@ -461,7 +459,7 @@
 (setq reftex-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib"))
 
 (use-package! helm-bibtex
-  :no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
+  ;;:no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
   :config
   (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
         bibtex-completion-library-path "~/Documents/Papers/"
