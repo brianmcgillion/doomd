@@ -25,7 +25,7 @@
 ;;;
 
 ;; When starting a new frame make it maximized
-(add-to-list 'initial-frame-alist '(fullscreen . maximized))
+(add-to-list 'initial-frame-alist '(fullscreen . fullboth))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -104,9 +104,10 @@
 (use-package! vlf)
 
 ;; Store some more frequently used files in the
-(set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
+(set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
 (set-register ?d '(file . "~/Documents/org/decrypt.org"))
 (set-register ?e '(file . "~/.doom.d/config.org"))
+(set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
 ;; Improve garbage collection to 20MB of allocation to reduce time spent cleaning up
@@ -414,20 +415,24 @@
 
 
 (use-package org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
+  :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
   :hook
   (after-init . org-roam-mode)
   :bind (:map org-roam-mode-map
               (("C-c z l" . org-roam)
                ("C-c z f" . org-roam-find-file)
                ("C-c z b" . org-roam-switch-to-buffer)
-               ("C-c z g" . org-roam-show-graph))
+               ("C-c z g" . org-roam-graph-show))
               :map org-mode-map
               (("C-c z i" . org-roam-insert)))
   :init
+  (require 'helm)
   (setq org-roam-directory (expand-file-name "~/Documents/org/roam/")
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
-        org-roam-completion-system 'helm)) ;; use helm completion for org-roam
+        org-roam-completion-system 'helm) ;; use helm completion for org-roam
+  :config
+  (org-roam-mode +1))
 
 (use-package company-org-roam
   :when (featurep! :completion company)
