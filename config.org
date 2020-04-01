@@ -103,15 +103,16 @@
 
 (use-package! vlf)
 
-;; (use-package! super-save
-;;   :ensure t
-;;   :config
-;;   (super-save-mode +1)
-;;   (setq super-save-auto-save-when-idle t)
-;;   (setq auto-save-default nil)
-;;   (setq super-save-exclude '(".gpg"))
-;;   (add-to-list 'super-save-triggers 'ace-window)
-;;   (add-to-list 'super-save-hook-triggers 'find-file-hook))
+(package-initialize)
+(use-package! super-save
+  :ensure t
+  :config
+  (setq super-save-auto-save-when-idle t)
+  (setq auto-save-default nil)
+  (setq super-save-exclude '(".gpg"))
+  (add-to-list 'super-save-triggers 'ace-window)
+  (add-to-list 'super-save-hook-triggers 'find-file-hook)
+  (super-save-mode +1))
 
 ;; Store some more frequently used files in the
 (set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
@@ -523,7 +524,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   ;;:no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
   :config
   (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        bibtex-completion-library-path "~/Documents/Papers/"
+        bibtex-completion-library-path "~/Documents/Papers"
         bibtex-completion-notes-path "~/Documents/org/roam/" ;; Using a directory enables a note per document
         bibtex-completion-notes-extension ".org"
         bibtex-completion-additional-search-fields '(journal) ;; TODO should extend this with a list of the fields that are of interest
@@ -531,7 +532,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 
   (setq bibtex-completion-notes-template-multiple-files
-       "#+TITLE: Notes on: ${author-or-editor} (${year}) (${=key=}): ${title}
+       "Notes on: ${author-or-editor} (${year}) (${=key=}): ${title}
+#+ROAM_KEY: cite:${=key=}
 
 \n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE:\n  :END:\n\n")
 
