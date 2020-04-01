@@ -122,7 +122,7 @@
 
 (global-auto-revert-mode t)
 
-(setq projectile-project-serch-path '("~/code" "~/tools"))
+;;(setq projectile-project-serch-path '("~/code" "~/tools"))
 
 
 (defadvice server-visit-files (before parse-numbers-in-lines (files proc &optional nowait) activate)
@@ -250,6 +250,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 ;;;
 
 (setq bmg/org-agenda-directory (concat org-directory "/gtd/"))
+(setq org-archive-location (concat org-directory "/archive.org_archive::datetree/"))
 
 (after! org-agenda
   (require 'find-lisp)
@@ -261,7 +262,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (after! org
   (setq org-default-notes-file (expand-file-name "inbox.org" bmg/org-agenda-directory))
-  (setq org-archive-location (expand-file-name "/archive.org_archive::datetree/" org-directory))
   (setq +org-capture-todo-file org-default-notes-file
         +org-capture-notes-file org-default-notes-file
         +org-capture-projects-file org-default-notes-file)
