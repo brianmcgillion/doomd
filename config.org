@@ -527,15 +527,18 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
         bibtex-completion-library-path "~/Documents/Papers"
         bibtex-completion-notes-path "~/Documents/org/roam/" ;; Using a directory enables a note per document
         bibtex-completion-notes-extension ".org"
-        bibtex-completion-additional-search-fields '(journal) ;; TODO should extend this with a list of the fields that are of interest
+        bibtex-completion-additional-search-fields '(keywords) ;; TODO should extend this with a list of the fields that are of interest
         bibtex-completion-pdf-field "file");; This tell bibtex-completion to look at the File field of the bibtex to figure out which pdf to open
 
 
   (setq bibtex-completion-notes-template-multiple-files
-       "Notes on: ${author-or-editor} (${year}) (${=key=}): ${title}
+       "Notes on: ${title} : ${author-or-editor} (${=key=})
 #+ROAM_KEY: cite:${=key=}
 
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE:\n  :END:\n\n")
+- tags ::
+- keywords :: ${keywords}
+
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE: \n  :END:\n\n")
 
 
   (setq bibtex-completion-notes-template-one-file
