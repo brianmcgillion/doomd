@@ -49,6 +49,42 @@
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
+(setq +doom-dashboard-menu-sections
+  '(("Open org-agenda"
+     :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+     :action bmg/switch-to-agenda)
+    ("Recently opened files"
+     :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
+     :action recentf-open-files)
+    ("Open project"
+     :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+     :action projectile-switch-project)
+    ("RSS"
+     :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
+     :action elfeed)
+    ("Open private configuration"
+     :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+     :when (file-directory-p doom-private-dir)
+     :action doom/open-private-config)
+    ("Open documentation"
+     :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
+     :action doom/help)
+    ;; ("Email"
+    ;;  :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+    ;;  :action =mu4e)
+    ;; ("Jump to bookmark"
+    ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+    ;;  :action bookmark-jump)
+    ;; ("Notes"
+    ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
+    ;;  :action ragone-deft-or-close)
+    ;; ("Passwords"
+    ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+    ;;  :action pass)
+    ;; ("IRC"
+    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+    ;;  :action =irc)))
+    ))
 ;;;
 ;;;
 ;;; END_Interface_Tweaks
@@ -107,7 +143,7 @@
 (use-package! super-save
   :ensure t
   :config
-  (setq super-save-auto-save-when-idle t)
+  ;;(setq super-save-auto-save-when-idle t)
   (setq auto-save-default nil)
   (setq super-save-exclude '(".gpg"))
   (add-to-list 'super-save-triggers 'ace-window)
@@ -273,7 +309,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                  "* TODO %?"))
 
   (add-to-list 'org-capture-templates
-               `("p" "Protocol" entry (file org-default-notes-file)
+               `("h" "Protocol hl" entry (file org-default-notes-file)
                  "* TODO %^{Title}\nSource: %u, %c\n #+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n\n%?\n\n" :immediate-finish t))
 
   (add-to-list 'org-capture-templates
@@ -376,7 +412,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (defun bmg/set-todo-state-next ()
   "Visit each parent task and change NEXT states to TODO"
-  (org-todo "NEXT"))
+  (org-todo "STRT"))
 
 (add-hook 'org-clock-in-hook 'bmg/set-todo-state-next 'append)
 
@@ -389,7 +425,11 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package! org-agenda
   :init
-  (map! "<f4>" #'bmg/switch-to-agenda)
+  (map! "<f4>" #'org-agenda)
+  (map! :leader
+        ;;; <leader> n --- notes
+        (:prefix-map ("n" . "notes")
+          :desc "Org agenda"                     "a" #'bmg/switch-to-agenda))
   (setq org-agenda-block-separator nil
         org-agenda-start-with-log-mode t)
   (defun bmg/switch-to-agenda ()
@@ -404,7 +444,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "To Refile")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "inbox.org")))))
-                                       (todo "NEXT"
+                                       (todo "STRT"
                                              ((org-agenda-overriding-header "In Progress")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "someday.org")
                                                                   ,(concat bmg/org-agenda-directory "projects.org")
@@ -418,7 +458,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                                                (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")))))
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "One-off Tasks")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "next.org")))
+                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "next.org")
+                                                                  ,(concat bmg/org-agenda-directory "someday.org")))
                                               (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'scheduled)))))))))
 
 ;;;
@@ -532,17 +573,17 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 
   (setq bibtex-completion-notes-template-multiple-files
-       "Notes on: ${title} : ${author-or-editor} (${=key=})
+       "${title} : (${=key=})
 #+ROAM_KEY: cite:${=key=}
 
 - tags ::
 - keywords :: ${keywords}
 
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE: \n  :END:\n\n")
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE: \n  :END:\n\n")
 
 
   (setq bibtex-completion-notes-template-one-file
-        "\n** ${author} (${year}): ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: ${file}\n  :END:\n\n")
+        "\n** ${author} (${year}): ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :END:\n\n")
 
 
   ;; Override the bibtex complete function to add parsing of the file name and removing the : :pdf parts of the string
