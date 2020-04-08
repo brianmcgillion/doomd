@@ -268,7 +268,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/Documents/org/"
       org-ellipsis " ▾ "
-      org-startup-folded t)
+      org-startup-folded t
+      org-src-fontify-natively t)
 
 ;;;
 ;;;
@@ -303,6 +304,17 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
         +org-capture-notes-file org-default-notes-file
         +org-capture-projects-file org-default-notes-file)
 
+  (setq org-log-done 'time
+        org-log-into-drawer t
+        org-log-state-notes-insert-after-drawers nil)
+
+  (setq org-tag-alist (quote (("@errand" . ?e)
+                              ("@office" . ?o)
+                              ("@home" . ?h)
+                              (:newline)
+                              ("WAITING" . ?w)
+                              ("HOLD" . ?H)
+                              ("CANCELLED" . ?c))))
   ;; Capture templates
   (add-to-list 'org-capture-templates
                `("i" "inbox" entry (file org-default-notes-file)
@@ -320,6 +332,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   )
 
 (after! org-refile
+  (setq org-refile-allow-creating-parent-nodes 'confirm)
   (setq org-refile-targets '(("next.org" :level . 0)
                              ("someday.org" :level . 0)
                              ("reading.org" :level . 1)
@@ -503,6 +516,14 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
         org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
         org-roam-completion-system 'helm) ;; use helm completion for org-roam
   :config
+  (setq org-roam-capture-templates
+        '(("d" "default" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "%<%Y%m%d%H%M%S>-${slug}"
+           :head "#+TITLE: ${title}
+
+- tags :: "
+           :unnarrowed t)))
   (org-roam-mode +1))
 
 (use-package! company-org-roam
