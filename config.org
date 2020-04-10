@@ -1,98 +1,4 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-* Repos
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_REPOS
-;;;
-;;;
-
-;; Enable the debugger when needed
-;;(setq debug-on-error t)
-
-;;;
-;;;
-;;; END_REPOS
-;;;
-;;;
-#+END_SRC
-* Interface Tweaks
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_Interface_Tweaks
-;;;
-;;;
-
-;; When starting a new frame make it maximized
-(add-to-list 'initial-frame-alist '(fullscreen . fullboth))
-
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
-;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string. You generally only need these two:
-;;(setq doom-font (font-spec :family "monospace" :size 14))
-
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-dracula)
-
-
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
-
-(setq +doom-dashboard-menu-sections
-  '(("Open org-agenda"
-     :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
-     :action bmg/switch-to-agenda)
-    ("Recently opened files"
-     :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
-     :action recentf-open-files)
-    ("Open project"
-     :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
-     :action projectile-switch-project)
-    ("RSS"
-     :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
-     :action elfeed)
-    ("Open private configuration"
-     :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
-     :when (file-directory-p doom-private-dir)
-     :action doom/open-private-config)
-    ("Open documentation"
-     :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
-     :action doom/help)
-    ;; ("Email"
-    ;;  :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
-    ;;  :action =mu4e)
-    ;; ("Jump to bookmark"
-    ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
-    ;;  :action bookmark-jump)
-    ;; ("Notes"
-    ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
-    ;;  :action ragone-deft-or-close)
-    ;; ("Passwords"
-    ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
-    ;;  :action pass)
-    ;; ("IRC"
-    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
-    ;;  :action =irc)))
-    ))
-;;;
-;;;
-;;; END_Interface_Tweaks
-;;;
-;;;
-
-#+END_SRC
-
 * Code
 #+BEGIN_SRC emacs-lisp
 
@@ -137,8 +43,6 @@
 (setq user-full-name "Brian McGillion"
       user-mail-address "brian@ssrc.tii.ae")
 
-(use-package! vlf)
-
 (package-initialize)
 (use-package! super-save
   :ensure t
@@ -149,6 +53,12 @@
   (add-to-list 'super-save-triggers 'ace-window)
   (add-to-list 'super-save-hook-triggers 'find-file-hook)
   (super-save-mode +1))
+
+
+(use-package! vlf)
+(use-package! crux)
+(use-package! imenu-anywhere)
+
 
 ;; Store some more frequently used files in the
 (set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
@@ -203,23 +113,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
      (setq x-wait-for-event-timeout nil))
 
 (use-package! helm
-  :init
-  ;; recent changes to helm have removed the left and right arrow keys
-  ;; returning to that functionality
-  ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-  (map! :map helm-map
-        "<left>" #'helm-previous-source
-        "<right>" #'helm-next-source)
-  (map! :leader
-        "r" #'helm-recentf)
-  (map! :map minibuffer-local-map
-        "C-c C-l" #'helm-minibuffer-history)
-  (map! :map isearch-mode-map
-        "C-o" #'helm-occur-from-isearch)
-  (map! :map shell-mode-map
-        "C-c C-l" #'helm-comint-input-ring)
-  (map! [remap switch-to-buffer] #'helm-mini)
-  (map! [remap occur] #'helm-occur)
+  :config
   (setq helm-google-suggest-use-curl-p        t
         helm-split-window-inside-p            t
         helm-buffers-fuzzy-matching           t
@@ -230,10 +124,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                          (substitute-key-definition 'eshell-list-history 'helm-eshell-history eshell-mode-map))))
 
 (use-package! helm-config)
-(use-package! helm-ag)
+;;(use-package! helm-ag)
 
-(helm-mode 1)
-(helm-projectile-on)
+(after! helm
+  (helm-mode 1))
+(after! projectile
+  (helm-projectile-on))
 
 ;; recent changes to helm have removed the left and right arrow keys
 ;; returning to that functionality
@@ -248,6 +144,193 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
 ;; for helm-grep
 (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
+
+;;;
+;;;
+;;; END_Helm
+;;;
+;;;
+
+#+END_SRC
+* Interface Tweaks
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Interface_Tweaks
+;;;
+;;;
+
+;; When starting a new frame make it maximized
+(add-to-list 'initial-frame-alist '(fullscreen . fullboth))
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
+;; are the three important ones:
+;;
+;; + `doom-font'
+;; + `doom-variable-pitch-font'
+;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;;
+;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
+;; font string. You generally only need these two:
+;;(setq doom-font (font-spec :family "monospace" :size 14))
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq doom-theme 'doom-dracula)
+
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq display-line-numbers-type t)
+
+(setq +doom-dashboard-menu-sections
+  '(("Open org-agenda"
+     :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+     :action bmg/switch-to-agenda)
+    ("Recently opened files"
+     :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
+     :action recentf-open-files)
+    ("Open project"
+     :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+     :action projectile-switch-project)
+    ("RSS"
+     :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
+     :action =rss)
+    ("IRC"
+     :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+     :action =irc)
+    ("Open private configuration"
+     :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+     :when (file-directory-p doom-private-dir)
+     :action doom/open-private-config)
+    ("Open documentation"
+     :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
+     :action doom/help)
+    ;; ("Email"
+    ;;  :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+    ;;  :action =mu4e)
+    ;; ("Jump to bookmark"
+    ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+    ;;  :action bookmark-jump)
+    ;; ("Notes"
+    ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
+    ;;  :action ragone-deft-or-close)
+    ;; ("Passwords"
+    ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+    ;;  :action pass)
+    ;; ("IRC"
+    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+    ;;  :action =irc)))
+    ))
+;;;
+;;;
+;;; END_Interface_Tweaks
+;;;
+;;;
+
+#+END_SRC
+* IRC
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_ORG_Knowledge
+;;;
+;;;
+
+(after! circe
+  (set-irc-server! "chat.freenode.net"
+    `(:tls t
+      :port 6697
+      :nick "bmg"
+      :sasl-username ,(+pass-get-user "irc/freenode.net")
+      :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode.net"))
+      :channels ("#emacs" "#opentee"))))
+  ;; (set-irc-server! "chat.freenode.net"
+  ;;   `(:tls t
+  ;;     :port 6697
+  ;;     :nick "pirut"
+  ;;     :sasl-username ,(+pass-get-user "irc/freenode2.net")
+  ;;     :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode2.net"))
+  ;;     :channels ("#emacs" "#opentee"))))
+
+;;;
+;;;
+;;; END_IRC
+;;;
+;;;
+
+#+END_SRC
+* Map
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Map
+;;;
+;;;
+
+(map! "C--"     #'undo-fu-only-undo
+      "C-+"     #'undo-fu-only-redo
+
+      (:after org-roam
+        :leader
+        (:prefix-map ("z" . "roam")
+          :desc "Org roam"  "l" #'org-roam
+          :desc "Org roam insert"  "i" #'org-roam-insert
+          :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
+          :desc "Org roam find file"  "f" #'org-roam-find-file
+          :desc "Org roam show graph"  "g" #'org-roam-show-graph
+          :desc "Org roam capture"  "c" #'org-roam-capture))
+        
+      (:after org-agenda
+        "<f4>" #'org-agenda
+
+        :leader
+        ;;; <leader> n --- notes
+        (:prefix-map ("n" . "notes")
+          :desc "Org agenda"  "a" #'bmg/switch-to-agenda)
+
+        :map org-agenda-mode-map
+        "i"                       #'org-agenda-clock-in
+        "r"                       #'bmg/org-process-inbox
+        "R"                       #'org-agenda-refile
+        "c"                       #'bmg/org-inbox-capture)
+
+      (:after helm
+        [remap switch-to-buffer]  #'helm-mini
+        [remap occur]             #'helm-occur
+
+        :leader                   ;; Top level C-c
+        "r"                       #'helm-recentf
+        :map helm-map
+        "<left>"                  #'helm-previous-source ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+        "<right>"                 #'helm-next-source
+        :map minibuffer-local-map
+        "C-c C-l"                 #'helm-minibuffer-history
+        :map isearch-mode-map
+        "C-o"                     #'helm-occur-from-isearch
+        :map shell-mode-map
+        "C-c C-l"                 #'helm-comint-input-ring)
+
+
+      (:after crux
+        :leader
+   ;;; <leader> b --- prelude
+        (:prefix-map ("b" . "prelude")
+          :desc "crux-open-with"                         "o" #'crux-open-with
+          :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
+          :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
+          :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
+          :desc "crux-view-url"                          "u" #'crux-view-url
+          :desc "crux-swap-windows"                      "s" #'crux-swap-windows
+          :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+          :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+          :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+          :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+          :desc "imenu-anywhere"                         "i" #'imenu-anywhere))
+) ;; END MAP
+
 
 ;;;
 ;;;
@@ -417,12 +500,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (setq org-agenda-bulk-custom-functions `((,bmg/org-agenda-bulk-process-key bmg/org-agenda-process-inbox-item)))
 
-(map! :map org-agenda-mode-map
-      "i" #'org-agenda-clock-in
-      "r" #'bmg/org-process-inbox
-      "R" #'org-agenda-refile
-      "c" #'bmg/org-inbox-capture)
-
 (defun bmg/set-todo-state-next ()
   "Visit each parent task and change NEXT states to TODO"
   (org-todo "STRT"))
@@ -438,11 +515,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package! org-agenda
   :init
-  (map! "<f4>" #'org-agenda)
-  (map! :leader
-        ;;; <leader> n --- notes
-        (:prefix-map ("n" . "notes")
-          :desc "Org agenda"                     "a" #'bmg/switch-to-agenda))
   (setq org-agenda-block-separator nil
         org-agenda-start-with-log-mode t)
   (defun bmg/switch-to-agenda ()
@@ -500,16 +572,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (use-package! org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
   :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
-  :after helm
   :hook
   (after-init . org-roam-mode)
-  :bind (:map org-roam-mode-map
-              (("C-c z l" . org-roam)
-               ("C-c z f" . org-roam-find-file)
-               ("C-c z b" . org-roam-switch-to-buffer)
-               ("C-c z g" . org-roam-graph-show))
-              :map org-mode-map
-              (("C-c z i" . org-roam-insert)))
   :init
   (setq org-roam-directory (expand-file-name "~/Documents/org/roam/")
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
@@ -523,8 +587,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
            :head "#+TITLE: ${title}
 
 - tags :: "
-           :unnarrowed t)))
-  (org-roam-mode +1))
+           :unnarrowed t))))
 
 (use-package! company-org-roam
   :when (featurep! :completion company)
@@ -538,38 +601,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 ;;;
 ;;;
 
-#+END_SRC
-
-* Prelude
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_prelude
-;;;
-;;;
-
-(use-package! crux)
-(use-package! imenu-anywhere)
-
-(map! :leader
-      ;;; <leader> b --- prelude
-      (:prefix-map ("b" . "prelude")
-        :desc "crux-open-with"                         "o" #'crux-open-with
-        :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
-        :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
-        :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
-        :desc "crux-view-url"                          "u" #'crux-view-url
-        :desc "crux-swap-windows"                      "s" #'crux-swap-windows
-        :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-        :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
-        :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
-        :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-        :desc "imenu-anywhere"                         "i" #'imenu-anywhere))
-;;;
-;;;
-;;; END_prelude
-;;;
-;;;
 #+END_SRC
 
 * Literature
@@ -682,7 +713,23 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
 ;;;
 
 #+END_SRC
+* Repos
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_REPOS
+;;;
+;;;
 
+;; Enable the debugger when needed
+;;(setq debug-on-error t)
+
+;;;
+;;;
+;;; END_REPOS
+;;;
+;;;
+#+END_SRC
 * RSS
 
 #+BEGIN_SRC emacs-lisp

@@ -57,8 +57,8 @@
 
 ;; Very large files
 (package! vlf)
+
 ;; HELM related
-(package! helm-ag)
 (package! helm-bibtex)
 
 ;; For RSS and Atom feeds
