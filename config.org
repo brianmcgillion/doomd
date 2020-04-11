@@ -117,13 +117,11 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   ;; recent changes to helm have removed the left and right arrow keys
   ;; returning to that functionality
   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-  (map! :map helm-map
+  (map! :map helm-map ;; Seems that it needs to be done in init
         "<left>" #'helm-previous-source
         "<right>" #'helm-next-source)
   :config
   (setq helm-google-suggest-use-curl-p        t
-        helm-split-window-inside-p            t
-        helm-buffers-fuzzy-matching           t
         helm-move-to-line-cycle-in-source     t
         helm-ff-search-library-in-sexp        t
         helm-ff-file-name-history-use-recentf t)
@@ -131,9 +129,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                          (substitute-key-definition 'eshell-list-history 'helm-eshell-history eshell-mode-map))))
 
 (use-package! helm-config)
-;;(use-package! helm-ag)
 
-helm-mode 1
 (after! projectile
   (helm-projectile-on))
 
@@ -615,6 +611,8 @@ helm-mode 1
 
 (setq reftex-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib"))
 
+(setq bibtex-dialect 'bibtex)
+
 (use-package! helm-bibtex
   ;;:no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
   :config
@@ -698,7 +696,12 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
   (setq org-ref-open-pdf-function 'org-ref-get-pdf-filename-helm-bibtex
         org-ref-bibliography-notes "~/Documents/org/roam"
         org-ref-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        org-ref-pdf-directory "~/Documents/Papers"))
+        org-ref-pdf-directory "~/Documents/Papers")
+  (setq org-ref-notes-function
+        (lambda (thekey)
+          (let ((bibtex-completion-bibliography (org-ref-find-bibliography)))
+            (bibtex-completion-edit-notes
+             (list (car (org-ref-get-bibtex-key-and-file thekey))))))))
 
 ;; org-noter
 (use-package! org-noter
