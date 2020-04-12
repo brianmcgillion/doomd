@@ -352,6 +352,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
       org-startup-folded t
       org-src-fontify-natively t)
 
+(setq org-noter-notes-search-path '("~/Documents/org/roam/"))
+
 ;;;
 ;;;
 ;;; END_ORG
