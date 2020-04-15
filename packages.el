@@ -55,11 +55,8 @@
 ;; ############
 ;;(package! google-translate)
 
-;; Very large files
-(package! vlf)
-
 ;; HELM related
-(package! helm-bibtex)
+(package! helm-bibtex :pin "3cff6bd702")
 
 ;; For RSS and Atom feeds
 (package! elfeed-goodies)
@@ -68,6 +65,8 @@
 (package! org-ref)
 (package! org-noter)
 (unpin! org-roam company-org-roam)
+(package! org-roam-bibtex
+  :recipe (:host github :repo "Zaeph/org-roam-bibtex"))
 
 ;; General helper packages
 (package! super-save)

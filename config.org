@@ -576,93 +576,22 @@
 
 (use-package! helm-bibtex
   ;;:no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
+  :after helm
+  :commands (helm-bibtex)
   :config
   (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
         bibtex-completion-library-path "~/Documents/Papers"
-        bibtex-completion-notes-path "~/Documents/org/roam/" ;; Using a directory enables a note per document
-        bibtex-completion-notes-extension ".org"
         bibtex-completion-additional-search-fields '(keywords) ;; TODO should extend this with a list of the fields that are of interest
-        bibtex-completion-pdf-field "file");; This tell bibtex-completion to look at the File field of the bibtex to figure out which pdf to open
+        bibtex-completion-pdf-field "file"));; This tell bibtex-completion to look at the File field of the bibtex to figure out which pdf to open
 
-
-  (setq bibtex-completion-notes-template-multiple-files
-       "${title} : (${=key=})
-,#+ROAM_KEY: cite:${=key=}
-
-- tags ::
-- keywords :: ${keywords}
-
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: /${file}\n  :NOTER_PAGE: \n  :END:\n\n")
-
-
-  (setq bibtex-completion-notes-template-one-file
-        "\n** ${author} (${year}): ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :NOTER_DOCUMENT: /${file}\n  :END:\n\n")
-
-
-  ;; Override the bibtex complete function to add parsing of the file name and removing the : :pdf parts of the string
-  (defun bibtex-completion-apa-get-value (field entry &optional default)
-  "Return FIELD or ENTRY formatted following the APA
-guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
-  ;; Virtual fields:
-  (cond
-    ((string= field "author-or-editor")
-     (let ((value (bibtex-completion-get-value "author" entry)))
-       (if value
-           (bibtex-completion-apa-format-authors value)
-         (bibtex-completion-apa-format-editors
-          (bibtex-completion-get-value "editor" entry)))))
-    ((string= field "author-abbrev")
-     (let ((value (bibtex-completion-get-value "author" entry)))
-       (bibtex-completion-apa-format-authors-abbrev value)))
-    (t
-     ;; Real fields:
-     (let ((value (bibtex-completion-get-value field entry)))
-       (if value
-           (pcase field
-             ;; https://owl.english.purdue.edu/owl/resource/560/06/
-             ("author" (bibtex-completion-apa-format-authors value))
-             ("editor" (bibtex-completion-apa-format-editors value))
-             ;; When referring to books, chapters, articles, or Web pages,
-             ;; capitalize only the first letter of the first word of a
-             ;; title and subtitle, the first word after a colon or a dash
-             ;; in the title, and proper nouns. Do not capitalize the first
-             ;; letter of the second word in a hyphenated compound word.
-             ("title" (replace-regexp-in-string ; remove braces
-                       "[{}]"
-                       ""
-                       (replace-regexp-in-string ; remove macros
-                        "\\\\[[:alpha:]]+{"
-                        ""
-                        (replace-regexp-in-string ; upcase initial letter
-                         "^[[:alpha:]]"
-                         'upcase
-                         (replace-regexp-in-string ; preserve stuff in braces from being downcased
-                          "\\(^[^{]*{\\)\\|\\(}[^{]*{\\)\\|\\(}.*$\\)\\|\\(^[^{}]*$\\)"
-                          (lambda (x) (downcase (s-replace "\\" "\\\\" x)))
-                          value)))))
-             ("booktitle" value)
-             ;; Maintain the punctuation and capitalization that is used by
-             ;; the journal in its title.
-             ("pages" (s-join "–" (s-split "[^0-9]+" value t)))
-             ("doi" (s-concat " http://dx.doi.org/" value))
-             ("year" (or value
-                         (car (split-string (bibtex-completion-get-value "date" entry "") "-"))))
-             ("file" (nth 1 (s-split ":" value)))
-             (_ value))
-         ""))))))
 
 (use-package! org-ref
   :after (org helm-bibtex)
   :init
   (setq org-ref-open-pdf-function 'org-ref-get-pdf-filename-helm-bibtex
-        org-ref-bibliography-notes "~/Documents/org/roam"
         org-ref-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        org-ref-pdf-directory "~/Documents/Papers")
-  (setq org-ref-notes-function
-        (lambda (thekey)
-          (let ((bibtex-completion-bibliography (org-ref-find-bibliography)))
-            (bibtex-completion-edit-notes
-             (list (car (org-ref-get-bibtex-key-and-file thekey))))))))
+        org-ref-pdf-directory "~/Documents/Papers"))
+
 
 ;; org-noter
 (use-package! org-noter
@@ -671,6 +600,50 @@ guidelines.  Return DEFAULT if FIELD is not present in ENTRY."
   (setq org-noter-auto-save-last-location t
         org-noter-notes-search-path '("~/Documents/org/roam/")
         org-noter-separate-notes-from-heading t))
+
+
+ (use-package! org-roam-bibtex
+  :after (org-roam)
+  :config
+  (setq org-roam-bibtex-preformat-keywords
+   '("=key=" "title" "url" "file" "author-or-editor" "keywords"))
+  (setq org-roam-bibtex-template
+        '(("r" "ref" plain (function org-roam-capture--get-point) ""
+           :file-name "${slug}"
+           :head "#+TITLE: ${=key=}: ${title}\n#+ROAM_KEY: ${ref}
+
+- tags ::
+- keywords :: ${keywords}
+
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(menderley-process-file-field \"${file}\")\n  :NOTER_PAGE: \n  :END:\n\n"
+
+           :unnarrowed t)))
+:config
+  (defun menderley-make-file-alist (str)
+    "Return an alist cons cell with information on files.
+The cons cell are of the form \(extension . path\)."
+    (let (path)
+      (with-temp-buffer
+        (insert str)
+        (goto-char (point-min))
+        ;; Fix beginning
+        (replace-regexp "^:\\(.*?\\)/" "/\\1/")
+        ;; Fix ending
+        (replace-regexp ":.*?$" "")
+        (setq path (buffer-string))
+        (cons (file-name-nondirectory path) path))))
+
+  (defun menderley-process-file-field (string)
+    "Process the ‘file’ BibTeX field as formatted by Menderley."
+    (let* ((str-split (s-split ";" string))
+           (candidates
+            (mapcar #'menderley-make-file-alist
+                    str-split)))
+      (if (equal 1 (length candidates))
+          (cdar candidates)
+        (cdr (assoc (completing-read "File-type to use: " candidates)
+                    candidates)))))
+  (org-roam-bibtex-mode))
 
 ;;;
 ;;;
