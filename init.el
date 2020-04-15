@@ -65,12 +65,13 @@
        electric          ; smarter, keyword-based electric-indent
        (ibuffer +icons)         ; interactive buffer management
        vc                ; version-control and Emacs, sitting in a tree
+       undo
 
        :term
-       eshell            ; a consistent, cross-platform shell (WIP)
-       ;;shell             ; a terminal REPL for Emacs
-       term              ; terminals in Emacs
-       ;;vterm             ; another terminals in Emacs
+       ;;eshell            ; a consistent, cross-platform shell (WIP)
+       shell             ; a terminal REPL for Emacs
+       ;;term              ; terminals in Emacs
+       vterm             ; another terminals in Emacs
 
        :checkers
        (syntax +childframe)              ; tasing you for every semicolon you forget
@@ -86,7 +87,7 @@
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        ;;gist              ; interacting with github gists
-       (lookup +dictionary +offline +wordnet)              ; navigate your code and its documentation
+       (lookup +dictionary +offline +wordnet +docsets)              ; navigate your code and its documentation
        (lsp +peek)
        ;;macos             ; MacOS-specific commands
        magit             ; a git porcelain for Emacs
@@ -138,12 +139,12 @@
         +dragndrop       ; drag & drop files/images into org buffers
         ;;+hugo            ; use Emacs for hugo blogging
         ;;+jupyter        ; ipython/jupyter support for babel
-        ;;+pandoc          ; export-with-pandoc support
+        +pandoc          ; export-with-pandoc support
         +pomodoro        ; be fruitful with the tomato technique
         +present        ; using org-mode for presentations
         +gnuplot
-        +journal)
-        ;;+roam)            ;add org-roam support
+        +journal
+        +roam)            ;add org-roam support
        ;;perl              ; write code no one else can comprehend
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more

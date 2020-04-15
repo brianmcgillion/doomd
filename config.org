@@ -16,7 +16,7 @@
 ;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
 
 
-;; Add handlers for certain extensions
+;; Add handlers SELinux files
 (add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
 
 ;; make a shell script executable automatically on save
@@ -43,11 +43,9 @@
 (setq user-full-name "Brian McGillion"
       user-mail-address "brian@ssrc.tii.ae")
 
-(package-initialize)
+;; Autosave files when switching buffers
 (use-package! super-save
-  :ensure t
   :config
-  ;;(setq super-save-auto-save-when-idle t)
   (setq auto-save-default nil)
   (setq super-save-exclude '(".gpg"))
   (add-to-list 'super-save-triggers 'ace-window)
@@ -55,10 +53,9 @@
   (super-save-mode +1))
 
 
-(use-package! vlf)
+;;(use-package! vlf)
 (use-package! crux)
 (use-package! imenu-anywhere)
-
 
 ;; Store some more frequently used files in the
 (set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
@@ -67,30 +64,14 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
+;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
-;;(setq projectile-project-serch-path '("~/code" "~/tools"))
+(after! company
+  (setq company-dabbrev-downcase nil))
 
-
-(defadvice server-visit-files (before parse-numbers-in-lines (files proc &optional nowait) activate)
-  "Open file with emacsclient with cursors positioned on requested line.
-Most of console-based utilities prints filename in format
-'filename:linenumber'.  So you may wish to open filename in that format.
-Just call:
-
-  emacsclient filename:linenumber
-
-and file 'filename' will be opened and cursor set on line 'linenumber'"
-  (ad-set-arg 0
-              (mapcar (lambda (fn)
-                        (let ((name (car fn)))
-                          (if (string-match "^\\(.*?\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?$" name)
-                              (cons
-                               (match-string 1 name)
-                               (cons (string-to-number (match-string 2 name))
-                                     (string-to-number (or (match-string 3 name) ""))))
-                            fn))) files)))
-
+;; Configure language-tool for checkers/grammar
+(setq langtool-language-tool-jar "~/tools/languagetool/languagetool-commandline.jar")
 
 ;;;
 ;;;
@@ -124,11 +105,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
   (setq helm-google-suggest-use-curl-p        t
         helm-move-to-line-cycle-in-source     t
         helm-ff-search-library-in-sexp        t
-        helm-ff-file-name-history-use-recentf t)
-  :hook (eshell-mode . (lambda ()
-                         (substitute-key-definition 'eshell-list-history 'helm-eshell-history eshell-mode-map))))
-
-(use-package! helm-config)
+        helm-ff-file-name-history-use-recentf t))
 
 (after! projectile
   (helm-projectile-on))
@@ -187,6 +164,9 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
+;; Blinking cursors are annoying
+(blink-cursor-mode -1)
+
 (setq +doom-dashboard-menu-sections
   '(("Open org-agenda"
      :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
@@ -241,14 +221,14 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 ;;;
 ;;;
 
-(after! circe
-  (set-irc-server! "chat.freenode.net"
-    `(:tls t
-      :port 6697
-      :nick "bmg"
-      :sasl-username ,(+pass-get-user "irc/freenode.net")
-      :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode.net"))
-      :channels ("#emacs" "#opentee"))))
+;; (after! circe
+;;   (set-irc-server! "chat.freenode.net"
+;;     `(:tls t
+;;       :port 6697
+;;       :nick "bmg"
+;;       :sasl-username ,(+pass-get-user "irc/freenode.net")
+;;       :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode.net"))
+;;       :channels ("#emacs" "#opentee"))))
   ;; (set-irc-server! "chat.freenode.net"
   ;;   `(:tls t
   ;;     :port 6697
@@ -283,7 +263,12 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
           :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
           :desc "Org roam find file"      "f" #'org-roam-find-file
           :desc "Org roam show graph"     "g" #'org-roam-show-graph
-          :desc "Org roam capture"        "c" #'org-roam-capture))
+          :desc "Org roam capture"        "c" #'org-roam-capture
+          (:prefix ("d" . "by date")
+            :desc "Arbitrary date" "d" #'org-roam-date
+            :desc "Today"          "t" #'org-roam-today
+            :desc "Tomorrow"       "m" #'org-roam-tomorrow
+            :desc "Yesterday"      "y" #'org-roam-yesterday)))
 
       (:after org-agenda
         "<f4>" #'org-agenda
@@ -352,7 +337,36 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
       org-startup-folded t
       org-src-fontify-natively t)
 
-(setq org-noter-notes-search-path '("~/Documents/org/roam/"))
+(defvar my-roam-dir (concat org-directory "roam/"))
+
+(setq org-noter-notes-search-path my-roam-dir)
+
+
+(after! org-journal
+  (setq org-journal-dir my-roam-dir
+        org-journal-date-prefix "#+TITLE: "
+        org-journal-file-format "%Y-%m-%d.org"
+        org-journal-date-format "%A, %d %B %Y"))
+
+
+(use-package! org-roam
+  :init
+  (setq org-roam-directory my-roam-dir
+        org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
+        org-roam-graphviz-executable "/usr/bin/dot") ;; Visualize the relationships with notes
+  :config
+  (setq org-roam-capture-templates
+        '(("d" "default" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "${slug}"
+           :head "#+TITLE: ${title}
+
+- tags :: "
+           :unnarrowed t))))
+
+
+(after! company-org-roam
+  (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-ispell company-dabbrev company-capf)))
 
 ;;;
 ;;;
@@ -372,6 +386,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (setq bmg/org-agenda-directory (concat org-directory "/gtd/"))
 (setq org-archive-location (concat org-directory "/archive.org_archive::datetree/"))
+
 
 (after! org-agenda
   (require 'find-lisp)
@@ -409,10 +424,8 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
   (add-to-list 'org-capture-templates
                `("L" "Protocol Link" entry (file org-default-notes-file)
-                 "* TODO %? [[%:link][%:description]] \nCaptured On: %U\n\n" :immediate-finish t))
+                 "* TODO %? [[%:link][%:description]] \nCaptured On: %U\n\n" :immediate-finish t)))
 
-  ;;- TODO Check how to over ride e.g. +org-capture-{notes,journal,todo}-file
-  )
 
 (after! org-refile
   (setq org-refile-allow-creating-parent-nodes 'confirm)
@@ -420,6 +433,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
                              ("someday.org" :level . 0)
                              ("reading.org" :level . 1)
                              ("projects.org" :maxlevel . 1))))
+
 
 ;;;
 ;;; Functions for managing the org-agenda ala Jethro
@@ -506,13 +520,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 (add-hook 'org-clock-in-hook 'bmg/set-todo-state-next 'append)
 
-(use-package! org-clock-convenience
-  :bind (:map org-agenda-mode-map
-              ("<S-up>" . org-clock-convenience-timestamp-up)
-              ("<S-down>" . org-clock-convenience-timestamp-down)
-              ("o" . org-clock-convenience-fill-gap)
-              ("e" . org-clock-convenience-fill-gap-both)))
-
 (use-package! org-agenda
   :init
   (setq org-agenda-block-separator nil
@@ -555,54 +562,6 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
 #+END_SRC
 
-** Org Roam and Knowledgebase
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_ORG_Knowledge
-;;;
-;;;
-
-(after! org-journal
-  (setq org-journal-dir (expand-file-name "/roam/" org-directory)
-        org-journal-date-prefix "#+TITLE: "
-        org-journal-file-format "%Y-%m-%d.org"
-        org-journal-date-format "%A, %d %B %Y"))
-
-
-(use-package! org-roam ;; https://org-roam.readthedocs.io/en/develop/configuration/
-  :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
-  :hook
-  (after-init . org-roam-mode)
-  :init
-  (setq org-roam-directory (expand-file-name "~/Documents/org/roam/")
-        org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
-        org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
-        org-roam-completion-system 'helm) ;; use helm completion for org-roam
-  :config
-  (setq org-roam-capture-templates
-        '(("d" "default" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "%<%Y%m%d%H%M%S>-${slug}"
-           :head "#+TITLE: ${title}
-
-- tags :: "
-           :unnarrowed t))))
-
-(use-package! company-org-roam
-  :when (featurep! :completion company)
-  :after org-roam
-  :config
-  (set-company-backend! 'org-mode '(company-org-roam)))
-
-;;;
-;;;
-;;; END_ORG_Knowledge
-;;;
-;;;
-
-#+END_SRC
-
 * Literature
 #+BEGIN_SRC emacs-lisp
 ;;;
@@ -628,7 +587,7 @@ and file 'filename' will be opened and cursor set on line 'linenumber'"
 
   (setq bibtex-completion-notes-template-multiple-files
        "${title} : (${=key=})
-#+ROAM_KEY: cite:${=key=}
+,#+ROAM_KEY: cite:${=key=}
 
 - tags ::
 - keywords :: ${keywords}

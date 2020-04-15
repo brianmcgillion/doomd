@@ -67,11 +67,7 @@
 ;; Org related
 (package! org-ref)
 (package! org-noter)
-(package! org-clock-convenience)
-(package! org-roam
-  :recipe (:host github :repo "jethrokuan/org-roam" :files ("*.el")))
-(package! company-org-roam
-  :recipe (:host github :repo "jethrokuan/company-org-roam"))
+(unpin! org-roam company-org-roam)
 
 ;; General helper packages
 (package! super-save)
