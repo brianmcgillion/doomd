@@ -579,11 +579,7 @@
 
 (setq bibtex-dialect 'bibtex)
 
-(use-package! helm-bibtex
-  ;;:no-require t ;; Want to use eval-after-load style functionality so do not load at compile time
-  :after helm
-  :commands (helm-bibtex)
-  :config
+(after! helm-bibtex
   (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
         bibtex-completion-library-path "~/Documents/Papers"
         bibtex-completion-additional-search-fields '(keywords) ;; TODO should extend this with a list of the fields that are of interest
@@ -632,11 +628,11 @@ for a file with the citekey: =key=.
 
 (Mendeley, Zotero, normal paths) are all supported.
 If there are multiple files found the user is prompted to select which one to enter"
-    (let ((entry (bibtex-completion-get-entry key)))
-      (let ((paths (bibtex-completion-find-pdf entry)))
-        (if (equal 1 (length paths))
-            (car paths)
-          (completing-read "File to use: " paths)))))
+    (let* ((entry (bibtex-completion-get-entry key))
+           (paths (bibtex-completion-find-pdf entry)))
+      (if (= (length paths) 1)
+          (car paths)
+        (completing-read "File to use: " paths))))
   (org-roam-bibtex-mode))
 
 ;;;

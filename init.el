@@ -80,6 +80,7 @@
 
        :tools
        ;;ansible
+       biblio            ; bibliography management
        debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        docker

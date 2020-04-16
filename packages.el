@@ -55,9 +55,6 @@
 ;; ############
 ;;(package! google-translate)
 
-;; HELM related
-(package! helm-bibtex :pin "3cff6bd702")
-
 ;; For RSS and Atom feeds
 (package! elfeed-goodies)
 
