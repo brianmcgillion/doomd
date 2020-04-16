@@ -64,14 +64,17 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
-;; If a file changes on disk update the buffer to match
-(global-auto-revert-mode t)
 
 (after! company
   (setq company-dabbrev-downcase nil))
 
+(set-language-environment-charset "UTF-8")
+
 ;; Configure language-tool for checkers/grammar
 (setq langtool-language-tool-jar "~/tools/languagetool/languagetool-commandline.jar")
+
+;; If a file changes on disk update the buffer to match
+(global-auto-revert-mode t)
 
 ;;;
 ;;;
@@ -311,7 +314,9 @@
           :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
           :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
           :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-          :desc "imenu-anywhere"                         "i" #'imenu-anywhere))
+          :desc "imenu-anywhere"                         "i" #'imenu-anywhere
+          :desc "Helm Bibtex"                            "b" #'helm-bibtex))
+
 ) ;; END MAP
 
 
@@ -608,41 +613,30 @@
   (setq org-roam-bibtex-preformat-keywords
    '("=key=" "title" "url" "file" "author-or-editor" "keywords"))
   (setq org-roam-bibtex-template
-        '(("r" "ref" plain (function org-roam-capture--get-point) ""
+        '(("r" "ref" plain (function org-roam-capture--get-point)
+           ""
            :file-name "${slug}"
            :head "#+TITLE: ${=key=}: ${title}\n#+ROAM_KEY: ${ref}
 
 - tags ::
 - keywords :: ${keywords}
 
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(menderley-process-file-field \"${file}\")\n  :NOTER_PAGE: \n  :END:\n\n"
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(process-file-field \"${=key=}\")\n  :NOTER_PAGE: \n  :END:\n\n"
 
            :unnarrowed t)))
 :config
-  (defun menderley-make-file-alist (str)
-    "Return an alist cons cell with information on files.
-The cons cell are of the form \(extension . path\)."
-    (let (path)
-      (with-temp-buffer
-        (insert str)
-        (goto-char (point-min))
-        ;; Fix beginning
-        (replace-regexp "^:\\(.*?\\)/" "/\\1/")
-        ;; Fix ending
-        (replace-regexp ":.*?$" "")
-        (setq path (buffer-string))
-        (cons (file-name-nondirectory path) path))))
+  (defun process-file-field (key)
+    "Process the ‘file’ BibTeX field or search the disk for the file.
+The disk matching is based on looking in the bibtex-completion-library-path
+for a file with the citekey: =key=.
 
-  (defun menderley-process-file-field (string)
-    "Process the ‘file’ BibTeX field as formatted by Menderley."
-    (let* ((str-split (s-split ";" string))
-           (candidates
-            (mapcar #'menderley-make-file-alist
-                    str-split)))
-      (if (equal 1 (length candidates))
-          (cdar candidates)
-        (cdr (assoc (completing-read "File-type to use: " candidates)
-                    candidates)))))
+(Mendeley, Zotero, normal paths) are all supported.
+If there are multiple files found the user is prompted to select which one to enter"
+    (let ((entry (bibtex-completion-get-entry key)))
+      (let ((paths (bibtex-completion-find-pdf entry)))
+        (if (equal 1 (length paths))
+            (car paths)
+          (completing-read "File to use: " paths)))))
   (org-roam-bibtex-mode))
 
 ;;;
@@ -652,6 +646,7 @@ The cons cell are of the form \(extension . path\)."
 ;;;
 
 #+END_SRC
+
 * Repos
 #+BEGIN_SRC emacs-lisp
 ;;;
