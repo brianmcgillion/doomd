@@ -60,7 +60,6 @@
 
 ;; Org related
 (package! org-ref)
-(package! org-noter)
 (unpin! org-roam company-org-roam)
 (package! org-roam-bibtex
   :recipe (:host github :repo "Zaeph/org-roam-bibtex"))

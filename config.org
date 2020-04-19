@@ -579,11 +579,14 @@
 
 (setq bibtex-dialect 'bibtex)
 
+
 (after! helm-bibtex
   (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        bibtex-completion-library-path "~/Documents/Papers"
-        bibtex-completion-additional-search-fields '(keywords) ;; TODO should extend this with a list of the fields that are of interest
-        bibtex-completion-pdf-field "file"));; This tell bibtex-completion to look at the File field of the bibtex to figure out which pdf to open
+        bibtex-completion-library-path "~/Documents/Papers"))
+
+
+(after! org-noter
+  (setq org-noter-notes-search-path '("~/Documents/org/roam/")))
 
 
 (use-package! org-ref
@@ -594,17 +597,8 @@
         org-ref-pdf-directory "~/Documents/Papers"))
 
 
-;; org-noter
-(use-package! org-noter
-  :after (org)
-  :config
-  (setq org-noter-auto-save-last-location t
-        org-noter-notes-search-path '("~/Documents/org/roam/")
-        org-noter-separate-notes-from-heading t))
-
-
  (use-package! org-roam-bibtex
-  :after (org-roam)
+  :after org-roam
   :config
   (setq org-roam-bibtex-preformat-keywords
    '("=key=" "title" "url" "file" "author-or-editor" "keywords"))
@@ -617,22 +611,9 @@
 - tags ::
 - keywords :: ${keywords}
 
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(process-file-field \"${=key=}\")\n  :NOTER_PAGE: \n  :END:\n\n"
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(org-roam-bibtex-process-file-field \"${=key=}\")\n  :NOTER_PAGE: \n  :END:\n\n"
 
            :unnarrowed t)))
-:config
-  (defun process-file-field (key)
-    "Process the ‘file’ BibTeX field or search the disk for the file.
-The disk matching is based on looking in the bibtex-completion-library-path
-for a file with the citekey: =key=.
-
-(Mendeley, Zotero, normal paths) are all supported.
-If there are multiple files found the user is prompted to select which one to enter"
-    (let* ((entry (bibtex-completion-get-entry key))
-           (paths (bibtex-completion-find-pdf entry)))
-      (if (= (length paths) 1)
-          (car paths)
-        (completing-read "File to use: " paths))))
   (org-roam-bibtex-mode))
 
 ;;;
