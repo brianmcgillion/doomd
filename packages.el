@@ -65,6 +65,8 @@
 ;;(package! org-roam-bibtex
 ;;  :recipe (:host github :repo "Zaeph/org-roam-bibtex"))
 
+(package! company-tabnine)
+
 ;; General helper packages
 (package! super-save)
 (package! crux)

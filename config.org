@@ -67,10 +67,18 @@
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
 
-(after! company
-  (setq company-dabbrev-downcase nil))
+;; (after! company
+;;   (setq company-dabbrev-downcase nil))
+
+(use-package! company-tabnine)
+(add-to-list 'company-backends #'company-tabnine)
+; Trigger completion immediately.
+(setq company-idle-delay 0
+      company-show-numbers t) ;; Number the candidates (use M-1, M-2 etc to select completions).
+
 
 (set-language-environment-charset "UTF-8")
+;
 
 ;; Configure language-tool for checkers/grammar
 (setq langtool-language-tool-jar "~/tools/languagetool/languagetool-commandline.jar")
@@ -349,19 +357,10 @@
 (setq org-noter-notes-search-path my-roam-dir)
 
 
-(after! org-journal
-  (setq org-journal-dir my-roam-dir
-        org-journal-date-prefix "#+TITLE: "
-        org-journal-file-format "%Y-%m-%d.org"
-        org-journal-date-format "%A, %d %B %Y"))
-
-
-(use-package! org-roam
-  :init
+(after! org-roam
   (setq org-roam-directory my-roam-dir
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         org-roam-graphviz-executable "/usr/bin/dot") ;; Visualize the relationships with notes
-  :config
   (setq org-roam-capture-templates
         '(("d" "default" plain (function org-roam--capture-get-point)
            "%?"
@@ -374,6 +373,9 @@
 
 (after! company-org-roam
   (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-ispell company-dabbrev company-capf)))
+;;(add-to-list 'org-mode '(company-org-roam company-yasnippet company-ispell company-dabbrev company-capf)))
+
+(use-package! org-chef)
 
 ;;;
 ;;;
@@ -431,8 +433,11 @@
 
   (add-to-list 'org-capture-templates
                `("L" "Protocol Link" entry (file org-default-notes-file)
-                 "* TODO %? [[%:link][%:description]] \nCaptured On: %U\n\n" :immediate-finish t)))
+                 "* TODO %? [[%:link][%:description]] \nCaptured On: %U\n\n" :immediate-finish t))
 
+  (add-to-list 'org-capture-templates
+               '("c" "Cookbook" entry (file org-default-notes-file)
+                 "%(org-chef-get-recipe-from-url)" :empty-lines 1)))
 
 (after! org-refile
   (setq org-refile-allow-creating-parent-nodes 'confirm)
