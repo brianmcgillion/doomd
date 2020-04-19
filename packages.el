@@ -59,10 +59,11 @@
 (package! elfeed-goodies)
 
 ;; Org related
-(package! org-ref)
+;;(package! org-ref)
 (unpin! org-roam company-org-roam)
-(package! org-roam-bibtex
-  :recipe (:host github :repo "Zaeph/org-roam-bibtex"))
+(package! org-chef)
+;;(package! org-roam-bibtex
+;;  :recipe (:host github :repo "Zaeph/org-roam-bibtex"))
 
 ;; General helper packages
 (package! super-save)
