@@ -52,12 +52,15 @@
   (add-to-list 'super-save-hook-triggers 'find-file-hook)
   (super-save-mode +1))
 
-(setq uniquify-buffer-name-style 'forward)
-(setq which-key-idle-delay 0.5)
+(use-package! elfeed-goodies)
 
 ;;(use-package! vlf)
 (use-package! crux)
 (use-package! imenu-anywhere)
+
+
+(setq uniquify-buffer-name-style 'forward)
+(setq which-key-idle-delay 0.5)
 
 ;; Store some more frequently used files in the
 (set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
@@ -66,15 +69,17 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 (set-register ?l '(file . "~/Documents/org/library.bib"))
 
+(setq ispell-dictionary "en-custom")
 
 ;; (after! company
 ;;   (setq company-dabbrev-downcase nil))
 
-(use-package! company-tabnine)
-(add-to-list 'company-backends #'company-tabnine)
-; Trigger completion immediately.
-(setq company-idle-delay 0
-      company-show-numbers t) ;; Number the candidates (use M-1, M-2 etc to select completions).
+;;(use-package! company-tabnine)
+;;(add-to-list 'company-backends #'company-tabnine)
+;; (after! company
+;;   ;; Trigger completion immediately.
+;;   (setq company-idle-delay 0
+;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
 
 
 (set-language-environment-charset "UTF-8")
@@ -104,7 +109,7 @@
 
 ;; check emacs version to stop helm hanging with tool tips, fixed in emacs 27
 (if (< emacs-major-version 27)
-     (setq x-wait-for-event-timeout nil))
+     (setq x-wait-for-event-timeout 0))
 
 (use-package! helm
   :init
@@ -347,14 +352,18 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Documents/org/"
-      org-ellipsis " ▾ "
-      org-startup-folded t
-      org-src-fontify-natively t)
+(setq! org-directory "~/Documents/org/"
+       org-ellipsis " ▾ "
+       org-startup-folded t
+       org-src-fontify-natively t)
 
 (defvar my-roam-dir (concat org-directory "roam/"))
 
-(setq org-noter-notes-search-path my-roam-dir)
+(setq! org-noter-notes-search-path my-roam-dir)
+
+(setq! +biblio-pdf-library-dir "~/Documents/Papers/"
+       +biblio-default-bibliography-files '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
+       +biblio-notes-path my-roam-dir)
 
 
 (after! org-roam
@@ -371,9 +380,11 @@
            :unnarrowed t))))
 
 
-(after! company-org-roam
-  (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-ispell company-dabbrev company-capf)))
-;;(add-to-list 'org-mode '(company-org-roam company-yasnippet company-ispell company-dabbrev company-capf)))
+(use-package! company-org-roam
+  :config
+  (set-company-backend! 'org-mode nil)
+  (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-tabnine company-capf)))
+
 
 (use-package! org-chef)
 
@@ -574,98 +585,3 @@
 
 #+END_SRC
 
-* Literature
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_literature
-;;;
-;;;
-
-(after! helm-bibtex
-  (setq bibtex-completion-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        bibtex-completion-library-path "~/Documents/Papers"))
-
-
-(after! org-noter
-  (setq org-noter-notes-search-path '("~/Documents/org/roam/")))
-
-
-(after! org-ref
-  ;; remove the pdf opening function when DOOM config merged package merged.
-  (setq org-ref-open-pdf-function 'org-ref-get-pdf-filename-helm-bibtex
-        org-ref-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-        org-ref-pdf-directory "~/Documents/Papers")
-        reftex-default-bibliography org-ref-default-bibliography)
-
-;; (use-package! org-ref
-;;   :after (org helm-bibtex)
-;;   :init
-;;   (setq org-ref-open-pdf-function 'org-ref-get-pdf-filename-helm-bibtex
-;;         org-ref-default-bibliography '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-;;         org-ref-pdf-directory "~/Documents/Papers"))
-
-
-;;  (use-package! org-roam-bibtex
-;;   :after org-roam
-;;   :config
-;;   (setq org-roam-bibtex-preformat-keywords
-;;    '("=key=" "title" "url" "file" "author-or-editor" "keywords"))
-;;   (setq org-roam-bibtex-template
-;;         '(("r" "ref" plain (function org-roam-capture--get-point)
-;;            ""
-;;            :file-name "${slug}"
-;;            :head "#+TITLE: ${=key=}: ${title}\n#+ROAM_KEY: ${ref}
-
-;; - tags ::
-;; - keywords :: ${keywords}
-
-;; \n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${=key=}\n  :URL: ${url}\n  :AUTHOR: ${author-or-editor}\n  :NOTER_DOCUMENT: %(org-roam-bibtex-process-file-field \"${=key=}\")\n  :NOTER_PAGE: \n  :END:\n\n"
-
-;;            :unnarrowed t)))
-;;   (org-roam-bibtex-mode))
-
-;;;
-;;;
-;;; END_Literature
-;;;
-;;;
-
-#+END_SRC
-
-* Repos
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_REPOS
-;;;
-;;;
-
-;; Enable the debugger when needed
-;;(setq debug-on-error t)
-
-;;;
-;;;
-;;; END_REPOS
-;;;
-;;;
-#+END_SRC
-* RSS
-
-#+BEGIN_SRC emacs-lisp
-
-;;;
-;;;
-;;; BEGIN_RSS
-;;;
-;;;
-
-(use-package! elfeed-goodies)
-
-;;;
-;;;
-;;; END_RSS
-;;;
-;;;
-
-#+END_SRC
