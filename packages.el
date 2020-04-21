@@ -59,11 +59,8 @@
 (package! elfeed-goodies)
 
 ;; Org related
-;;(package! org-ref)
-(unpin! org-roam company-org-roam)
+(unpin! org-roam company-org-roam lsp)
 (package! org-chef)
-;;(package! org-roam-bibtex
-;;  :recipe (:host github :repo "Zaeph/org-roam-bibtex"))
 
 (package! company-tabnine)
 

@@ -45,6 +45,7 @@
 
 ;; Autosave files when switching buffers
 (use-package! super-save
+  :defer t
   :config
   (setq auto-save-default nil)
   (setq super-save-exclude '(".gpg"))
@@ -52,22 +53,23 @@
   (add-to-list 'super-save-hook-triggers 'find-file-hook)
   (super-save-mode +1))
 
-(use-package! elfeed-goodies)
+(use-package! elfeed-goodies
+  :after elfeed)
 
-;;(use-package! vlf)
-(use-package! crux)
-(use-package! imenu-anywhere)
+(use-package! crux
+  :defer t)
+(use-package! imenu-anywhere
+  :defer t)
 
 
 (setq uniquify-buffer-name-style 'forward)
 (setq which-key-idle-delay 0.5)
 
 ;; Store some more frequently used files in the
-(set-register ?b '(file . "~/.emacs.d/modules/config/default/+emacs-bindings.el"))
 (set-register ?d '(file . "~/Documents/org/decrypt.org"))
 (set-register ?e '(file . "~/.doom.d/config.org"))
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
-(set-register ?l '(file . "~/Documents/org/library.bib"))
+
 
 (setq ispell-dictionary "en-custom")
 
@@ -81,9 +83,9 @@
 ;;   (setq company-idle-delay 0
 ;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
 
+(remove-hook 'company-mode-hook #'company-prescient-mode)
 
 (set-language-environment-charset "UTF-8")
-;
 
 ;; Configure language-tool for checkers/grammar
 (setq langtool-language-tool-jar "~/tools/languagetool/languagetool-commandline.jar")
@@ -112,35 +114,35 @@
      (setq x-wait-for-event-timeout 0))
 
 (use-package! helm
-  :init
   ;; recent changes to helm have removed the left and right arrow keys
   ;; returning to that functionality
   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-  (map! :map helm-map ;; Seems that it needs to be done in init
-        "<left>" #'helm-previous-source
-        "<right>" #'helm-next-source)
-  :config
+  :bind (:map helm-map ;; Seems that it needs to be done in init
+          ("<left>" . #'helm-previous-source)
+          ("<right>" . #'helm-next-source)))
+
+(after! helm
   (setq helm-google-suggest-use-curl-p        t
         helm-move-to-line-cycle-in-source     t
         helm-ff-search-library-in-sexp        t
-        helm-ff-file-name-history-use-recentf t))
+        helm-ff-file-name-history-use-recentf t)
+
+  ;; recent changes to helm have removed the left and right arrow keys
+  ;; returning to that functionality
+  ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+  ;; for helm-find-files
+  (customize-set-variable 'helm-ff-lynx-style-map t)
+  ;; for helm-imenu
+  (customize-set-variable 'helm-imenu-lynx-style-map t)
+  ;; for semantic
+  (customize-set-variable 'helm-semantic-lynx-style-map t)
+  ;; for helm-occur
+  (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
+  ;; for helm-grep
+  (customize-set-variable 'helm-grep-use-ioccur-style-keys t))
 
 (after! projectile
   (helm-projectile-on))
-
-;; recent changes to helm have removed the left and right arrow keys
-;; returning to that functionality
-;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-;; for helm-find-files
-(customize-set-variable 'helm-ff-lynx-style-map t)
-;; for helm-imenu
-(customize-set-variable 'helm-imenu-lynx-style-map t)
-;; for semantic
-(customize-set-variable 'helm-semantic-lynx-style-map t)
-;; for helm-occur
-(customize-set-variable 'helm-occur-use-ioccur-style-keys t)
-;; for helm-grep
-(customize-set-variable 'helm-grep-use-ioccur-style-keys t)
 
 ;;;
 ;;;
@@ -273,7 +275,7 @@
 (map! "C--"     #'undo-fu-only-undo
       "C-+"     #'undo-fu-only-redo
 
-      (:after org-roam
+      (;;:org-roam
         :leader
         (:prefix-map ("z" . "roam")
           :desc "Org roam"                "l" #'org-roam
@@ -288,7 +290,7 @@
             :desc "Tomorrow"       "m" #'org-roam-tomorrow
             :desc "Yesterday"      "y" #'org-roam-yesterday)))
 
-      (:after org-agenda
+      (;;:org-agenda
         "<f4>" #'org-agenda
 
         (:leader
@@ -302,7 +304,7 @@
           "R"                       #'org-agenda-refile
           "c"                       #'bmg/org-inbox-capture))
 
-      (:after helm
+      (;;:helm
         [remap switch-to-buffer]    #'helm-mini
         [remap occur]               #'helm-occur
 
@@ -315,7 +317,7 @@
         (:map shell-mode-map
           "C-c C-l"                 #'helm-comint-input-ring))
 
-      (:after crux
+      (;;: crux and stuff
         :leader
    ;;; <leader> b --- prelude
         (:prefix-map ("b" . "prelude")
@@ -381,12 +383,14 @@
 
 
 (use-package! company-org-roam
+  :after org-roam
   :config
   (set-company-backend! 'org-mode nil)
-  (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-tabnine company-capf)))
+  (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
 
 
-(use-package! org-chef)
+(use-package! org-chef
+    :after org)
 
 ;;;
 ;;;
@@ -543,13 +547,16 @@
 
 (add-hook 'org-clock-in-hook 'bmg/set-todo-state-next 'append)
 
+;; MOved outside the use-package! agenda so it shows on the home screen
+(defun bmg/switch-to-agenda ()
+    (interactive)
+    (org-agenda nil " "))
+
 (use-package! org-agenda
+  :after org
   :init
   (setq org-agenda-block-separator nil
         org-agenda-start-with-log-mode t)
-  (defun bmg/switch-to-agenda ()
-    (interactive)
-    (org-agenda nil " "))
   :config
   (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
   (setq org-agenda-custom-commands `((" " "Agenda"
@@ -565,12 +572,12 @@
                                                                   ,(concat bmg/org-agenda-directory "projects.org")
                                                                   ,(concat bmg/org-agenda-directory "next.org")
                                                                   ,(concat bmg/org-agenda-directory "reading.org")))))
-                                        (todo "TODO"
-                                              ((org-agenda-overriding-header "Reading")
-                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "reading.org")))))
-                                        (todo "TODO"
-                                              ((org-agenda-overriding-header "Projects")
-                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")))))
+                                       (todo "TODO"
+                                             ((org-agenda-overriding-header "Reading")
+                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "reading.org")))))
+                                       (todo "TODO"
+                                             ((org-agenda-overriding-header "Projects")
+                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")))))
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "One-off Tasks")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "next.org")
@@ -584,4 +591,3 @@
 ;;;
 
 #+END_SRC
-
