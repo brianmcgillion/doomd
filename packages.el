@@ -59,7 +59,7 @@
 (package! elfeed-goodies)
 
 ;; Org related
-(unpin! org-roam company-org-roam lsp)
+(unpin! org-roam company-org-roam)
 (package! org-chef)
 
 (package! company-tabnine)
