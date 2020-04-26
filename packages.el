@@ -59,7 +59,8 @@
 (package! elfeed-goodies)
 
 ;; Org related
-(unpin! org-roam company-org-roam)
+(unpin! org-roam)
+(package! company-org-roam :disable t)
 (package! org-chef)
 
 (package! company-tabnine)

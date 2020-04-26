@@ -55,7 +55,6 @@
 
 (use-package! elfeed-goodies
   :after elfeed)
-
 (use-package! crux
   :defer t)
 (use-package! imenu-anywhere
@@ -76,14 +75,19 @@
 ;; (after! company
 ;;   (setq company-dabbrev-downcase nil))
 
-;;(use-package! company-tabnine)
-;;(add-to-list 'company-backends #'company-tabnine)
+(use-package! company-tabnine
+  :after company
+  (add-to-list 'company-backends #'company-tabnine))
+
 ;; (after! company
 ;;   ;; Trigger completion immediately.
 ;;   (setq company-idle-delay 0
 ;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
+(setq company-minimum-prefix-length 1
+      company-idle-delay 0.0
+      company-show-numbers t)
 
-(remove-hook 'company-mode-hook #'company-prescient-mode)
+;;(remove-hook 'company-mode-hook #'company-prescient-mode)
 
 (set-language-environment-charset "UTF-8")
 
@@ -371,7 +375,9 @@
 (after! org-roam
   (setq org-roam-directory my-roam-dir
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
-        org-roam-graphviz-executable "/usr/bin/dot") ;; Visualize the relationships with notes
+        org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
+        org-roam-buffer-no-delete-other-windows nil
+        +org-roam-open-buffer-on-find-file nil)
   (setq org-roam-capture-templates
         '(("d" "default" plain (function org-roam--capture-get-point)
            "%?"
@@ -381,12 +387,15 @@
 - tags :: "
            :unnarrowed t))))
 
-
-(use-package! company-org-roam
-  :after org-roam
-  :config
+(after! org
   (set-company-backend! 'org-mode nil)
-  (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
+  (set-company-backend! 'org-mode '(company-tabnine company-ispell))) ;;
+
+;; (use-package! company-org-roam
+;;   :after org-roam
+;;   :config
+;;   (set-company-backend! 'org-mode nil)
+;;   (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
 
 
 (use-package! org-chef
