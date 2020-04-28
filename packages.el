@@ -69,3 +69,7 @@
 (package! super-save)
 (package! crux)
 (package! imenu-anywhere)
+
+;; Communications
+(package! slack)
+(package! helm-slack)

@@ -83,8 +83,8 @@
 ;;   ;; Trigger completion immediately.
 ;;   (setq company-idle-delay 0
 ;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
-(setq company-minimum-prefix-length 1
-      company-idle-delay 0.0
+(setq company-minimum-prefix-length 2
+      company-idle-delay 0.5
       company-show-numbers t)
 
 ;;(remove-hook 'company-mode-hook #'company-prescient-mode)
@@ -204,6 +204,9 @@
     ("RSS"
      :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
      :action =rss)
+    ("Slack"
+     :icon (all-the-icons-faicon "comment-discussion" :face 'font-lock-keyword-face)
+     :action slack-start)
     ("IRC"
      :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
      :action =irc)
@@ -237,11 +240,11 @@
 ;;;
 
 #+END_SRC
-* IRC
+* Comms
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
-;;; BEGIN_ORG_Knowledge
+;;; BEGIN_ORG_Comms
 ;;;
 ;;;
 
@@ -261,9 +264,32 @@
   ;;     :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode2.net"))
   ;;     :channels ("#emacs" "#opentee"))))
 
+(use-package! slack
+  :commands (slack-start)
+  :bind (:map slack-mode-map
+              (("@" . slack-message-embed-mention)
+               ("#" . slack-message-embed-channel)))
+  :custom
+  (slack-buffer-emojify t)
+  (slack-prefer-current-team t)
+  :config
+  (slack-register-team
+   :name "orgroam"
+   :default t
+   :token (+pass-get-user "slack-tokens/orgroam")
+   :subscribed-channels '(general github org-roam-bibtex random troubleshooting workflows)
+   :full-and-display-names t))
+
+(use-package! alert
+  :commands (alert)
+  :init
+  (setq alert-default-style 'notifier))
+
+(use-package! helm-slack
+  :after (slack))
 ;;;
 ;;;
-;;; END_IRC
+;;; END_Comms
 ;;;
 ;;;
 
@@ -336,7 +362,8 @@
           :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
           :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
           :desc "imenu-anywhere"                         "i" #'imenu-anywhere
-          :desc "Helm Bibtex"                            "b" #'helm-bibtex))
+          :desc "Helm Bibtex"                            "b" #'helm-bibtex
+          :desc "Start Slack"                            "s" #'start-slack))
 
 ) ;; END MAP
 
@@ -389,7 +416,8 @@
 
 (after! org
   (set-company-backend! 'org-mode nil)
-  (set-company-backend! 'org-mode '(company-tabnine company-ispell))) ;;
+;;TODO Trying to see if tabnine alone is ok, might need to put back in ispell
+  (set-company-backend! 'org-mode '(company-tabnine))) ;;company-ispell
 
 ;; (use-package! company-org-roam
 ;;   :after org-roam
@@ -575,7 +603,7 @@
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "To Refile")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "inbox.org")))))
-                                       (todo "STRT"
+                                       (todo "STRT|PROJ"
                                              ((org-agenda-overriding-header "In Progress")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "someday.org")
                                                                   ,(concat bmg/org-agenda-directory "projects.org")
@@ -584,9 +612,10 @@
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "Reading")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "reading.org")))))
-                                       (todo "TODO"
+                                       (todo "TODO|PROJ"
                                              ((org-agenda-overriding-header "Projects")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")))))
+                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")
+                                                                  ,(concat bmg/org-agenda-directory "next.org")))))
                                        (todo "TODO"
                                              ((org-agenda-overriding-header "One-off Tasks")
                                               (org-agenda-files '(,(concat bmg/org-agenda-directory "next.org")
@@ -600,3 +629,15 @@
 ;;;
 
 #+END_SRC
+* Slack
+
+# (defun jb/send-region-to-slack-code ()
+#     (interactive)
+#     (let ((team (slack-team-select)) ;; Select team
+#           (room (slack-room-select
+#                  (cl-loop for team in (list team)
+#                           for channels = (oref team channels)
+#                           nconc channels)))) ;; Get all rooms from selected team
+#       (slack-message-send-internal (concat "```" (filter-buffer-substring (region-beginning) (region-end)) "```")
+#                                    (oref room id)
+#                                    team)))
