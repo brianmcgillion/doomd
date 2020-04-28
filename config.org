@@ -205,7 +205,7 @@
      :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
      :action =rss)
     ("Slack"
-     :icon (all-the-icons-faicon "comment-discussion" :face 'font-lock-keyword-face)
+     :icon (all-the-icons-octicon "comment-discussion" :face 'font-lock-keyword-face)
      :action slack-start)
     ("IRC"
      :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
@@ -264,29 +264,29 @@
   ;;     :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode2.net"))
   ;;     :channels ("#emacs" "#opentee"))))
 
-(use-package! slack
-  :commands (slack-start)
-  :bind (:map slack-mode-map
-              (("@" . slack-message-embed-mention)
-               ("#" . slack-message-embed-channel)))
-  :custom
-  (slack-buffer-emojify t)
-  (slack-prefer-current-team t)
-  :config
-  (slack-register-team
-   :name "orgroam"
-   :default t
-   :token (+pass-get-user "slack-tokens/orgroam")
-   :subscribed-channels '(general github org-roam-bibtex random troubleshooting workflows)
-   :full-and-display-names t))
+;; (use-package! slack
+;;   :commands (slack-start)
+;;   :bind (:map slack-mode-map
+;;               (("@" . slack-message-embed-mention)
+;;                ("#" . slack-message-embed-channel)))
+;;   :custom
+;;   (slack-buffer-emojify t)
+;;   (slack-prefer-current-team t)
+;;   :config
+;;   (slack-register-team
+;;    :name "orgroam"
+;;    :default t
+;;    :token (+pass-get-secret "slack-tokens/orgroam")
+;;    :subscribed-channels '(general github org-roam-bibtex random troubleshooting workflows)
+;;    :full-and-display-names t))
 
-(use-package! alert
-  :commands (alert)
-  :init
-  (setq alert-default-style 'notifier))
+;; (use-package! alert
+;;   :commands (alert)
+;;   :init
+;;   (setq alert-default-style 'notifier))
 
-(use-package! helm-slack
-  :after (slack))
+;; (use-package! helm-slack
+;;   :after (slack))
 ;;;
 ;;;
 ;;; END_Comms
@@ -348,22 +348,22 @@
           "C-c C-l"                 #'helm-comint-input-ring))
 
       (;;: crux and stuff
-        :leader
+        (:leader
    ;;; <leader> b --- prelude
-        (:prefix-map ("b" . "prelude")
-          :desc "crux-open-with"                         "o" #'crux-open-with
-          :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
-          :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
-          :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
-          :desc "crux-view-url"                          "u" #'crux-view-url
-          :desc "crux-swap-windows"                      "s" #'crux-swap-windows
-          :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-          :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
-          :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
-          :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-          :desc "imenu-anywhere"                         "i" #'imenu-anywhere
-          :desc "Helm Bibtex"                            "b" #'helm-bibtex
-          :desc "Start Slack"                            "s" #'start-slack))
+          (:prefix-map ("b" . "prelude")
+            :desc "crux-open-with"                         "o" #'crux-open-with
+            :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
+            :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
+            :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
+            :desc "crux-view-url"                          "u" #'crux-view-url
+            :desc "crux-swap-windows"                      "s" #'crux-swap-windows
+            :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+            :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+            :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+            :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+            :desc "imenu-anywhere"                         "i" #'imenu-anywhere
+            :desc "Helm Bibtex"                            "b" #'helm-bibtex
+            :desc "Start Slack"                            "s" #'start-slack)))
 
 ) ;; END MAP
 

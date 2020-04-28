@@ -71,5 +71,6 @@
 (package! imenu-anywhere)
 
 ;; Communications
-(package! slack)
-(package! helm-slack)
+;;(package! slack)
+;;(package! helm-slack
+;;  :recipe (:host github :repo "yuya373/helm-slack"))
