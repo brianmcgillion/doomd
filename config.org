@@ -31,6 +31,7 @@
 
 #+END_SRC
 * General
+
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -96,6 +97,10 @@
 
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
+
+(after! tramp
+  (setenv "SHELL" "/bin/bash")
+  (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
 
 ;;;
 ;;;
@@ -183,13 +188,17 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-dracula)
 
-
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
+
+(after! pdf-tools
+  ;; automatically turns on midnight-mode for
+  (add-hook 'pdf-view-mode-hook (lambda ()
+                                  (pdf-view-midnight-minor-mode))))
 
 (setq +doom-dashboard-menu-sections
   '(("Open org-agenda"
@@ -279,7 +288,16 @@
 ;;    :token (+pass-get-secret "slack-tokens/orgroam")
 ;;    :subscribed-channels '(general github org-roam-bibtex random troubleshooting workflows)
 ;;    :full-and-display-names t))
-
+;; # (defun jb/send-region-to-slack-code ()
+;; #     (interactive)
+;; #     (let ((team (slack-team-select)) ;; Select team
+;; #           (room (slack-room-select
+;; #                  (cl-loop for team in (list team)
+;; #                           for channels = (oref team channels)
+;; #                           nconc channels)))) ;; Get all rooms from selected team
+;; #       (slack-message-send-internal (concat "```" (filter-buffer-substring (region-beginning) (region-end)) "```")
+;; #                                    (oref room id)
+;; #                                    team)))
 ;; (use-package! alert
 ;;   :commands (alert)
 ;;   :init
@@ -312,7 +330,7 @@
           :desc "Org roam insert"         "i" #'org-roam-insert
           :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
           :desc "Org roam find file"      "f" #'org-roam-find-file
-          :desc "Org roam show graph"     "g" #'org-roam-show-graph
+          :desc "Org roam show graph"     "g" #'org-roam-graph
           :desc "Org roam capture"        "c" #'org-roam-capture
           (:prefix ("d" . "by date")
             :desc "Arbitrary date" "d" #'org-roam-date
@@ -352,18 +370,16 @@
    ;;; <leader> b --- prelude
           (:prefix-map ("b" . "prelude")
             :desc "crux-open-with"                         "o" #'crux-open-with
-            :desc "crux-move-beginning-of-line"            "a" #'crux-move-beginning-of-line
             :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
             :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
             :desc "crux-view-url"                          "u" #'crux-view-url
-            :desc "crux-swap-windows"                      "s" #'crux-swap-windows
+            :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
             :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
             :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
             :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
-            :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-            :desc "imenu-anywhere"                         "i" #'imenu-anywhere
+            :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
             :desc "Helm Bibtex"                            "b" #'helm-bibtex
-            :desc "Start Slack"                            "s" #'start-slack)))
+            :desc "helm-imenu"                             "i" #'helm-imenu)))
 
 ) ;; END MAP
 
@@ -398,6 +414,8 @@
        +biblio-default-bibliography-files '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
        +biblio-notes-path my-roam-dir)
 
+;;(setq bibtex-dialect 'biblatex)
+(setq bibtex-dialect 'BibTeX)
 
 (after! org-roam
   (setq org-roam-directory my-roam-dir
@@ -629,15 +647,30 @@
 ;;;
 
 #+END_SRC
-* Slack
-
-# (defun jb/send-region-to-slack-code ()
-#     (interactive)
-#     (let ((team (slack-team-select)) ;; Select team
-#           (room (slack-room-select
-#                  (cl-loop for team in (list team)
-#                           for channels = (oref team channels)
-#                           nconc channels)))) ;; Get all rooms from selected team
-#       (slack-message-send-internal (concat "```" (filter-buffer-substring (region-beginning) (region-end)) "```")
-#                                    (oref room id)
-#                                    team)))
+* Random
+# (defun doom/convert-package-pins-to-bump ()
+#   "Convert a `package!' call into 'username/repo@commit'.
+# For bump commits."
+#   (interactive)
+#   (save-excursion
+#     (beginning-of-line)
+#     (let (beg end package pin)
+#       (when (re-search-forward "(package! +\\([^ ]+\\)" (line-end-position) t)
+#         (goto-char (match-beginning 0))
+#         (let* ((end (cdr (bounds-of-thing-at-point 'sexp)))
+#                (sexp (sexp-at-point))
+#                (recipe (plist-get sexp :recipe)))
+#           (setq package (cadr sexp)
+#                 pin (plist-get sexp :pin))
+#           (goto-char (match-beginning 0))
+#           (delete-region (match-beginning 0) end)
+#           (insert
+#            (format "%s@%s"
+#                    (plist-get (doom-plist-merge
+#                                (plist-get (cdr recipe) :recipe)
+#                                (or (cdr (straight-recipes-retrieve package))
+#                                    (plist-get (cdr (assq package
+#                                                          doom-packages))
+#                                               :recipe)))
+#                               :repo)
+#                    (substring-no-properties pin 0 7))))))))

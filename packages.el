@@ -70,6 +70,8 @@
 (package! crux)
 (package! imenu-anywhere)
 
+(unpin! helm)
+
 ;; Communications
 ;;(package! slack)
 ;;(package! helm-slack
