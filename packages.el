@@ -70,6 +70,9 @@
 (package! crux)
 (package! imenu-anywhere)
 
+;; Edit webcontent from emacs
+(package! atomic-chrome)
+
 (unpin! helm)
 
 ;; Communications
