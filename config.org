@@ -77,7 +77,9 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 
 
-(setq ispell-dictionary "en-custom")
+;; TODO Put this behind a IS_MAC flag
+;;(setq ispell-dictionary "en-custom")
+(setq ispell-dictionary "en_GB")
 
 ;; (after! company
 ;;   (setq company-dabbrev-downcase nil))
@@ -232,88 +234,21 @@
     ("Open documentation"
      :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
      :action doom/help)
-    ;; ("Email"
-    ;;  :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
-    ;;  :action =mu4e)
-    ;; ("Jump to bookmark"
-    ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
-    ;;  :action bookmark-jump)
     ;; ("Notes"
     ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
     ;;  :action ragone-deft-or-close)
     ;; ("Passwords"
     ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
     ;;  :action pass)
-    ;; ("IRC"
-    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
-    ;;  :action =irc)))
+    
     ))
+
+
+;;(setq fancy-splash-image (concat doom-private-dir "images/emacs-transparent.png"))
+
 ;;;
 ;;;
 ;;; END_Interface_Tweaks
-;;;
-;;;
-
-#+END_SRC
-* Comms
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_ORG_Comms
-;;;
-;;;
-
-;; (after! circe
-;;   (set-irc-server! "chat.freenode.net"
-;;     `(:tls t
-;;       :port 6697
-;;       :nick "bmg"
-;;       :sasl-username ,(+pass-get-user "irc/freenode.net")
-;;       :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode.net"))
-;;       :channels ("#emacs" "#opentee"))))
-  ;; (set-irc-server! "chat.freenode.net"
-  ;;   `(:tls t
-  ;;     :port 6697
-  ;;     :nick "pirut"
-  ;;     :sasl-username ,(+pass-get-user "irc/freenode2.net")
-  ;;     :sasl-password (lambda (&rest _) (+pass-get-secret "irc/freenode2.net"))
-  ;;     :channels ("#emacs" "#opentee"))))
-
-;; (use-package! slack
-;;   :commands (slack-start)
-;;   :bind (:map slack-mode-map
-;;               (("@" . slack-message-embed-mention)
-;;                ("#" . slack-message-embed-channel)))
-;;   :custom
-;;   (slack-buffer-emojify t)
-;;   (slack-prefer-current-team t)
-;;   :config
-;;   (slack-register-team
-;;    :name "orgroam"
-;;    :default t
-;;    :token (+pass-get-secret "slack-tokens/orgroam")
-;;    :subscribed-channels '(general github org-roam-bibtex random troubleshooting workflows)
-;;    :full-and-display-names t))
-;; # (defun jb/send-region-to-slack-code ()
-;; #     (interactive)
-;; #     (let ((team (slack-team-select)) ;; Select team
-;; #           (room (slack-room-select
-;; #                  (cl-loop for team in (list team)
-;; #                           for channels = (oref team channels)
-;; #                           nconc channels)))) ;; Get all rooms from selected team
-;; #       (slack-message-send-internal (concat "```" (filter-buffer-substring (region-beginning) (region-end)) "```")
-;; #                                    (oref room id)
-;; #                                    team)))
-;; (use-package! alert
-;;   :commands (alert)
-;;   :init
-;;   (setq alert-default-style 'notifier))
-
-;; (use-package! helm-slack
-;;   :after (slack))
-;;;
-;;;
-;;; END_Comms
 ;;;
 ;;;
 
@@ -515,14 +450,6 @@
                `("i" "inbox" entry (file org-default-notes-file)
                  "* TODO %?"))
 
-  ;; (add-to-list 'org-capture-templates
-  ;;              `("h" "Protocol hl" entry (file org-default-notes-file)
-  ;;                "* TODO %^{Title}\nSource: %u, %c\n #+BEGIN_QUOTE\n%i\n#+END_QUOTE\n\n\n%?\n\n" :immediate-finish t))
-
-  ;; (add-to-list 'org-capture-templates
-  ;;              `("L" "Protocol Link" entry (file org-default-notes-file)
-  ;;                "* TODO %? [[%:link][%:description]] \nCaptured On: %U\n\n" :immediate-finish t))
-
   (add-to-list 'org-capture-templates
                '("c" "Cookbook" entry (file org-default-notes-file)
                  "%(org-chef-get-recipe-from-url)" :empty-lines 1)))
@@ -665,30 +592,3 @@
 ;;;
 
 #+END_SRC
-* Random
-# (defun doom/convert-package-pins-to-bump ()
-#   "Convert a `package!' call into 'username/repo@commit'.
-# For bump commits."
-#   (interactive)
-#   (save-excursion
-#     (beginning-of-line)
-#     (let (beg end package pin)
-#       (when (re-search-forward "(package! +\\([^ ]+\\)" (line-end-position) t)
-#         (goto-char (match-beginning 0))
-#         (let* ((end (cdr (bounds-of-thing-at-point 'sexp)))
-#                (sexp (sexp-at-point))
-#                (recipe (plist-get sexp :recipe)))
-#           (setq package (cadr sexp)
-#                 pin (plist-get sexp :pin))
-#           (goto-char (match-beginning 0))
-#           (delete-region (match-beginning 0) end)
-#           (insert
-#            (format "%s@%s"
-#                    (plist-get (doom-plist-merge
-#                                (plist-get (cdr recipe) :recipe)
-#                                (or (cdr (straight-recipes-retrieve package))
-#                                    (plist-get (cdr (assq package
-#                                                          doom-packages))
-#                                               :recipe)))
-#                               :repo)
-#                    (substring-no-properties pin 0 7))))))))
