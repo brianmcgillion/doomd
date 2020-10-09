@@ -77,21 +77,15 @@
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 
 
-;; TODO Put this behind a IS_MAC flag
-;;(setq ispell-dictionary "en-custom")
-(setq ispell-dictionary "en_GB")
+;; Use a custom dictionary on linux
+;; (if IS-MAC (setq ispell-dictionary "en_GB")
+;;   (setq ispell-dictionary "en-custom"))
 
-;; (after! company
-;;   (setq company-dabbrev-downcase nil))
 
 (use-package! company-tabnine
   :after company
   (add-to-list 'company-backends #'company-tabnine))
 
-;; (after! company
-;;   ;; Trigger completion immediately.
-;;   (setq company-idle-delay 0
-;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
 (setq company-minimum-prefix-length 2
       company-idle-delay 0.5
       company-show-numbers t)
