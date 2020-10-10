@@ -78,8 +78,8 @@
 
 
 ;; Use a custom dictionary on linux
-;; (if IS-MAC (setq ispell-dictionary "en_GB")
-;;   (setq ispell-dictionary "en-custom"))
+(if IS-MAC (setq ispell-dictionary "en_GB")
+  (setq ispell-dictionary "en-custom"))
 
 
 (use-package! company-tabnine
