@@ -62,7 +62,7 @@
        ;;parinfer          ; turn lisp into python, sort of
        ;;rotate-text       ; cycle region at point between text candidates
        snippets          ; my elves. They type so I don't have to
-       ;;word-wrap         ; soft wrapping with language-aware indent
+       word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
        (dired +icons)             ; making dired pretty [functional]
@@ -151,7 +151,7 @@
         ;;+hugo            ; use Emacs for hugo blogging
         ;;+jupyter         ; ipython/jupyter support for babel
         +pandoc            ; export-with-pandoc support
-        +pomodoro          ; be fruitful with the tomato technique
+        +pretty            ; org-superstar-mode
         +present           ; using org-mode for presentations
         +gnuplot
         ;;+journal

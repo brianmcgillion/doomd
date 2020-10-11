@@ -23,6 +23,9 @@
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
+
+(setq c-default-style "linux" ;; set style to "linux")
+
 ;;;
 ;;;
 ;;; END_code
@@ -43,6 +46,14 @@
 ;; clients, file templates and snippets.
 (setq user-full-name "Brian McGillion"
       user-mail-address "brian@ssrc.tii.ae")
+
+;; enable word-wrap in C/C++/ObjC/Java
+;; (add-hook 'c-mode-common-hook #'+word-wrap-mode)
+
+;; TODO see if this is too much and maybe only leave it for C
+;; enable word-wrap (almost) everywhere
+(+global-word-wrap-mode +1)
+
 
 ;; Autosave files when switching buffers
 (use-package! super-save
@@ -86,8 +97,8 @@
   :after company
   (add-to-list 'company-backends #'company-tabnine))
 
-(setq company-minimum-prefix-length 2
-      company-idle-delay 0.5
+(setq company-minimum-prefix-length 0
+      company-idle-delay 0.2
       company-show-numbers t)
 
 ;;(remove-hook 'company-mode-hook #'company-prescient-mode)
