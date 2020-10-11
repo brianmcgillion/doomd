@@ -24,7 +24,7 @@
           'executable-make-buffer-file-executable-if-script-p)
 
 
-(setq c-default-style "linux" ;; set style to "linux")
+(setq c-default-style "linux") ;; set style to "linux"
 
 ;;;
 ;;;
@@ -53,7 +53,6 @@
 ;; TODO see if this is too much and maybe only leave it for C
 ;; enable word-wrap (almost) everywhere
 (+global-word-wrap-mode +1)
-
 
 ;; Autosave files when switching buffers
 (use-package! super-save
