@@ -59,8 +59,13 @@
 (package! elfeed-goodies)
 
 ;; Org related
+;; packages.el
+(package! org-mode
+  :recipe (:repo "https://code.orgmode.org/bzg/org-mode.git"
+           :files ("*.el" "lisp/*.el" "contrib/lisp/*.el"))
+  :pin "8402c4a778")
+
 (unpin! org-roam)
-(package! company-org-roam :disable t)
 (package! org-chef)
 
 (package! company-tabnine)
@@ -74,8 +79,3 @@
 (package! atomic-chrome)
 
 (unpin! helm)
-
-;; Communications
-;;(package! slack)
-;;(package! helm-slack
-;;  :recipe (:host github :repo "yuya373/helm-slack"))

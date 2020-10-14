@@ -26,6 +26,23 @@
 
 (setq c-default-style "linux") ;; set style to "linux"
 
+;; (after! lsp
+;;   (setq lsp-lens-enable t
+;;         lsp-headerline-breadcrumb-enable t
+;;         lsp-modeline-code-actions-enable t
+;;         lsp-diagnostics-provider :auto
+;;         lsp-modeline-diagnostics-enable t
+;;         lsp-signature-auto-activate t
+;;         lsp-signature-render-documentation t
+;;         lsp-completion-show-detail t
+;;         lsp-completion-show-kind t))
+
+;; (after! lsp-ui
+;;   (setq lsp-ui-sideline-enable t
+;;         lsp-ui-sideline-show-code-actions t
+;;         lsp-ui-sideline-enable t
+;;         lsp-ui-sideline-show-diagnostics t))
+
 ;;;
 ;;;
 ;;; END_code
@@ -389,16 +406,12 @@
 - tags :: "
            :unnarrowed t))))
 
-(after! org
-  (set-company-backend! 'org-mode nil)
-;;TODO Trying to see if tabnine alone is ok, might need to put back in ispell
-  (set-company-backend! 'org-mode '(company-tabnine))) ;;company-ispell
-
-;; (use-package! company-org-roam
-;;   :after org-roam
-;;   :config
+;; (after! org
 ;;   (set-company-backend! 'org-mode nil)
-;;   (set-company-backend! 'org-mode '(company-org-roam company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
+;; ;;TODO Trying to see if tabnine alone is ok, might need to put back in ispell
+;;   (set-company-backend! 'org-mode '(company-tabnine))) ;;company-ispell
+
+;;   (set-company-backend! 'org-mode '(company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
 
 
 (use-package! org-chef
