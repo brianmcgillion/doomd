@@ -224,10 +224,10 @@
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
 
-(after! pdf-tools
-  ;; automatically turns on midnight-mode for
-  (add-hook 'pdf-view-mode-hook (lambda ()
-                                  (pdf-view-midnight-minor-mode))))
+;; (after! pdf-tools
+;;   ;; automatically turns on midnight-mode for
+;;   (add-hook 'pdf-view-mode-hook (lambda ()
+;;                                   (pdf-view-midnight-minor-mode))))
 
 (setq +doom-dashboard-menu-sections
   '(("Open org-agenda"
@@ -261,7 +261,7 @@
     ;; ("Passwords"
     ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
     ;;  :action pass)
-    
+
     ))
 
 
