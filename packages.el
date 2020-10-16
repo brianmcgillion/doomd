@@ -66,6 +66,7 @@
   :pin "8402c4a778")
 
 (unpin! org-roam)
+(package! org-roam-server)
 (package! org-chef)
 
 (package! company-tabnine)

@@ -177,7 +177,16 @@
   ;; for helm-occur
   (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
   ;; for helm-grep
-  (customize-set-variable 'helm-grep-use-ioccur-style-keys t))
+  (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
+
+  ;; helm-rg can be limited by helm-candidate-number-limit which is set to
+  ;; 50 in doom, so increase that, but cap it at 5000 just not to crash emacs
+  ;; when there is a massive amount of returns
+  (defadvice! +helm--increase-limit-for-helm-rg-a (orig-fn &rest args)
+    :around #'helm-rg
+    (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
+      (apply orig-fn args)))
+)
 
 (after! projectile
   (helm-projectile-on))
@@ -407,7 +416,6 @@
            :unnarrowed t))))
 
 (use-package org-roam-server
-  :ensure t
   :config
   (setq org-roam-server-host "127.0.0.1"
         org-roam-server-port 8080
