@@ -109,9 +109,9 @@
   (setq ispell-dictionary "en-custom"))
 
 
-(use-package! company-tabnine
-  :after company
-  (add-to-list 'company-backends #'company-tabnine))
+;; (use-package! company-tabnine
+;;   :after company
+;;   (add-to-list 'company-backends #'company-tabnine))
 
 (setq company-minimum-prefix-length 0
       company-idle-delay 0.2
@@ -384,7 +384,7 @@
 ;; +biblio-default-bibliography-files '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
 
 (setq! +biblio-pdf-library-dir "~/Documents/Papers/"
-       +biblio-default-bibliography-files '("~/Documents/org/emacs_lit.bib")
+       +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
        +biblio-notes-path my-roam-dir)
 
 ;;(setq bibtex-dialect 'biblatex)
