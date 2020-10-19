@@ -105,17 +105,17 @@
 
 
 ;; Use a custom dictionary on linux
-(if IS-MAC (setq ispell-dictionary "en_GB")
-  (setq ispell-dictionary "en-custom"))
+(if IS-MAC (setq ispell-dictionary "en_GB"))
+;;  (setq ispell-dictionary "en-custom"))
 
 
 ;; (use-package! company-tabnine
 ;;   :after company
 ;;   (add-to-list 'company-backends #'company-tabnine))
 
-(setq company-minimum-prefix-length 0
-      company-idle-delay 0.2
-      company-show-numbers t)
+;; (setq company-minimum-prefix-length 2
+;;       company-idle-delay 0.2
+;;       company-show-numbers t)
 
 ;;(remove-hook 'company-mode-hook #'company-prescient-mode)
 
@@ -393,9 +393,9 @@
 (after! org-roam
   (setq org-roam-directory my-roam-dir
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
-        org-roam-graphviz-executable "/usr/bin/dot" ;; Visualize the relationships with notes
-        org-roam-buffer-no-delete-other-windows nil
-        +org-roam-open-buffer-on-find-file nil)
+        +org-roam-open-buffer-on-find-file nil
+        org-id-link-to-org-use-id t
+        org-roam-completion-everywhere nil)
   (setq org-roam-capture-templates
         '(("d" "default" plain (function org-roam--capture-get-point)
            "%?"
@@ -430,16 +430,13 @@
         org-roam-server-network-label-truncate-length 60
         org-roam-server-network-label-wrap-length 20))
 
+(after! org
+  (set-company-backend! 'org-mode '(company-ispell company-dabbrev company-yasnippet)))
 ;; (after! org
-;;   (set-company-backend! 'org-mode nil)
-;; ;;TODO Trying to see if tabnine alone is ok, might need to put back in ispell
-;;   (set-company-backend! 'org-mode '(company-tabnine))) ;;company-ispell
+;;    (set-company-backend! 'org-mode nil)
+;;    (set-company-backend! 'org-mode '(company-tabnine company-ispell company-dabbrev company-yasnippet)))
 
 ;;   (set-company-backend! 'org-mode '(company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
-
-
-(use-package! org-chef
-    :after org)
 
 ;;;
 ;;;
@@ -489,11 +486,7 @@
   ;; Capture templates
   (add-to-list 'org-capture-templates
                `("i" "inbox" entry (file org-default-notes-file)
-                 "* TODO %?"))
-
-  (add-to-list 'org-capture-templates
-               '("c" "Cookbook" entry (file org-default-notes-file)
-                 "%(org-chef-get-recipe-from-url)" :empty-lines 1)))
+                 "* TODO %?")))
 
 (after! org-refile
   (setq org-refile-allow-creating-parent-nodes 'confirm)
