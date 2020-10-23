@@ -58,12 +58,11 @@
 ;; For RSS and Atom feeds
 (package! elfeed-goodies)
 
-;; Org related
-;; packages.el
-(package! org-mode
-  :recipe (:repo "https://code.orgmode.org/bzg/org-mode.git"
-           :files ("*.el" "lisp/*.el" "contrib/lisp/*.el"))
-  :pin "8402c4a778")
+;; Org related packages.el
+;; (package! org-mode
+;;   :recipe (:repo "https://code.orgmode.org/bzg/org-mode.git"
+;;            :files ("*.el" "lisp/*.el" "contrib/lisp/*.el"))
+;;   :pin "8402c4a778")
 
 (unpin! org-roam)
 (package! org-roam-server)

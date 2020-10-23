@@ -50,6 +50,27 @@
 ;;;
 
 #+END_SRC
+* Connections
+#+BEGIN_SRC emacs-lisp
+
+;;;
+;;;
+;;; BEGIN_connection
+;;;
+;;;
+
+(after! tramp
+  (setenv "SHELL" "/bin/bash")
+  (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
+
+
+;;;
+;;;
+;;; END_connection
+;;;
+;;;
+
+#+END_SRC
 * General
 
 #+BEGIN_SRC emacs-lisp
@@ -126,10 +147,6 @@
 
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
-
-(after! tramp
-  (setenv "SHELL" "/bin/bash")
-  (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
 
 ;;;
 ;;;
