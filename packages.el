@@ -67,7 +67,7 @@
 (unpin! org-roam)
 (package! org-roam-server)
 
-(package! company-tabnine)
+;;(package! company-tabnine)
 
 ;; General helper packages
 (package! super-save)

@@ -153,7 +153,6 @@
 ;;; END_General
 ;;;
 ;;;
-
 #+END_SRC
 
 * Helm
@@ -312,72 +311,70 @@
       "C-+"     #'undo-fu-only-redo
 
       (;;:org-roam
-        :leader
-        (:prefix-map ("z" . "roam")
-          :desc "Org roam"                "l" #'org-roam
-          :desc "Org roam insert"         "i" #'org-roam-insert
-          :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
-          :desc "Org roam find file"      "f" #'org-roam-find-file
-          :desc "Org roam show graph"     "g" #'org-roam-graph
-          :desc "Org roam capture"        "c" #'org-roam-capture
-          (:prefix ("d" . "by date")
-            :desc "Arbitrary date" "d" #'org-roam-date
-            :desc "Today"          "t" #'org-roam-today
-            :desc "Tomorrow"       "m" #'org-roam-tomorrow
-            :desc "Yesterday"      "y" #'org-roam-yesterday)))
+       :leader
+       (:prefix-map ("z" . "roam")
+        :desc "Org roam"                "l" #'org-roam
+        :desc "Org roam insert"         "i" #'org-roam-insert
+        :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
+        :desc "Org roam find file"      "f" #'org-roam-find-file
+        :desc "Org roam show graph"     "g" #'org-roam-graph
+        :desc "Org roam capture"        "c" #'org-roam-capture
+        (:prefix ("d" . "by date")
+         :desc "Arbitrary date" "d" #'org-roam-date
+         :desc "Today"          "t" #'org-roam-today
+         :desc "Tomorrow"       "m" #'org-roam-tomorrow
+         :desc "Yesterday"      "y" #'org-roam-yesterday)))
 
       (;;:org-agenda
-        "<f4>" #'org-agenda
+       "<f4>" #'org-agenda
 
-        (:leader
+       (:leader
         ;;; <leader> n --- notes
-          (:prefix-map ("n" . "notes")
-            :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
+        (:prefix-map ("n" . "notes")
+         :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
 
-        (:map org-agenda-mode-map
-          "i"                       #'org-agenda-clock-in
-          "r"                       #'bmg/org-process-inbox
-          "R"                       #'org-agenda-refile
-          "c"                       #'bmg/org-inbox-capture))
+       (:map org-agenda-mode-map
+        "i"                       #'org-agenda-clock-in
+        "r"                       #'bmg/org-process-inbox
+        "R"                       #'org-agenda-refile
+        "c"                       #'bmg/org-inbox-capture))
 
       (;;:helm
-        [remap switch-to-buffer]    #'helm-mini
-        [remap occur]               #'helm-occur
+       [remap switch-to-buffer]    #'helm-mini
+       [remap occur]               #'helm-occur
 
-        (:leader                    ;; Top level C-c
-          "r"                       #'helm-recentf)
-        (:map minibuffer-local-map
-          "C-c C-l"                 #'helm-minibuffer-history)
-        (:map isearch-mode-map
-          "C-o"                     #'helm-occur-from-isearch)
-        (:map shell-mode-map
-          "C-c C-l"                 #'helm-comint-input-ring))
+       (:leader                    ;; Top level C-c
+        "r"                       #'helm-recentf)
+       (:map minibuffer-local-map
+        "C-c C-l"                 #'helm-minibuffer-history)
+       (:map isearch-mode-map
+        "C-o"                     #'helm-occur-from-isearch)
+       (:map shell-mode-map
+        "C-c C-l"                 #'helm-comint-input-ring))
 
       (;;: crux and stuff
-        (:leader
-   ;;; <leader> b --- prelude
-          (:prefix-map ("b" . "prelude")
-            :desc "crux-open-with"                         "o" #'crux-open-with
-            :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
-            :desc "crux-indent-defun"                      "TAB" #''crux-indent-defun
-            :desc "crux-view-url"                          "u" #'crux-view-url
-            :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
-            :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-            :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
-            :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
-            :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
-            :desc "Helm Bibtex"                            "b" #'helm-bibtex
-            :desc "helm-imenu"                             "i" #'helm-imenu)))
-
+       (:leader
+        ;;;  <leader> b --- prelude
+        (:prefix-map ("b" . "prelude")
+         :desc "crux-open-with"                         "o" #'crux-open-with
+         :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
+         :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
+         :desc "crux-view-url"                          "u" #'crux-view-url
+         :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
+         :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+         :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+         :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+         :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+         :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
+         :desc "Helm Bibtex"                            "b" #'helm-bibtex
+         :desc "helm-imenu"                             "i" #'helm-imenu)))
 ) ;; END MAP
-
 
 ;;;
 ;;;
 ;;; END_Helm
 ;;;
 ;;;
-
 #+END_SRC
 * Org
 #+BEGIN_SRC emacs-lisp
