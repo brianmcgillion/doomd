@@ -13,7 +13,7 @@
 (setq anaconda-mode-localhost-address "localhost")
 ;;(require 'py-autopep8)
 ;;(add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
-;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+;;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
 
 
 ;; Add handlers SELinux files
@@ -25,6 +25,23 @@
 
 
 (setq c-default-style "linux") ;; set style to "linux"
+
+(after! lsp-mode
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-tramp-connection "mspyls")
+                    :major-modes '(python-mode)
+                    :remote? t
+                    :server-id 'mspyls-remote))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-tramp-connection "/usr/local/bin/bash-language-server")
+                    :major-modes '(sh-mode)
+                    :remote? t
+                    :server-id 'bash-remote))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-tramp-connection 'lsp-clients--clangd-command)
+                    :major-modes '(c++-mode c-mode cc-mode)
+                    :remote? t
+                    :server-id 'clangd-remote)))
 
 ;; (after! lsp
 ;;   (setq lsp-lens-enable t
@@ -48,7 +65,6 @@
 ;;; END_code
 ;;;
 ;;;
-
 #+END_SRC
 * Connections
 #+BEGIN_SRC emacs-lisp
@@ -313,17 +329,23 @@
       (;;:org-roam
        :leader
        (:prefix-map ("z" . "roam")
-        :desc "Org roam"                "l" #'org-roam
-        :desc "Org roam insert"         "i" #'org-roam-insert
-        :desc "Org roam switch buffer"  "b" #'org-roam-switch-to-buffer
-        :desc "Org roam find file"      "f" #'org-roam-find-file
-        :desc "Org roam show graph"     "g" #'org-roam-graph
-        :desc "Org roam capture"        "c" #'org-roam-capture
-        (:prefix ("d" . "by date")
-         :desc "Arbitrary date" "d" #'org-roam-date
-         :desc "Today"          "t" #'org-roam-today
-         :desc "Tomorrow"       "m" #'org-roam-tomorrow
-         :desc "Yesterday"      "y" #'org-roam-yesterday)))
+        :desc "Org roam"                  "l" #'org-roam
+        :desc "Org roam insert"           "i" #'org-roam-insert
+        :desc "Org roam insert Immediate" "I" #'org-roam-insert-immediate
+        :desc "Org roam switch buffer"    "b" #'org-roam-switch-to-buffer
+        :desc "Org roam find file"        "f" #'org-roam-find-file
+        :desc "Org roam show graph"       "g" #'org-roam-graph
+        :desc "Org roam capture"          "c" #'org-roam-capture
+        (:prefix ("d" . "Dailies")
+         :desc "Find today"         "d" #'org-roam-dailies-find-today
+         :desc "Find yesterday"     "y" #'org-roam-dailies-find-yesterday
+         :desc "Find tomorrow"      "t" #'org-roam-dailies-find-tomorrow
+         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
+         :desc "Find next note"     "f" #'org-roam-dailies-find-next-note
+         :desc "Find previous note" "b" #'org-roam-dailies-find-previous-note
+         :desc "Find date"          "c" #'org-roam-dailies-find-date
+         :desc "Capture Date"       "v" #'org-roam-dailies-capture-date
+         :desc "Find directory"     "." #'org-roam-dailies-find-directory)))
 
       (;;:org-agenda
        "<f4>" #'org-agenda
@@ -368,11 +390,11 @@
          :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
          :desc "Helm Bibtex"                            "b" #'helm-bibtex
          :desc "helm-imenu"                             "i" #'helm-imenu)))
-) ;; END MAP
+      ) ;; END MAP
 
 ;;;
 ;;;
-;;; END_Helm
+;;; END_MAP
 ;;;
 ;;;
 #+END_SRC
@@ -427,7 +449,28 @@
 - source :: ${ref}
 
 - tags :: "
-           :unnarrowed t))))
+           :unnarrowed t)))
+  (setq org-roam-dailies-capture-templates
+        '(("p" "Pentest" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
+           :olp ("Pentest Cert"))
+
+          ("d" "Default" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
+           :olp ("Default"))
+
+          ("s" "Systems" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
+           :olp ("Secure Systems")))))
 
 (use-package org-roam-server
   :defer t
@@ -457,7 +500,6 @@
 ;;; END_ORG
 ;;;
 ;;;
-
 #+END_SRC
 
 ** Org GTD
