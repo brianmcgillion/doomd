@@ -26,22 +26,34 @@
 
 (setq c-default-style "linux") ;; set style to "linux"
 
-(after! lsp-mode
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-tramp-connection "mspyls")
-                    :major-modes '(python-mode)
-                    :remote? t
-                    :server-id 'mspyls-remote))
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-tramp-connection "/usr/local/bin/bash-language-server")
-                    :major-modes '(sh-mode)
-                    :remote? t
-                    :server-id 'bash-remote))
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-tramp-connection 'lsp-clients--clangd-command)
-                    :major-modes '(c++-mode c-mode cc-mode)
-                    :remote? t
-                    :server-id 'clangd-remote)))
+(use-package x86-lookup
+  :defer t
+  :config
+  (setq  x86-lookup-pdf "~/Documents/Papers/Intel_64_and_IA-32_Architecture_Software_Developer_Manual.pdf"))
+
+(use-package nasm-mode
+  :defer t
+  :config
+  (add-hook 'asm-mode-hook 'nasm-mode))
+
+(add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
+
+;; (after! lsp-mode
+;;   (lsp-register-client
+;;    (make-lsp-client :new-connection (lsp-tramp-connection "mspyls")
+;;                     :major-modes '(python-mode)
+;;                     :remote? t
+;;                     :server-id 'mspyls-remote))
+;;   (lsp-register-client
+;;    (make-lsp-client :new-connection (lsp-tramp-connection "/usr/local/bin/bash-language-server")
+;;                     :major-modes '(sh-mode)
+;;                     :remote? t
+;;                     :server-id 'bash-remote))
+;;   (lsp-register-client
+;;    (make-lsp-client :new-connection (lsp-tramp-connection 'lsp-clients--clangd-command)
+;;                     :major-modes '(c++-mode c-mode cc-mode)
+;;                     :remote? t
+;;                     :server-id 'clangd-remote)))
 
 ;; (after! lsp
 ;;   (setq lsp-lens-enable t
@@ -75,17 +87,18 @@
 ;;;
 ;;;
 
-(after! tramp
-  (setenv "SHELL" "/bin/bash")
-  (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
+;; (after! tramp
+;;   (setenv "SHELL" "/bin/bash")
+;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
 
-
+;; When connecting over tramp it takes a long time processing projectile
+(defadvice projectile-project-root (around ignore-remote first activate)
+  (unless (file-remote-p default-directory) ad-do-it))
 ;;;
 ;;;
 ;;; END_connection
 ;;;
 ;;;
-
 #+END_SRC
 * General
 

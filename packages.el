@@ -78,3 +78,7 @@
 (package! atomic-chrome)
 
 (unpin! helm)
+
+;; Code related
+(package! x86-lookup)
+(package! nasm-mode)
