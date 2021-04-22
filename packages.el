@@ -75,7 +75,7 @@
 (package! imenu-anywhere)
 
 ;; Edit webcontent from emacs
-(package! atomic-chrome)
+;;(package! atomic-chrome)
 
 (unpin! helm)
 

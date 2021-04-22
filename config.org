@@ -138,13 +138,6 @@
 (use-package! imenu-anywhere
   :defer t)
 
-(use-package! atomic-chrome
-  :after-call focus-out-hook
-  :config
-  (setq atomic-chrome-default-major-mode 'text-mode ;;markdown-mode
-        atomic-chrome-buffer-open-style 'frame)
-  (atomic-chrome-start-server))
-
 (setq uniquify-buffer-name-style 'forward)
 (setq which-key-idle-delay 0.5)
 
