@@ -154,8 +154,9 @@
         +present           ; using org-mode for presentations
         +gnuplot
         ;;+journal
-        +roam              ;add org-roam support
-        +noter)
+        +roam              ; add org-roam support
+        +noter             ; org-noter for annotating pdfs in an org doc
+        +ref)              ; Add org-ref support
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
