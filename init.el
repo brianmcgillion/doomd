@@ -154,7 +154,7 @@
         +present           ; using org-mode for presentations
         +gnuplot
         ;;+journal
-        +roam              ; add org-roam support
+        +roam2              ; add org-roam support
         +noter             ; org-noter for annotating pdfs in an org doc
         +ref)              ; Add org-ref support
        ;;php               ; perl's insecure younger brother

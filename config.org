@@ -1,5 +1,8 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 * Code
+:PROPERTIES:
+:ID:       4460f37d-9944-4717-acf5-e2ab1e410787
+:END:
 #+BEGIN_SRC emacs-lisp
 
 ;;;
@@ -79,6 +82,9 @@
 ;;;
 #+END_SRC
 * Connections
+:PROPERTIES:
+:ID:       7018c3c5-ffc5-4b4d-a2cc-ae70796fd448
+:END:
 #+BEGIN_SRC emacs-lisp
 
 ;;;
@@ -101,6 +107,9 @@
 ;;;
 #+END_SRC
 * General
+:PROPERTIES:
+:ID:       5fa6e40a-6235-4da7-9c35-3df39775a7af
+:END:
 
 #+BEGIN_SRC emacs-lisp
 ;;;
@@ -178,6 +187,9 @@
 #+END_SRC
 
 * Helm
+:PROPERTIES:
+:ID:       6b424a31-028d-4f08-9514-32185b39f914
+:END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -237,6 +249,9 @@
 
 #+END_SRC
 * Interface Tweaks
+:PROPERTIES:
+:ID:       7d3f0a7b-101c-44cd-920c-65a82bc21877
+:END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -322,6 +337,9 @@
 
 #+END_SRC
 * Map
+:PROPERTIES:
+:ID:       629b4ae3-039b-4729-b3f6-1ae18ed50d13
+:END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -334,24 +352,38 @@
 
       (;;:org-roam
        :leader
-       (:prefix-map ("z" . "roam")
-        :desc "Org roam"                  "l" #'org-roam
-        :desc "Org roam insert"           "i" #'org-roam-insert
-        :desc "Org roam insert Immediate" "I" #'org-roam-insert-immediate
-        :desc "Org roam switch buffer"    "b" #'org-roam-switch-to-buffer
-        :desc "Org roam find file"        "f" #'org-roam-find-file
-        :desc "Org roam show graph"       "g" #'org-roam-graph
-        :desc "Org roam capture"          "c" #'org-roam-capture
-        (:prefix ("d" . "Dailies")
-         :desc "Find today"         "d" #'org-roam-dailies-find-today
-         :desc "Find yesterday"     "y" #'org-roam-dailies-find-yesterday
-         :desc "Find tomorrow"      "t" #'org-roam-dailies-find-tomorrow
+       (:prefix-map ("z" . "org-roam")
+        "c" #'org-roam-capture
+        "D" #'org-roam-demote-entire-buffer
+        "f" #'org-roam-node-find
+        "F" #'org-roam-ref-find
+        "g" #'org-roam-graph
+        "i" #'org-roam-node-insert
+        "I" #'org-id-get-create
+        "t" #'org-roam-buffer-toggle
+        "T" #'org-roam-buffer-display-dedicated
+        "r" #'org-roam-refile
+        "R" #'org-roam-link-replace-all
+        (:prefix ("d" . "by date")
+         :desc "Goto previous note" "b" #'org-roam-dailies-goto-previous-note
+         :desc "Goto date"          "d" #'org-roam-dailies-goto-date
+         :desc "Capture date"       "D" #'org-roam-dailies-capture-date
+         :desc "Goto next note"     "f" #'org-roam-dailies-goto-next-note
+         :desc "Goto tomorrow"      "m" #'org-roam-dailies-goto-tomorrow
+         :desc "Capture tomorrow"   "M" #'org-roam-dailies-capture-tomorrow
          :desc "Capture today"      "n" #'org-roam-dailies-capture-today
-         :desc "Find next note"     "f" #'org-roam-dailies-find-next-note
-         :desc "Find previous note" "b" #'org-roam-dailies-find-previous-note
-         :desc "Find date"          "c" #'org-roam-dailies-find-date
-         :desc "Capture Date"       "v" #'org-roam-dailies-capture-date
-         :desc "Find directory"     "." #'org-roam-dailies-find-directory)))
+         :desc "Goto today"         "t" #'org-roam-dailies-goto-today
+         :desc "Capture today"      "T" #'org-roam-dailies-capture-today
+         :desc "Goto yesterday"     "y" #'org-roam-dailies-goto-yesterday
+         :desc "Capture yesterday"  "Y" #'org-roam-dailies-capture-yesterday
+         :desc "Find directory"     "-" #'org-roam-dailies-find-directory)
+        (:prefix ("n" . "node properties")
+         "a" #'org-roam-alias-add
+         "A" #'org-roam-alias-remove
+         "t" #'org-roam-tag-add
+         "T" #'org-roam-tag-remove
+         "r" #'org-roam-ref-add
+         "R" #'org-roam-ref-remove)))
 
       (;;:org-agenda
        "<f4>" #'org-agenda
@@ -405,6 +437,9 @@
 ;;;
 #+END_SRC
 * Org
+:PROPERTIES:
+:ID:       b889f253-3691-41e3-a2ca-7f1c76f10d7d
+:END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
@@ -439,44 +474,25 @@
         org-id-link-to-org-use-id t
         org-roam-completion-everywhere nil)
   (setq org-roam-capture-templates
-        '(("d" "default" plain (function org-roam--capture-get-point)
+        '(("d" "default" plain
            "%?"
-           :file-name "${slug}"
-           :head "#+TITLE: ${title}
+           :if-new (file+head "${slug}.org"
+                              "#+title: ${title}
 
-- tags :: "
+- related :: ")
+           :immediate-finish t
            :unnarrowed t)))
   (setq org-roam-capture-ref-templates
-        '(("r" "ref" plain (function org-roam-capture--get-point)
+        '(("r" "ref" plain
            "%?"
-           :file-name "${slug}"
-           :head "#+TITLE: ${title}\n#+roam_key: ${ref}\n#+roam_tags: website
-
-- source :: ${ref}
-
-- tags :: "
+           :if-new (file+head "${slug}.org"
+                              "#+title: ${title}\n")
            :unnarrowed t)))
   (setq org-roam-dailies-capture-templates
-        '(("p" "Pentest" entry
-           #'org-roam-capture--get-point
+        '(("d" "default" entry
            "* %?"
-           :file-name "daily/%<%Y-%m-%d>"
-           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
-           :olp ("Pentest Cert"))
-
-          ("d" "Default" entry
-           #'org-roam-capture--get-point
-           "* %?"
-           :file-name "daily/%<%Y-%m-%d>"
-           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
-           :olp ("Default"))
-
-          ("s" "Systems" entry
-           #'org-roam-capture--get-point
-           "* %?"
-           :file-name "daily/%<%Y-%m-%d>"
-           :head "#+TITLE: %<%Y-%m-%d>\n\n* Default\n* Secure Systems\n* Pentest Cert"
-           :olp ("Secure Systems")))))
+           :if-new (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>\n")))))
 
 (use-package org-roam-server
   :defer t
@@ -509,6 +525,9 @@
 #+END_SRC
 
 ** Org GTD
+:PROPERTIES:
+:ID:       515ef8a5-cc71-4ad8-a24b-aa0b758e7bd4
+:END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
