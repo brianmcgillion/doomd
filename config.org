@@ -155,6 +155,9 @@
 (set-register ?e '(file . "~/.doom.d/config.org"))
 (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 
+;; Stop undo-tree storing persistent history
+(after! undo-tree
+  (setq undo-tree-auto-save-history nil))
 
 ;; Use a custom dictionary on linux
 (if IS-MAC (setq ispell-dictionary "en_GB"))
@@ -279,12 +282,17 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-dracula)
 
+;; Configure treemacs theme and git highlighting
+(setq doom-themes-treemacs-theme "doom-colors")
+(setq +treemacs-git-mode 'deferred)
+
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
+
 
 ;; (after! pdf-tools
 ;;   ;; automatically turns on midnight-mode for
@@ -304,12 +312,6 @@
     ("RSS"
      :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
      :action =rss)
-    ("Slack"
-     :icon (all-the-icons-octicon "comment-discussion" :face 'font-lock-keyword-face)
-     :action slack-start)
-    ("IRC"
-     :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
-     :action =irc)
     ("Open private configuration"
      :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
      :when (file-directory-p doom-private-dir)
@@ -317,6 +319,12 @@
     ("Open documentation"
      :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
      :action doom/help)
+    ;; ("Slack"
+    ;;  :icon (all-the-icons-octicon "comment-discussion" :face 'font-lock-keyword-face)
+    ;;  :action slack-start)
+    ;; ("IRC"
+    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+    ;;  :action =irc)
     ;; ("Notes"
     ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
     ;;  :action ragone-deft-or-close)
@@ -416,18 +424,18 @@
        (:leader
         ;;;  <leader> b --- prelude
         (:prefix-map ("b" . "prelude")
-         :desc "crux-open-with"                         "o" #'crux-open-with
-         :desc "crux-cleanup-buffer-or-region"          "n" #'crux-cleanup-buffer-or-region
-         :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
-         :desc "crux-view-url"                          "u" #'crux-view-url
-         :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
-         :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-         :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+         :desc "crux-cleanup-buffer-or-region"          "c" #'crux-cleanup-buffer-or-region
          :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+         :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+         :desc "helm-imenu"                             "i" #'helm-imenu
+         :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+         :desc "crux-open-with"                         "o" #'crux-open-with
          :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+         :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
+         :desc "treemacs-select-window"                 "t" #'treemacs-select-window
+         :desc "crux-view-url"                          "u" #'crux-view-url
          :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
-         :desc "Helm Bibtex"                            "b" #'helm-bibtex
-         :desc "helm-imenu"                             "i" #'helm-imenu)))
+         :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
       ) ;; END MAP
 
 ;;;
