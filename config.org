@@ -200,10 +200,6 @@
 ;;;
 ;;;
 
-;; check emacs version to stop helm hanging with tool tips, fixed in emacs 27
-(if (< emacs-major-version 27)
-     (setq x-wait-for-event-timeout 0))
-
 (use-package! helm
   ;; recent changes to helm have removed the left and right arrow keys
   ;; returning to that functionality
@@ -240,9 +236,6 @@
     (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
       (apply orig-fn args)))
 )
-
-(after! projectile
-  (helm-projectile-on))
 
 ;;;
 ;;;
@@ -408,11 +401,8 @@
         "c"                       #'bmg/org-inbox-capture))
 
       (;;:helm
-       [remap switch-to-buffer]    #'helm-mini
        [remap occur]               #'helm-occur
 
-       (:leader                    ;; Top level C-c
-        "r"                       #'helm-recentf)
        (:map minibuffer-local-map
         "C-c C-l"                 #'helm-minibuffer-history)
        (:map isearch-mode-map
