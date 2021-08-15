@@ -123,9 +123,6 @@
 (setq user-full-name "Brian McGillion"
       user-mail-address "brian@ssrc.tii.ae")
 
-;; enable word-wrap in C/C++/ObjC/Java
-;; (add-hook 'c-mode-common-hook #'+word-wrap-mode)
-
 ;; TODO see if this is too much and maybe only leave it for C
 ;; enable word-wrap (almost) everywhere
 (+global-word-wrap-mode +1)
@@ -162,17 +159,6 @@
 ;; Use a custom dictionary on linux
 (if IS-MAC (setq ispell-dictionary "en_GB"))
 ;;  (setq ispell-dictionary "en-custom"))
-
-
-;; (use-package! company-tabnine
-;;   :after company
-;;   (add-to-list 'company-backends #'company-tabnine))
-
-;; (setq company-minimum-prefix-length 2
-;;       company-idle-delay 0.2
-;;       company-show-numbers t)
-
-;;(remove-hook 'company-mode-hook #'company-prescient-mode)
 
 (set-language-environment-charset "UTF-8")
 
@@ -312,15 +298,6 @@
     ("Open documentation"
      :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
      :action doom/help)
-    ;; ("Slack"
-    ;;  :icon (all-the-icons-octicon "comment-discussion" :face 'font-lock-keyword-face)
-    ;;  :action slack-start)
-    ;; ("IRC"
-    ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
-    ;;  :action =irc)
-    ;; ("Notes"
-    ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
-    ;;  :action ragone-deft-or-close)
     ;; ("Passwords"
     ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
     ;;  :action pass)
@@ -462,58 +439,53 @@
        +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
        +biblio-notes-path my-roam-dir)
 
-;;(setq bibtex-dialect 'biblatex)
-(setq bibtex-dialect 'BibTeX)
+;; For org-ref and helm-bibtex
+(setq bibtex-dialect 'biblatex)
+;;(setq bibtex-dialect 'BibTeX)
 
-(after! org-roam
-  (setq org-roam-directory my-roam-dir
-        org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
-        +org-roam-open-buffer-on-find-file nil
-        org-id-link-to-org-use-id t
-        org-roam-completion-everywhere nil)
-  (setq org-roam-capture-templates
-        '(("d" "default" plain
-           "%?"
-           :if-new (file+head "${slug}.org"
-                              "#+title: ${title}
+;; Let org-ref know we are using mendeley
+(setq org-ref-get-pdf-filename-function 'org-ref-get-mendeley-filename)
 
-- related :: ")
-           :immediate-finish t
-           :unnarrowed t)))
-  (setq org-roam-capture-ref-templates
-        '(("r" "ref" plain
-           "%?"
-           :if-new (file+head "${slug}.org"
-                              "#+title: ${title}\n")
-           :unnarrowed t)))
-  (setq org-roam-dailies-capture-templates
-        '(("d" "default" entry
-           "* %?"
-           :if-new (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>\n")))))
+(setq org-roam-directory my-roam-dir
+      org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
+      +org-roam-open-buffer-on-find-file nil
+      org-id-link-to-org-use-id t
+      org-roam-completion-everywhere nil)
+(setq org-roam-capture-templates
+      '(("d" "default" plain
+         "%?"
+         :if-new (file+head "${slug}.org"
+                            "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+         :unnarrowed t)))
+(setq org-roam-capture-ref-templates
+      '(("r" "ref" plain
+         "%?"
+         :if-new (file+head "${slug}.org"
+                            "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n")
+         :unnarrowed t)))
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" entry
+         "* %?"
+         :if-new (file+head "%<%Y-%m-%d>.org"
+                            "#+title: %<%Y-%m-%d>\n"))));;)
 
-(use-package org-roam-server
-  :defer t
-  :config
-  (setq org-roam-server-host "127.0.0.1"
-        org-roam-server-port 8080
-        org-roam-server-authenticate nil
-        org-roam-server-export-inline-images t
-        org-roam-server-serve-files nil
-        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
-        org-roam-server-network-poll t
-        org-roam-server-network-arrows nil
-        org-roam-server-network-label-truncate t
-        org-roam-server-network-label-truncate-length 60
-        org-roam-server-network-label-wrap-length 20))
+(use-package! websocket
+    :after org-roam)
 
-(after! org
-  (set-company-backend! 'org-mode '(company-ispell company-dabbrev company-yasnippet)))
+(use-package! org-roam-ui
+    :after org-roam
+    :commands (org-roam-ui-mode))
+
+;;TODO Add some more of the org-ref helpers here
+(after! org-ref
+    ;;(require 'org-ref)
+    (require 'doi-utils)
+    (require 'org-ref-arxiv)
+    (require 'org-ref-pdf)
+)
+
 ;; (after! org
-;;    (set-company-backend! 'org-mode nil)
-;;    (set-company-backend! 'org-mode '(company-tabnine company-ispell company-dabbrev company-yasnippet)))
-
-;;   (set-company-backend! 'org-mode '(company-dabbrev company-yasnippet company-ispell company-capf))) ;; company-tabnine
+;;   (set-company-backend! 'org-mode '(company-ispell company-dabbrev company-yasnippet)))
 
 ;;;
 ;;;

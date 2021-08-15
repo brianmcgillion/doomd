@@ -64,8 +64,10 @@
 ;;            :files ("*.el" "lisp/*.el" "contrib/lisp/*.el"))
 ;;   :pin "8402c4a778")
 
+;; roam and related packages
 (unpin! org-roam)
-(package! org-roam-server)
+(package! websocket)
+(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 
 ;;(package! company-tabnine)
 
