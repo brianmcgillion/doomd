@@ -449,8 +449,12 @@
 (setq org-roam-directory my-roam-dir
       org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
       +org-roam-open-buffer-on-find-file nil
-      org-id-link-to-org-use-id t
-      org-roam-completion-everywhere nil)
+      org-id-link-to-org-use-id t)
+
+;; Workaround doom defaulting to having the roam completion everywhere
+(after! org-roam
+  (setq org-roam-completion-everywhere nil))
+
 (setq org-roam-capture-templates
       '(("d" "default" plain
          "%?"
@@ -461,13 +465,13 @@
       '(("r" "ref" plain
          "%?"
          :if-new (file+head "${slug}.org"
-                            "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n")
+                            "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
          :unnarrowed t)))
 (setq org-roam-dailies-capture-templates
       '(("d" "default" entry
          "* %?"
          :if-new (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n"))));;)
+                            "#+title: %<%Y-%m-%d>\n"))))
 
 (use-package! websocket
     :after org-roam)
