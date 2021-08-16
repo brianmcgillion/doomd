@@ -446,32 +446,32 @@
 ;; Let org-ref know we are using mendeley
 (setq org-ref-get-pdf-filename-function 'org-ref-get-mendeley-filename)
 
-(setq org-roam-directory my-roam-dir
-      org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
-      +org-roam-open-buffer-on-find-file nil
-      org-id-link-to-org-use-id t)
-
-;; Workaround doom defaulting to having the roam completion everywhere
-(after! org-roam
-  (setq org-roam-completion-everywhere nil))
-
+;; TODO Why can I not use add-to-list for this
 (setq org-roam-capture-templates
       '(("d" "default" plain
          "%?"
          :if-new (file+head "${slug}.org"
                             "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
          :unnarrowed t)))
-(setq org-roam-capture-ref-templates
-      '(("r" "ref" plain
-         "%?"
-         :if-new (file+head "${slug}.org"
-                            "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-         :unnarrowed t)))
-(setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :if-new (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n"))))
+
+(after! org-roam
+  (setq org-roam-directory my-roam-dir
+        org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
+        +org-roam-open-buffer-on-find-file nil
+        org-roam-completion-everywhere nil
+        org-id-link-to-org-use-id t)
+
+  (setq org-roam-capture-ref-templates
+        '(("r" "ref" plain
+           "%?"
+           :if-new (file+head "${slug}.org"
+                              "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+           :unnarrowed t)))
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry
+           "* %?"
+           :if-new (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>\n")))))
 
 (use-package! websocket
     :after org-roam)
