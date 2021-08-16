@@ -455,7 +455,7 @@
          :unnarrowed t)))
 
 (after! org-roam
-  (setq org-roam-directory my-roam-dir
+  (setq org-roam-directory (file-truename my-roam-dir)
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         +org-roam-open-buffer-on-find-file nil
         org-roam-completion-everywhere nil
