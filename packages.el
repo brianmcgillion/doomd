@@ -50,11 +50,6 @@
 ;; our package manager can't deal with; see raxod502/straight.el#279)
 ;(package! builtin-package :recipe (:branch "develop"))
 
-;; ############
-;;  My Additions
-;; ############
-;;(package! google-translate)
-
 ;; For RSS and Atom feeds
 (package! elfeed-goodies)
 
@@ -69,16 +64,12 @@
 (package! websocket)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 
-;;(package! company-tabnine)
-
 ;; General helper packages
 (package! super-save)
 (package! crux)
 (package! imenu-anywhere)
 
-;; Edit webcontent from emacs
-;;(package! atomic-chrome)
-
+;; Get the latest completion
 (unpin! helm)
 
 ;; Code related

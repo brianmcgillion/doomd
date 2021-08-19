@@ -168,6 +168,9 @@
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
+;; use browse-url with gist
+(setq gist-view-gist t)
+
 ;;;
 ;;;
 ;;; END_General
@@ -364,7 +367,7 @@
          "R" #'org-roam-ref-remove)))
 
       (;;:org-agenda
-       "<f4>" #'org-agenda
+  ;;     "<f4>" #'org-agenda
 
        (:leader
         ;;; <leader> n --- notes
