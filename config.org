@@ -436,8 +436,6 @@
 
 (setq! org-noter-notes-search-path my-roam-dir)
 
-;; +biblio-default-bibliography-files '("~/Documents/org/library.bib" "~/Documents/org/emacs_lit.bib")
-
 (setq! +biblio-pdf-library-dir "~/Documents/Papers/"
        +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
        +biblio-notes-path my-roam-dir)
@@ -462,7 +460,8 @@
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         +org-roam-open-buffer-on-find-file nil
         org-roam-completion-everywhere nil
-        org-id-link-to-org-use-id t)
+        org-id-link-to-org-use-id t
+        org-roam-extract-new-file-path "${slug}.org")
 
   (setq org-roam-capture-ref-templates
         '(("r" "ref" plain
@@ -491,8 +490,279 @@
     (require 'org-ref-pdf)
 )
 
-;; (after! org
-;;   (set-company-backend! 'org-mode '(company-ispell company-dabbrev company-yasnippet)))
+;;;
+;;;
+;;; END_ORG
+;;;
+;;;
+#+END_SRC
+** Org Capture
+:PROPERTIES:
+:ID:       bb09674e-72b6-4185-803e-a23c7cc0aa77
+:END:
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_ORG_CAPTURE
+;;;
+;;;
+
+(setq org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) my-roam-dir))
+(setq +org-capture-todo-file org-default-notes-file
+      +org-capture-notes-file org-default-notes-file
+      +org-capture-projects-file org-default-notes-file)
+
+(setq org-log-done 'time
+      org-log-into-drawer t
+      org-log-state-notes-insert-after-drawers nil)
+
+(use-package! doct
+  :after org-capture)
+
+(after! org-capture
+ (defun org-capture-select-template-prettier (&optional keys)
+      "Select a capture template, in a prettier way than default
+    Lisp programs can force the template by setting KEYS to a string."
+      (let ((org-capture-templates
+             (or (org-contextualize-keys
+                  (org-capture-upgrade-templates org-capture-templates)
+                  org-capture-templates-contexts)
+                 '(("t" "Task" entry (file+headline "" "Tasks")
+                    "* TODO %?\n  %u\n  %a")))))
+        (if keys
+            (or (assoc keys org-capture-templates)
+                (error "No capture template referred to by \"%s\" keys" keys))
+          (org-mks org-capture-templates
+                   "Select a capture template\n━━━━━━━━━━━━━━━━━━━━━━━━━"
+                   "Template key: "
+                   `(("q" ,(concat (all-the-icons-octicon "stop" :face 'all-the-icons-red :v-adjust 0.01) "\tAbort")))))))
+    (advice-add 'org-capture-select-template :override #'org-capture-select-template-prettier)
+
+    (defun org-mks-pretty (table title &optional prompt specials)
+      "Select a member of an alist with multiple keys. Prettified.
+
+    TABLE is the alist which should contain entries where the car is a string.
+    There should be two types of entries.
+
+    1. prefix descriptions like (\"a\" \"Description\")
+       This indicates that `a' is a prefix key for multi-letter selection, and
+       that there are entries following with keys like \"ab\", \"ax\"…
+
+    2. Select-able members must have more than two elements, with the first
+       being the string of keys that lead to selecting it, and the second a
+       short description string of the item.
+
+    The command will then make a temporary buffer listing all entries
+    that can be selected with a single key, and all the single key
+    prefixes.  When you press the key for a single-letter entry, it is selected.
+    When you press a prefix key, the commands (and maybe further prefixes)
+    under this key will be shown and offered for selection.
+
+    TITLE will be placed over the selection in the temporary buffer,
+    PROMPT will be used when prompting for a key.  SPECIALS is an
+    alist with (\"key\" \"description\") entries.  When one of these
+    is selected, only the bare key is returned."
+      (save-window-excursion
+        (let ((inhibit-quit t)
+              (buffer (org-switch-to-buffer-other-window "*Org Select*"))
+              (prompt (or prompt "Select: "))
+              case-fold-search
+              current)
+          (unwind-protect
+              (catch 'exit
+                (while t
+                  (setq-local evil-normal-state-cursor (list nil))
+                  (erase-buffer)
+                  (insert title "\n\n")
+                  (let ((des-keys nil)
+                        (allowed-keys '("\C-g"))
+                        (tab-alternatives '("\s" "\t" "\r"))
+                        (cursor-type nil))
+                    ;; Populate allowed keys and descriptions keys
+                    ;; available with CURRENT selector.
+                    (let ((re (format "\\`%s\\(.\\)\\'"
+                                      (if current (regexp-quote current) "")))
+                          (prefix (if current (concat current " ") "")))
+                      (dolist (entry table)
+                        (pcase entry
+                          ;; Description.
+                          (`(,(and key (pred (string-match re))) ,desc)
+                           (let ((k (match-string 1 key)))
+                             (push k des-keys)
+                             ;; Keys ending in tab, space or RET are equivalent.
+                             (if (member k tab-alternatives)
+                                 (push "\t" allowed-keys)
+                               (push k allowed-keys))
+                             (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) (propertize "›" 'face 'font-lock-comment-face) "  " desc "…" "\n")))
+                          ;; Usable entry.
+                          (`(,(and key (pred (string-match re))) ,desc . ,_)
+                           (let ((k (match-string 1 key)))
+                             (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) "   " desc "\n")
+                             (push k allowed-keys)))
+                          (_ nil))))
+                    ;; Insert special entries, if any.
+                    (when specials
+                      (insert "─────────────────────────\n")
+                      (pcase-dolist (`(,key ,description) specials)
+                        (insert (format "%s   %s\n" (propertize key 'face '(bold all-the-icons-red)) description))
+                        (push key allowed-keys)))
+                    ;; Display UI and let user select an entry or
+                    ;; a sub-level prefix.
+                    (goto-char (point-min))
+                    (unless (pos-visible-in-window-p (point-max))
+                      (org-fit-window-to-buffer))
+                    (let ((pressed (org--mks-read-key allowed-keys
+                                                      prompt
+                                                      (not (pos-visible-in-window-p (1- (point-max)))))))
+                      (setq current (concat current pressed))
+                      (cond
+                       ((equal pressed "\C-g") (user-error "Abort"))
+                       ;; Selection is a prefix: open a new menu.
+                       ((member pressed des-keys))
+                       ;; Selection matches an association: return it.
+                       ((let ((entry (assoc current table)))
+                          (and entry (throw 'exit entry))))
+                       ;; Selection matches a special entry: return the
+                       ;; selection prefix.
+                       ((assoc current specials) (throw 'exit current))
+                       (t (error "No entry available")))))))
+            (when buffer (kill-buffer buffer))))))
+    (advice-add 'org-mks :override #'org-mks-pretty)
+
+    (defun +doct-icon-declaration-to-icon (declaration)
+      "Convert :icon declaration to icon"
+      (let ((name (pop declaration))
+            (set  (intern (concat "all-the-icons-" (plist-get declaration :set))))
+            (face (intern (concat "all-the-icons-" (plist-get declaration :color))))
+            (v-adjust (or (plist-get declaration :v-adjust) 0.01)))
+        (apply set `(,name :face ,face :v-adjust ,v-adjust))))
+
+    (defun +doct-iconify-capture-templates (groups)
+      "Add declaration's :icon to each template group in GROUPS."
+      (let ((templates (doct-flatten-lists-in groups)))
+        (setq doct-templates (mapcar (lambda (template)
+                                       (when-let* ((props (nthcdr (if (= (length template) 4) 2 5) template))
+                                                   (spec (plist-get (plist-get props :doct) :icon)))
+                                         (setf (nth 1 template) (concat (+doct-icon-declaration-to-icon spec)
+                                                                        "\t"
+                                                                        (nth 1 template))))
+                                       template)
+                                     templates))))
+
+    (setq doct-after-conversion-functions '(+doct-iconify-capture-templates))
+
+  (defun set-org-capture-templates ()
+    (setq org-capture-templates
+          (doct `(("Personal todo" :keys "t"
+                   :icon ("checklist" :set "octicon" :color "green")
+                   :file +org-capture-todo-file
+                   :prepend t
+                   :headline "Inbox"
+                   :type entry
+                   :template ("* TODO %?"
+                              "%i %a")
+                   )
+                  ("Personal note" :keys "n"
+                   :icon ("sticky-note-o" :set "faicon" :color "green")
+                   :file +org-capture-todo-file
+                   :prepend t
+                   :headline "Inbox"
+                   :type entry
+                   :template ("* %?"
+                              "%i %a"))
+                  ("Email" :keys "e"
+                   :icon ("envelope" :set "faicon" :color "blue")
+                   :file +org-capture-todo-file
+                   :prepend t
+                   :headline "Inbox"
+                   :type entry
+                   :template ("* TODO %^{type|reply to|contact} %\\3 %? :email:"
+                              "Send an email %^{urgancy|soon|ASAP|anon|at some point|eventually} to %^{recipiant}"
+                              "about %^{topic}"
+                              "%U %i %a"))
+                  ("Interesting" :keys "i"
+                   :icon ("eye" :set "faicon" :color "lcyan")
+                   :file +org-capture-todo-file
+                   :prepend t
+                   :headline "Interesting"
+                   :type entry
+                   :template ("* [ ] %{desc}%? :%{i-type}:"
+                              "%i %a")
+                   :children (("Webpage" :keys "w"
+                               :icon ("globe" :set "faicon" :color "green")
+                               :desc "%(org-cliplink-capture) "
+                               :i-type "read:web"
+                               )
+                              ("Article" :keys "a"
+                               :icon ("file-text" :set "octicon" :color "yellow")
+                               :desc ""
+                               :i-type "read:reaserch"
+                               )
+                              ("Information" :keys "i"
+                               :icon ("info-circle" :set "faicon" :color "blue")
+                               :desc ""
+                               :i-type "read:info"
+                               )
+                              ("Idea" :keys "I"
+                               :icon ("bubble_chart" :set "material" :color "silver")
+                               :desc ""
+                               :i-type "idea"
+                               )))
+                  ("Tasks" :keys "k"
+                   :icon ("inbox" :set "octicon" :color "yellow")
+                   :file +org-capture-todo-file
+                   :prepend t
+                   :headline "Tasks"
+                   :type entry
+                   :template ("* TODO %? %^G%{extra}"
+                              "%i %a")
+                   :children (("General Task" :keys "k"
+                               :icon ("inbox" :set "octicon" :color "yellow")
+                               :extra ""
+                               )
+                              ("Task with deadline" :keys "d"
+                               :icon ("timer" :set "material" :color "orange" :v-adjust -0.1)
+                               :extra "\nDEADLINE: %^{Deadline:}t"
+                               )
+                              ("Scheduled Task" :keys "s"
+                               :icon ("calendar" :set "octicon" :color "orange")
+                               :extra "\nSCHEDULED: %^{Start time:}t"
+                               )
+                              ))
+                  ("Project" :keys "p"
+                   :icon ("repo" :set "octicon" :color "silver")
+                   :prepend t
+                   :type entry
+                   :headline "Inbox"
+                   :template ("* %{time-or-todo} %?"
+                              "%i"
+                              "%a")
+                   :file ""
+                   :custom (:time-or-todo "")
+                   :children (("Project-local todo" :keys "t"
+                               :icon ("checklist" :set "octicon" :color "green")
+                               :time-or-todo "TODO"
+                               :function +org-capture-project-todo-file)
+                              ("Project-local note" :keys "n"
+                               :icon ("sticky-note" :set "faicon" :color "yellow")
+                               :time-or-todo "%U"
+                               :file +org-capture-project-notes-file)
+                              ("Project-local changelog" :keys "c"
+                               :icon ("list" :set "faicon" :color "blue")
+                               :time-or-todo "%U"
+                               :heading "Unreleased"
+                               :file +org-capture-project-changelog-file))
+                   )))))
+
+  (set-org-capture-templates)
+  (unless (display-graphic-p)
+    (add-hook 'server-after-make-frame-hook
+              (defun org-capture-reinitialise-hook ()
+                (when (display-graphic-p)
+                  (set-org-capture-templates)
+                  (remove-hook 'server-after-make-frame-hook
+                               #'org-capture-reinitialise-hook))))))
+
 
 ;;;
 ;;;
@@ -512,170 +782,210 @@
 ;;;
 ;;;
 
-(setq bmg/org-agenda-directory (concat org-directory "/gtd/"))
+;;(setq bmg/org-agenda-directory (concat org-directory "/gtd/"))
 (setq org-archive-location (concat org-directory "/archive.org_archive::datetree/"))
 
-
-(after! org-agenda
-  (require 'find-lisp)
-  (setq org-agenda-files (find-lisp-find-files "~/Documents/org/gtd/" "\.org$"))
-  (add-to-list 'org-agenda-custom-commands
-               `("r" "Reading" todo ""
-                 ((org-agenda-files '(,(concat bmg/org-agenda-directory "reading.org")))))))
-
-
 (after! org
-  (setq org-default-notes-file (expand-file-name "inbox.org" bmg/org-agenda-directory))
-  (setq +org-capture-todo-file org-default-notes-file
-        +org-capture-notes-file org-default-notes-file
-        +org-capture-projects-file org-default-notes-file)
+   ;; The 'bmg-org-roam-agenda' tag is used to tell vulpea that there is a todo item in this file
+  (add-to-list 'org-tags-exclude-from-inheritance "bmg-org-roam-agenda"))
 
-  (setq org-log-done 'time
-        org-log-into-drawer t
-        org-log-state-notes-insert-after-drawers nil)
+(use-package! vulpea
+  :after org-agenda)
 
-  (setq org-tag-alist (quote (("@errand" . ?e)
-                              ("@office" . ?o)
-                              ("@home" . ?h)
-                              (:newline)
-                              ("WAITING" . ?w)
-                              ("HOLD" . ?H)
-                              ("CANCELLED" . ?c))))
-  ;; Capture templates
-  (add-to-list 'org-capture-templates
-               `("i" "inbox" entry (file org-default-notes-file)
-                 "* TODO %?")))
+(defun bmg/vulpea-project-p ()
+  "Return non-nil if current buffer has any todo entry.
+TODO entries marked as done are ignored, meaning the this
+function returns nil if current buffer contains only completed
+tasks."
+  (seq-find                                 ; (3)
+   (lambda (type)
+     (eq type 'todo))
+   (org-element-map                         ; (2)
+       (org-element-parse-buffer 'headline) ; (1)
+       'headline
+     (lambda (h)
+       (org-element-property :todo-type h)))))
 
-(after! org-refile
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
-  (setq org-refile-targets '(("next.org" :level . 0)
-                             ("someday.org" :level . 0)
-                             ("reading.org" :level . 1)
-                             ("projects.org" :maxlevel . 1))))
+(defun bmg/vulpea-project-update-tag ()
+    "Update PROJECT tag in the current buffer."
+    (when (and (not (active-minibuffer-window))
+               (bmg/vulpea-buffer-p))
+      (save-excursion
+        (goto-char (point-min))
+        (let* ((tags (vulpea-buffer-tags-get))
+               (original-tags tags))
+          (if (bmg/vulpea-project-p)
+              (setq tags (cons "bmg-org-roam-agenda" tags))
+            (setq tags (remove "bmg-org-roam-agenda" tags)))
+
+          ;; cleanup duplicates
+          (setq tags (seq-uniq tags))
+
+          ;; update tags if changed
+          (when (or (seq-difference tags original-tags)
+                    (seq-difference original-tags tags))
+            (apply #'vulpea-buffer-tags-set tags))))))
+
+(defun bmg/vulpea-buffer-p ()
+  "Return non-nil if the currently visited buffer is a note."
+  (and buffer-file-name
+       (string-prefix-p
+        (expand-file-name (file-name-as-directory org-roam-directory))
+        (file-name-directory buffer-file-name))))
+
+(defun bmg/vulpea-project-files ()
+    "Return a list of note files containing 'project' tag." ;
+    (seq-uniq
+     (seq-map
+      #'car
+      (org-roam-db-query
+       [:select [nodes:file]
+        :from tags
+        :left-join nodes
+        :on (= tags:node-id nodes:id)
+        :where (like tag (quote "%\"bmg-org-roam-agenda\"%"))]))))
+
+(defun bmg/vulpea-agenda-files-update (&rest _)
+  "Update the value of `org-agenda-files'."
+  (setq org-agenda-files (bmg/vulpea-project-files)))
+
+(defun bmg/vulpea-agenda-category (&optional len)
+  "Get category of item at point for agenda.
+
+Category is defined by one of the following items:
+
+- CATEGORY property
+- TITLE keyword
+- TITLE property
+- filename without directory and extension
+
+When LEN is a number, resulting string is padded right with
+spaces and then truncated with ... on the right if result is
+longer than LEN.
+
+Usage example:
+
+  (setq org-agenda-prefix-format
+        '((agenda . \" %(vulpea-agenda-category) %?-12t %12s\")))
+
+Refer to `org-agenda-prefix-format' for more information."
+  (let* ((file-name (when buffer-file-name
+                      (file-name-sans-extension
+                       (file-name-nondirectory buffer-file-name))))
+         (title (vulpea-buffer-prop-get "title"))
+         (category (org-get-category))
+         (result
+          (or (if (and
+                   title
+                   (string-equal category file-name))
+                  title
+                category)
+              "")))
+    (if (numberp len)
+        (s-truncate len (s-pad-right len " " result))
+      result)))
 
 
-;;;
-;;; Functions for managing the org-agenda ala Jethro
-;;;
-(defvar bmg/org-agenda-bulk-process-key ?f
-  "Default key for bulk processing inbox items.")
+(add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
+(add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
+(advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
 
-(defun bmg/org-process-inbox ()
-  "Called in org-agenda-mode, processes all inbox items."
-  (interactive)
-  (org-agenda-bulk-mark-regexp "inbox:")
-  (bmg/bulk-process-entries))
 
-(defvar bmg/org-current-effort "1:00" "Current effort for agenda items.")
+(use-package! org-super-agenda
+  :commands org-super-agenda-mode
+  :config
+  (setq org-agenda-prefix-format
+        '((agenda . " %i %(bmg/vulpea-agenda-category 12)%?-12t% s")
+          (todo . " %i %(bmg/vulpea-agenda-category 12) ")
+          (tags . " %i %(bmg/vulpea-agenda-category 12) ")
+          (search . " %i %(bmg/vaulpea-agenda-category 12) ")))
 
-(defun bmg/my-org-agenda-set-effort (effort)
-  "Set the effort property for the current headline."
-  (interactive
-   (list (read-string (format "Effort [%s]: " bmg/org-current-effort) nil nil bmg/org-current-effort)))
-  (setq bmg/org-current-effort effort)
-  (org-agenda-check-no-diary)
-  (let* ((hdmarker (or (org-get-at-bol 'org-hd-marker)
-                       (org-agenda-error)))
-         (buffer (marker-buffer hdmarker))
-         (pos (marker-position hdmarker))
-         (inhibit-read-only t)
-         newhead)
-    (org-with-remote-undo buffer
-      (with-current-buffer buffer
-        (widen)
-        (goto-char pos)
-        (org-show-context 'agenda)
-        (funcall-interactively 'org-set-effort nil bmg/org-current-effort)
-        (end-of-line 1)
-        (setq newhead (org-get-heading)))
-      (org-agenda-change-all-lines newhead hdmarker))))
+  (setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil)
+        org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-deadline-if-done t
+        org-agenda-include-deadlines t
+        org-agenda-include-diary t
+        org-agenda-block-separator nil
+        org-agenda-compact-blocks t
+        org-agenda-start-with-log-mode t
+        org-agenda-start-day nil) ;; i.e. today
 
-(defun bmg/org-agenda-process-inbox-item ()
-  "Process a single item in the org-agenda."
-  (org-with-wide-buffer
-   (org-agenda-set-tags)
-   (org-agenda-priority)
-   (call-interactively 'bmg/my-org-agenda-set-effort)
-   (org-agenda-refile nil nil t)))
+  ;;TODO fix the sections so that the match the todo-list (lang/org/config.el)
+  (setq org-agenda-custom-commands
+        '(("o" "Overview"
+           ((agenda "" ((org-agenda-span 'day)
+                        (org-super-agenda-groups
+                         '((:name "Today"
+                            :time-grid t
+                            :date today
+                            :todo "TODAY"
+                            :scheduled today
+                            :order 1)))))
+            (alltodo "" ((org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          '((:name "To Refile"
+                             :tag "REFILE"
+                             :order 1)
+                            (:name "Next to do"
+                             :todo "NEXT"
+                             :order 3)
+                            (:name "Ongoing"
+                             :todo "STRT"
+                             :order 3)
+                            (:name "Personal"
+                             :tag "PERSONAL"
+                             :order 12)
+                            (:name "Important"
+                             :tag "Important"
+                             :priority "A"
+                             :order 6)
+                            (:name "Due Today"
+                             :deadline today
+                             :order 2)
+                            (:name "Due Soon"
+                             :deadline future
+                             :order 8)
+                            (:name "Overdue"
+                             :deadline past
+                             :face error
+                             :order 7)
+                            (:name "Issues"
+                             :tag "Issue"
+                             :order 12)
+                            (:name "Emacs"
+                             :tag "Emacs"
+                             :order 13)
+                            (:name "Projects"
+                             :tag "Project"
+                             :order 14)
+                            (:name "Research"
+                             :tag "Research"
+                             :order 15)
+                            (:name "To read"
+                             :tag "Read"
+                             :order 30)
+                            (:name "Waiting"
+                             :todo "WAITING"
+                             :order 20)
+                            (:name "University"
+                             :tag "uni"
+                             :order 32)
+                            (:name "Trivial"
+                             :priority<= "E"
+                             :tag ("Trivial" "Unimportant")
+                             :todo ("SOMEDAY" )
+                             :order 90)
+                            (:discard (:tag ("Chore" "Routine" "Daily"))))))))))))
 
-(defun bmg/bulk-process-entries ()
-  (if (not (null org-agenda-bulk-marked-entries))
-      (let ((entries (reverse org-agenda-bulk-marked-entries))
-            (processed 0)
-            (skipped 0))
-        (dolist (e entries)
-          (let ((pos (text-property-any (point-min) (point-max) 'org-hd-marker e)))
-            (if (not pos)
-                (progn (message "Skipping removed entry at %s" e)
-                       (cl-incf skipped))
-              (goto-char pos)
-              (let (org-loop-over-headlines-in-active-region) (funcall 'bmg/org-agenda-process-inbox-item))
-              ;; `post-command-hook' is not run yet.  We make sure any
-              ;; pending log note is processed.
-              (when (or (memq 'org-add-log-note (default-value 'post-command-hook))
-                        (memq 'org-add-log-note post-command-hook))
-                (org-add-log-note))
-              (cl-incf processed))))
-        (org-agenda-redo)
-        (unless org-agenda-persistent-marks (org-agenda-bulk-unmark-all))
-        (message "Acted on %d entries%s%s"
-                 processed
-                 (if (= skipped 0)
-                     ""
-                   (format ", skipped %d (disappeared before their turn)"
-                           skipped))
-                 (if (not org-agenda-persistent-marks) "" " (kept marked)")))))
 
-(defun bmg/org-inbox-capture ()
-  (interactive)
-  "Capture a task in agenda mode."
-  (org-capture nil "i"))
-
-(setq org-agenda-bulk-custom-functions `((,bmg/org-agenda-bulk-process-key bmg/org-agenda-process-inbox-item)))
-
-(defun bmg/set-todo-state-next ()
-  "Visit each parent task and change NEXT states to TODO"
-  (org-todo "STRT"))
-
-(add-hook 'org-clock-in-hook 'bmg/set-todo-state-next 'append)
-
-;; MOved outside the use-package! agenda so it shows on the home screen
+;; Moved outside the use-package! agenda so it shows on the home screen
 (defun bmg/switch-to-agenda ()
     (interactive)
-    (org-agenda nil " "))
+    (org-agenda nil "o"))
 
-(use-package! org-agenda
-  :after org
-  :init
-  (setq org-agenda-block-separator nil
-        org-agenda-start-with-log-mode t)
-  :config
-  (setq org-columns-default-format "%40ITEM(Task) %Effort(EE){:} %CLOCKSUM(Time Spent) %SCHEDULED(Scheduled) %DEADLINE(Deadline)")
-  (setq org-agenda-custom-commands `((" " "Agenda"
-                                      ((agenda ""
-                                               ((org-agenda-span 'week)
-                                                (org-deadline-warning-days 365)))
-                                       (todo "TODO"
-                                             ((org-agenda-overriding-header "To Refile")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "inbox.org")))))
-                                       (todo "STRT|PROJ"
-                                             ((org-agenda-overriding-header "In Progress")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "someday.org")
-                                                                  ,(concat bmg/org-agenda-directory "projects.org")
-                                                                  ,(concat bmg/org-agenda-directory "next.org")
-                                                                  ,(concat bmg/org-agenda-directory "reading.org")))))
-                                       (todo "TODO"
-                                             ((org-agenda-overriding-header "Reading")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "reading.org")))))
-                                       (todo "TODO|PROJ"
-                                             ((org-agenda-overriding-header "Projects")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "projects.org")
-                                                                  ,(concat bmg/org-agenda-directory "next.org")))))
-                                       (todo "TODO"
-                                             ((org-agenda-overriding-header "One-off Tasks")
-                                              (org-agenda-files '(,(concat bmg/org-agenda-directory "next.org")
-                                                                  ,(concat bmg/org-agenda-directory "someday.org")))
-                                              (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'scheduled)))))))))
+(after! org-agenda
+   (org-super-agenda-mode))
+
 
 ;;;
 ;;;
