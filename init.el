@@ -153,7 +153,7 @@
         +dragndrop         ; drag & drop files/images into org buffers
         ;;+hugo            ; use Emacs for hugo blogging
         +pandoc            ; export-with-pandoc support
-        ;;+pretty            ; org-superstar-mode
+        +pretty            ; org-superstar-mode
         +present           ; using org-mode for presentations
         +gnuplot
         ;;+journal

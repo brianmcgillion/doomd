@@ -904,7 +904,7 @@ Refer to `org-agenda-prefix-format' for more information."
         org-agenda-skip-scheduled-if-done t
         org-agenda-skip-deadline-if-done t
         org-agenda-include-deadlines t
-        org-agenda-include-diary t
+        org-agenda-include-diary nil
         org-agenda-block-separator nil
         org-agenda-compact-blocks t
         org-agenda-start-with-log-mode t
@@ -913,7 +913,8 @@ Refer to `org-agenda-prefix-format' for more information."
   ;;TODO fix the sections so that the match the todo-list (lang/org/config.el)
   (setq org-agenda-custom-commands
         '(("o" "Overview"
-           ((agenda "" ((org-agenda-span 'day)
+           ((agenda "" ((org-agenda-span 'week)
+                        (org-agenda-start-on-weekday 0) ;; Sunday
                         (org-super-agenda-groups
                          '((:name "Today"
                             :time-grid t
