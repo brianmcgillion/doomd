@@ -440,11 +440,6 @@
        bibtex-completion-library-path '("~/Documents/Papers/")
        bibtex-completion-notes-path my-roam-dir)
 
-
-;; (setq! +biblio-pdf-library-dir "~/Documents/Papers/"
-;;        +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
-;;        +biblio-notes-path my-roam-dir)
-
 ;; For org-ref and helm-bibtex
 (setq bibtex-dialect 'biblatex)
 ;;(setq bibtex-dialect 'BibTeX)
