@@ -148,9 +148,9 @@
 (setq which-key-idle-delay 0.5)
 
 ;; Store some more frequently used files in the
-(set-register ?d '(file . "~/Documents/org/decrypt.org"))
-(set-register ?e '(file . "~/.doom.d/config.org"))
-(set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
+;; (set-register ?d '(file . "~/Documents/org/decrypt.org"))
+;; (set-register ?e '(file . "~/.doom.d/config.org"))
+;; (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
 
 ;; Stop undo-tree storing persistent history
 (after! undo-tree
@@ -436,16 +436,18 @@
 
 (setq! org-noter-notes-search-path my-roam-dir)
 
-(setq! +biblio-pdf-library-dir "~/Documents/Papers/"
-       +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
-       +biblio-notes-path my-roam-dir)
+(setq! bibtex-completion-bibliography (concat org-directory "emacs_lit.bib")
+       bibtex-completion-library-path '("~/Documents/Papers/")
+       bibtex-completion-notes-path my-roam-dir)
+
+
+;; (setq! +biblio-pdf-library-dir "~/Documents/Papers/"
+;;        +biblio-default-bibliography-files (concat org-directory "emacs_lit.bib")
+;;        +biblio-notes-path my-roam-dir)
 
 ;; For org-ref and helm-bibtex
 (setq bibtex-dialect 'biblatex)
 ;;(setq bibtex-dialect 'BibTeX)
-
-;; Let org-ref know we are using mendeley
-(setq org-ref-get-pdf-filename-function 'org-ref-get-mendeley-filename)
 
 ;; TODO Why can I not use add-to-list for this
 (setq org-roam-capture-templates
@@ -483,12 +485,21 @@
     :commands (org-roam-ui-mode))
 
 ;;TODO Add some more of the org-ref helpers here
-(after! org-ref
-    ;;(require 'org-ref)
-    (require 'doi-utils)
-    (require 'org-ref-arxiv)
-    (require 'org-ref-pdf)
-)
+;; (after! org-ref
+;;   (setq bibtex-autokey-year-length 4
+;;         bibtex-autokey-name-year-separator nil
+;;         bibtex-autokey-year-title-separator nil
+;;         bibtex-autokey-titleword-separator nil
+;;         bibtex-autokey-titlewords 0
+;;         bibtex-autokey-titlewords-stretch nil
+;;         bibtex-autokey-titleword-length 0)
+;;   (require 'doi-utils)
+;;   (require 'org-ref-arxiv)
+;;   (require 'org-ref-pdf)
+;; )
+
+;; Let org-ref know we are using mendeley
+;;(setq org-ref-get-pdf-filename-function 'org-ref-get-mendeley-filename)
 
 ;;;
 ;;;
