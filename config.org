@@ -453,7 +453,8 @@
         +org-roam-open-buffer-on-find-file nil
         org-roam-completion-everywhere nil
         org-id-link-to-org-use-id t
-        org-roam-extract-new-file-path "${slug}.org")
+        org-roam-extract-new-file-path "${slug}.org"
+        org-roam-database-connector 'sqlite3)
 
   (setq org-roam-capture-ref-templates
         '(("r" "ref" plain
