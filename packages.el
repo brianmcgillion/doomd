@@ -77,3 +77,10 @@
 ;; Code related
 (package! x86-lookup)
 (package! nasm-mode)
+
+;; TMP work around until the merge hits the various downstream repos
+;;(package! helm-core)
+
+;; (setq straight-recipe-overrides nil)
+;; (straight-override-recipe '(helm :files ("*.el" "emacs-helm.sh" (:exclude "helm-core.el" "helm-lib.el" "helm-source.el" "helm-multi-match.el"))))
+;; (straight-override-recipe '(helm-core :files ("helm-core.el" "helm-lib.el" "helm-source.el" "helm-multi-match.el")))

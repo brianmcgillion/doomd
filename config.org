@@ -147,11 +147,6 @@
 (setq uniquify-buffer-name-style 'forward)
 (setq which-key-idle-delay 0.5)
 
-;; Store some more frequently used files in the
-;; (set-register ?d '(file . "~/Documents/org/decrypt.org"))
-;; (set-register ?e '(file . "~/.doom.d/config.org"))
-;; (set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
-
 ;; Stop undo-tree storing persistent history
 (after! undo-tree
   (setq undo-tree-auto-save-history nil))
@@ -170,6 +165,9 @@
 
 ;; use browse-url with gist
 (setq gist-view-gist t)
+
+;; hopefully projectile auto finds the projects
+(setq projectile-project-search-path '(("~/.dotfiles" . 5)("~/projects" . 5)))
 
 ;;;
 ;;;
@@ -306,9 +304,6 @@
     ;;  :action pass)
 
     ))
-
-
-;;(setq fancy-splash-image (concat doom-private-dir "images/emacs-transparent.png"))
 
 ;;;
 ;;;
