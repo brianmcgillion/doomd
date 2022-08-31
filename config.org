@@ -41,6 +41,7 @@
 
 (add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
 
+
 ;; (after! lsp-mode
 ;;   (lsp-register-client
 ;;    (make-lsp-client :new-connection (lsp-tramp-connection "mspyls")
