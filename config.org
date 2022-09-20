@@ -477,7 +477,7 @@
     :commands (org-roam-ui-mode))
 
 (use-package! org-roam-bibtex
-   :when (featurep! :lang org +roam2)
+   :when (modulep! :lang org +roam2)
    :after org-roam
    :preface
    ;; if the user has not set a template mechanism set a reasonable one of them
@@ -486,12 +486,12 @@
      '("title" "url" "file" "author-or-editor" "keywords" "citekey" "pdf"))
    :hook (org-roam-mode . org-roam-bibtex-mode)
    :custom
-   (orb-note-actions-interface (cond ((featurep! :completion ivy)  'ivy)
-                                     ((featurep! :completion helm) 'helm)
+   (orb-note-actions-interface (cond ((modulep! :completion ivy)  'ivy)
+                                     ((modulep! :completion helm) 'helm)
                                      ((t                           'default))))
    :config
-   (setq orb-insert-interface (cond ((featurep! :completion ivy)  'ivy-bibtex)
-                                    ((featurep! :completion helm) 'helm-bibtex)
+   (setq orb-insert-interface (cond ((modulep! :completion ivy)  'ivy-bibtex)
+                                    ((modulep! :completion helm) 'helm-bibtex)
                                     ((t                           'generic))))
    (setq orb-process-file-keyword t
          orb-file-field-extensions '("pdf"))
@@ -933,7 +933,10 @@ Refer to `org-agenda-prefix-format' for more information."
           (tags . " %i %(bmg/vulpea-agenda-category 12) ")
           (search . " %i %(bmg/vaulpea-agenda-category 12) ")))
 
-  (setq org-agenda-time-grid '((daily today require-timed) "----------------------" nil)
+  (setq org-agenda-time-grid '((daily today require-timed)
+                               (800 1200 1600 2000)
+                               "......"
+                               "----------------")
         org-agenda-skip-scheduled-if-done t
         org-agenda-skip-deadline-if-done t
         org-agenda-include-deadlines t
