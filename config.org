@@ -168,6 +168,7 @@
 (setq gist-view-gist t)
 
 ;; hopefully projectile auto finds the projects
+;; M-x projectile-discover-projects-in-directory
 (setq projectile-project-search-path '(("~/.dotfiles" . 5)("~/projects" . 5)))
 
 ;;;

@@ -74,8 +74,11 @@
 (package! imenu-anywhere)
 
 ;; Get the latest completion
-(unpin! helm)
+;;(unpin! helm)
 
 ;; Code related
 (package! x86-lookup)
 (package! nasm-mode)
+
+;;(package! ox-reveal)
+;;(package! htmlize)
