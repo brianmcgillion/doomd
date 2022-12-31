@@ -72,6 +72,8 @@
 (package! super-save)
 (package! crux)
 (package! imenu-anywhere)
+;; Download repos from git forges into local dirs under a main repo structure
+(package! my-repo-pins)
 
 ;; Get the latest completion
 ;;(unpin! helm)
@@ -79,6 +81,7 @@
 ;; Code related
 (package! x86-lookup)
 (package! nasm-mode)
+
 
 ;;(package! ox-reveal)
 ;;(package! htmlize)

@@ -41,6 +41,12 @@
 
 (add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
 
+;; Clone git repos or jump to the project in the code path
+;; https://github.com/NinjaTrappeur/my-repo-pins
+(use-package my-repo-pins
+  :defer t
+  :config
+  (setq my-repo-pins-code-root "~/projects/code"))
 
 ;; (after! lsp-mode
 ;;   (lsp-register-client
@@ -246,6 +252,9 @@
 
 ;; When starting a new frame make it maximized
 (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
+
+;; Set your own banner to replace the default doom one
+;;(setq fancy-splash-image "~/.doom.d/banner/MyBanner.png")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
