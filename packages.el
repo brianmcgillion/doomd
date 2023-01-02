@@ -51,7 +51,7 @@
 ;(package! builtin-package :recipe (:branch "develop"))
 
 ;; For RSS and Atom feeds
-(package! elfeed-goodies)
+;;(package! elfeed-goodies)
 
 ;; a modern agenda and styled capture
 (package! org-super-agenda)
@@ -79,8 +79,8 @@
 ;;(unpin! helm)
 
 ;; Code related
-(package! x86-lookup)
-(package! nasm-mode)
+;;(package! x86-lookup)
+;;(package! nasm-mode)
 
 
 ;;(package! ox-reveal)

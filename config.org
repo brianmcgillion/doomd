@@ -29,17 +29,17 @@
 
 (setq c-default-style "linux") ;; set style to "linux"
 
-(use-package x86-lookup
-  :defer t
-  :config
-  (setq  x86-lookup-pdf "~/Documents/Papers/Intel_64_and_IA-32_Architecture_Software_Developer_Manual.pdf"))
+;; (use-package x86-lookup
+;;   :defer t
+;;   :config
+;;   (setq  x86-lookup-pdf "~/Documents/Papers/Intel_64_and_IA-32_Architecture_Software_Developer_Manual.pdf"))
 
-(use-package nasm-mode
-  :defer t
-  :config
-  (add-hook 'asm-mode-hook 'nasm-mode))
+;; (use-package nasm-mode
+;;   :defer t
+;;   :config
+;;   (add-hook 'asm-mode-hook 'nasm-mode))
 
-(add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
+;;(add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
 
 ;; Clone git repos or jump to the project in the code path
 ;; https://github.com/NinjaTrappeur/my-repo-pins
@@ -144,8 +144,9 @@
   (add-to-list 'super-save-hook-triggers 'find-file-hook)
   (super-save-mode +1))
 
-(use-package! elfeed-goodies
-  :after elfeed)
+;;(use-package! elfeed-goodies
+;;  :after elfeed)
+
 (use-package! crux
   :defer t)
 (use-package! imenu-anywhere
@@ -175,7 +176,7 @@
 
 ;; hopefully projectile auto finds the projects
 ;; M-x projectile-discover-projects-in-directory
-(setq projectile-project-search-path '(("~/.dotfiles" . 5)("~/projects" . 5)))
+(setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 5)("~/.config" . 2)))
 
 ;;;
 ;;;
@@ -935,8 +936,8 @@ Refer to `org-agenda-prefix-format' for more information."
 
 
 (use-package! org-super-agenda
-  :commands org-super-agenda-mode
-  :config
+  :after org-agenda
+  :init
   (setq org-agenda-prefix-format
         '((agenda . " %i %(bmg/vulpea-agenda-category 12)%?-12t% s")
           (todo . " %i %(bmg/vulpea-agenda-category 12) ")
@@ -1022,7 +1023,9 @@ Refer to `org-agenda-prefix-format' for more information."
                              :tag ("Trivial" "Unimportant")
                              :todo ("SOMEDAY" )
                              :order 90)
-                            (:discard (:tag ("Chore" "Routine" "Daily"))))))))))))
+                            (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
+  :config
+  (org-super-agenda-mode))
 
 
 ;; Moved outside the use-package! agenda so it shows on the home screen
