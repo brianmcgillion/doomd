@@ -176,7 +176,9 @@
 
 ;; hopefully projectile auto finds the projects
 ;; M-x projectile-discover-projects-in-directory
+;; M-x projectile-discover-projects-in-search-path
 (setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 5)("~/.config" . 2)))
+(setq projectile-auto-discover t)
 
 ;;;
 ;;;
@@ -516,6 +518,10 @@
  :END:
  ,#+TITLE: ${title}\n")
                   :unnarrowed t)))
+
+;; For use with org-reveal to export as htlm and ppt
+(after! org
+  (load-library "ox-reveal"))
 
 ;;TODO Add some more of the org-ref helpers here
 ;; (after! org-ref

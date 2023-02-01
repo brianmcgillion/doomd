@@ -83,5 +83,6 @@
 ;;(package! nasm-mode)
 
 
-;;(package! ox-reveal)
+(package! org-reveal)
+(package! ox-reveal)
 ;;(package! htmlize)
