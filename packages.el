@@ -62,7 +62,7 @@
   :recipe (:host github :repo "progfolio/doct"))
 
 ;; roam and related packages
-(unpin! org-roam)
+;;(unpin! org-roam)
 (package! websocket)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 (package! org-roam-bibtex)
@@ -86,3 +86,6 @@
 (package! org-reveal)
 (package! ox-reveal)
 ;;(package! htmlize)
+
+(package! transient :pin "c2bdf7e12c530eb85476d3aef317eb2941ab9440")
+(package! with-editor :pin "391e76a256aeec6b9e4cbd733088f30c677d965b")

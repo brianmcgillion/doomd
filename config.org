@@ -165,8 +165,10 @@
 
 (set-language-environment-charset "UTF-8")
 
-;; Configure language-tool for checkers/grammar
-(setq langtool-language-tool-jar "~/tools/languagetool/languagetool-commandline.jar")
+;; Use the Languagetool only in server mode
+(setq langtool-http-server-host "localhost"
+      langtool-http-server-port 8081
+      langtool-default-language nil)
 
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
@@ -179,6 +181,11 @@
 ;; M-x projectile-discover-projects-in-search-path
 (setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 5)("~/.config" . 2)))
 (setq projectile-auto-discover t)
+
+(use-package executable
+  :hook
+  ((after-save .
+    executable-make-buffer-file-executable-if-script-p)))
 
 ;;;
 ;;;
@@ -462,6 +469,7 @@
          :unnarrowed t)))
 
 (after! org-roam
+  (org-roam-db-autosync-mode)
   (setq org-roam-directory (file-truename my-roam-dir)
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         +org-roam-open-buffer-on-find-file nil
@@ -836,11 +844,16 @@
 (setq org-archive-location (concat org-directory "/archive.org_archive::datetree/"))
 
 (after! org
-   ;; The 'bmg-org-roam-agenda' tag is used to tell vulpea that there is a todo item in this file
+  ;; The 'bmg-org-roam-agenda' tag is used to tell vulpea that there is a todo item in this file
   (add-to-list 'org-tags-exclude-from-inheritance "bmg-org-roam-agenda"))
 
 (use-package! vulpea
-  :after (org-agenda org-roam)
+  :commands (bmg/vulpea-agenda-files-update bmg/vulpea-project-update-tag)
+  :init
+  (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
+  (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
+  (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable))
   :config
   (defun bmg/vulpea-project-p ()
     "Return non-nil if current buffer has any todo entry.
@@ -933,13 +946,7 @@ Refer to `org-agenda-prefix-format' for more information."
                 "")))
       (if (numberp len)
           (s-truncate len (s-pad-right len " " result))
-        result)))
-
-
-  (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
-  (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
-  (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update))
-
+        result))))
 
 (use-package! org-super-agenda
   :after org-agenda
@@ -1036,11 +1043,11 @@ Refer to `org-agenda-prefix-format' for more information."
 
 ;; Moved outside the use-package! agenda so it shows on the home screen
 (defun bmg/switch-to-agenda ()
-    (interactive)
-    (org-agenda nil "o"))
+  (interactive)
+  (org-agenda nil "o"))
 
 (after! org-agenda
-   (org-super-agenda-mode))
+  (org-super-agenda-mode))
 
 
 ;;;
