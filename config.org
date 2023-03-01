@@ -11,14 +11,6 @@
 ;;;
 ;;;
 
-;; use python3 by default
-(setq python-shell-interpreter "python3")
-(setq anaconda-mode-localhost-address "localhost")
-;;(require 'py-autopep8)
-;;(add-hook 'python-mode-hook 'py-autopep8-enable-on-save)
-;;(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-
-
 ;; Add handlers SELinux files
 (add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
 
@@ -26,20 +18,7 @@
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
-
 (setq c-default-style "linux") ;; set style to "linux"
-
-;; (use-package x86-lookup
-;;   :defer t
-;;   :config
-;;   (setq  x86-lookup-pdf "~/Documents/Papers/Intel_64_and_IA-32_Architecture_Software_Developer_Manual.pdf"))
-
-;; (use-package nasm-mode
-;;   :defer t
-;;   :config
-;;   (add-hook 'asm-mode-hook 'nasm-mode))
-
-;;(add-to-list 'auto-mode-alist '("\\.nasm\\'" . nasm-mode))
 
 ;; Clone git repos or jump to the project in the code path
 ;; https://github.com/NinjaTrappeur/my-repo-pins
@@ -48,68 +27,9 @@
   :config
   (setq my-repo-pins-code-root "~/projects/code"))
 
-;; (after! lsp-mode
-;;   (lsp-register-client
-;;    (make-lsp-client :new-connection (lsp-tramp-connection "mspyls")
-;;                     :major-modes '(python-mode)
-;;                     :remote? t
-;;                     :server-id 'mspyls-remote))
-;;   (lsp-register-client
-;;    (make-lsp-client :new-connection (lsp-tramp-connection "/usr/local/bin/bash-language-server")
-;;                     :major-modes '(sh-mode)
-;;                     :remote? t
-;;                     :server-id 'bash-remote))
-;;   (lsp-register-client
-;;    (make-lsp-client :new-connection (lsp-tramp-connection 'lsp-clients--clangd-command)
-;;                     :major-modes '(c++-mode c-mode cc-mode)
-;;                     :remote? t
-;;                     :server-id 'clangd-remote)))
-
-;; (after! lsp
-;;   (setq lsp-lens-enable t
-;;         lsp-headerline-breadcrumb-enable t
-;;         lsp-modeline-code-actions-enable t
-;;         lsp-diagnostics-provider :auto
-;;         lsp-modeline-diagnostics-enable t
-;;         lsp-signature-auto-activate t
-;;         lsp-signature-render-documentation t
-;;         lsp-completion-show-detail t
-;;         lsp-completion-show-kind t))
-
-;; (after! lsp-ui
-;;   (setq lsp-ui-sideline-enable t
-;;         lsp-ui-sideline-show-code-actions t
-;;         lsp-ui-sideline-enable t
-;;         lsp-ui-sideline-show-diagnostics t))
-
 ;;;
 ;;;
 ;;; END_code
-;;;
-;;;
-#+END_SRC
-* Connections
-:PROPERTIES:
-:ID:       7018c3c5-ffc5-4b4d-a2cc-ae70796fd448
-:END:
-#+BEGIN_SRC emacs-lisp
-
-;;;
-;;;
-;;; BEGIN_connection
-;;;
-;;;
-
-;; (after! tramp
-;;   (setenv "SHELL" "/bin/bash")
-;;   (setq tramp-shell-prompt-pattern "\\(?:^\\|\\)[^]#$%>\n]*#?[]#$%>] *\\(\\[[0-9;]*[a-zA-Z] *\\)*")) ;; defult + 
-
-;; When connecting over tramp it takes a long time processing projectile
-(defadvice projectile-project-root (around ignore-remote first activate)
-  (unless (file-remote-p default-directory) ad-do-it))
-;;;
-;;;
-;;; END_connection
 ;;;
 ;;;
 #+END_SRC
@@ -130,29 +50,27 @@
 (setq user-full-name "Brian McGillion"
       user-mail-address "brian@ssrc.tii.ae")
 
-;; TODO see if this is too much and maybe only leave it for C
-;; enable word-wrap (almost) everywhere
-(+global-word-wrap-mode +1)
+;; TODO WTF is happening here ?? enable word-wrap (almost) everywhere
+;;(+global-word-wrap-mode +1)
 
 ;; Autosave files when switching buffers
 (use-package! super-save
-  :defer t
+  :ensure t
   :config
   (setq auto-save-default nil)
-  (setq super-save-exclude '(".gpg"))
-  (add-to-list 'super-save-triggers 'ace-window)
-  (add-to-list 'super-save-hook-triggers 'find-file-hook)
+  (setq super-save-exclude '(".gpg" ".age"))
   (super-save-mode +1))
-
-;;(use-package! elfeed-goodies
-;;  :after elfeed)
 
 (use-package! crux
   :defer t)
 (use-package! imenu-anywhere
   :defer t)
 
+;; Change the name from "Makefile<1>" to "dir/Makefile"
+(require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
+
+;; Who remembers all the commands :)
 (setq which-key-idle-delay 0.5)
 
 ;; Stop undo-tree storing persistent history
@@ -173,19 +91,12 @@
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
-;; use browse-url with gist
-(setq gist-view-gist t)
-
 ;; hopefully projectile auto finds the projects
 ;; M-x projectile-discover-projects-in-directory
 ;; M-x projectile-discover-projects-in-search-path
 (setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 5)("~/.config" . 2)))
-(setq projectile-auto-discover t)
-
-(use-package executable
-  :hook
-  ((after-save .
-    executable-make-buffer-file-executable-if-script-p)))
+;; TODO set this back to t
+(setq projectile-auto-discover nil)
 
 ;;;
 ;;;
@@ -210,8 +121,8 @@
   ;; returning to that functionality
   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
   :bind (:map helm-map ;; Seems that it needs to be done in init
-          ("<left>" . #'helm-previous-source)
-          ("<right>" . #'helm-next-source)))
+              ("<left>" . #'helm-previous-source)
+              ("<right>" . #'helm-next-source)))
 
 (after! helm
   (setq helm-google-suggest-use-curl-p        t
@@ -240,7 +151,7 @@
     :around #'helm-rg
     (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
       (apply orig-fn args)))
-)
+  )
 
 ;;;
 ;;;
@@ -294,37 +205,31 @@
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
 
-
-;; (after! pdf-tools
-;;   ;; automatically turns on midnight-mode for
-;;   (add-hook 'pdf-view-mode-hook (lambda ()
-;;                                   (pdf-view-midnight-minor-mode))))
-
 (setq +doom-dashboard-menu-sections
-  '(("Open org-agenda"
-     :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
-     :action bmg/switch-to-agenda)
-    ("Recently opened files"
-     :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
-     :action recentf-open-files)
-    ("Open project"
-     :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
-     :action projectile-switch-project)
-    ("RSS"
-     :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
-     :action =rss)
-    ("Open private configuration"
-     :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
-     :when (file-directory-p doom-private-dir)
-     :action doom/open-private-config)
-    ("Open documentation"
-     :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
-     :action doom/help)
-    ;; ("Passwords"
-    ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
-    ;;  :action pass)
+      '(("Open org-agenda"
+         :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :action bmg/switch-to-agenda)
+        ("Recently opened files"
+         :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
+         :action recentf-open-files)
+        ("Open project"
+         :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+         :action projectile-switch-project)
+        ("RSS"
+         :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
+         :action =rss)
+        ("Open private configuration"
+         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :when (file-directory-p doom-private-dir)
+         :action doom/open-private-config)
+        ("Open documentation"
+         :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
+         :action doom/help)
+        ;; ("Passwords"
+        ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+        ;;  :action pass)
 
-    ))
+        ))
 
 ;;;
 ;;;
@@ -344,85 +249,81 @@
 ;;;
 ;;;
 
-(map! "C--"     #'undo-fu-only-undo
-      "C-+"     #'undo-fu-only-redo
+(map!
+ (;;:org-roam
+  :leader
+  (:prefix-map ("z" . "org-roam")
+               "c" #'org-roam-capture
+               "D" #'org-roam-demote-entire-buffer
+               "f" #'org-roam-node-find
+               "F" #'org-roam-ref-find
+               "g" #'org-roam-graph
+               "i" #'org-roam-node-insert
+               "I" #'org-id-get-create
+               "t" #'org-roam-buffer-toggle
+               "T" #'org-roam-buffer-display-dedicated
+               "r" #'org-roam-refile
+               "R" #'org-roam-link-replace-all
+               (:prefix ("d" . "by date")
+                :desc "Goto previous note" "b" #'org-roam-dailies-goto-previous-note
+                :desc "Goto date"          "d" #'org-roam-dailies-goto-date
+                :desc "Capture date"       "D" #'org-roam-dailies-capture-date
+                :desc "Goto next note"     "f" #'org-roam-dailies-goto-next-note
+                :desc "Goto tomorrow"      "m" #'org-roam-dailies-goto-tomorrow
+                :desc "Capture tomorrow"   "M" #'org-roam-dailies-capture-tomorrow
+                :desc "Capture today"      "n" #'org-roam-dailies-capture-today
+                :desc "Goto today"         "t" #'org-roam-dailies-goto-today
+                :desc "Capture today"      "T" #'org-roam-dailies-capture-today
+                :desc "Goto yesterday"     "y" #'org-roam-dailies-goto-yesterday
+                :desc "Capture yesterday"  "Y" #'org-roam-dailies-capture-yesterday
+                :desc "Find directory"     "-" #'org-roam-dailies-find-directory)
+               (:prefix ("n" . "node properties")
+                        "a" #'org-roam-alias-add
+                        "A" #'org-roam-alias-remove
+                        "t" #'org-roam-tag-add
+                        "T" #'org-roam-tag-remove
+                        "r" #'org-roam-ref-add
+                        "R" #'org-roam-ref-remove)))
 
-      (;;:org-roam
-       :leader
-       (:prefix-map ("z" . "org-roam")
-        "c" #'org-roam-capture
-        "D" #'org-roam-demote-entire-buffer
-        "f" #'org-roam-node-find
-        "F" #'org-roam-ref-find
-        "g" #'org-roam-graph
-        "i" #'org-roam-node-insert
-        "I" #'org-id-get-create
-        "t" #'org-roam-buffer-toggle
-        "T" #'org-roam-buffer-display-dedicated
-        "r" #'org-roam-refile
-        "R" #'org-roam-link-replace-all
-        (:prefix ("d" . "by date")
-         :desc "Goto previous note" "b" #'org-roam-dailies-goto-previous-note
-         :desc "Goto date"          "d" #'org-roam-dailies-goto-date
-         :desc "Capture date"       "D" #'org-roam-dailies-capture-date
-         :desc "Goto next note"     "f" #'org-roam-dailies-goto-next-note
-         :desc "Goto tomorrow"      "m" #'org-roam-dailies-goto-tomorrow
-         :desc "Capture tomorrow"   "M" #'org-roam-dailies-capture-tomorrow
-         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
-         :desc "Goto today"         "t" #'org-roam-dailies-goto-today
-         :desc "Capture today"      "T" #'org-roam-dailies-capture-today
-         :desc "Goto yesterday"     "y" #'org-roam-dailies-goto-yesterday
-         :desc "Capture yesterday"  "Y" #'org-roam-dailies-capture-yesterday
-         :desc "Find directory"     "-" #'org-roam-dailies-find-directory)
-        (:prefix ("n" . "node properties")
-         "a" #'org-roam-alias-add
-         "A" #'org-roam-alias-remove
-         "t" #'org-roam-tag-add
-         "T" #'org-roam-tag-remove
-         "r" #'org-roam-ref-add
-         "R" #'org-roam-ref-remove)))
-
-      (;;:org-agenda
-  ;;     "<f4>" #'org-agenda
-
-       (:leader
+ (;;: org-agenda
+  (:leader
         ;;; <leader> n --- notes
-        (:prefix-map ("n" . "notes")
-         :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
+   (:prefix-map ("n" . "notes")
+    :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
 
-       (:map org-agenda-mode-map
+  (:map org-agenda-mode-map
         "i"                       #'org-agenda-clock-in
         "r"                       #'bmg/org-process-inbox
         "R"                       #'org-agenda-refile
         "c"                       #'bmg/org-inbox-capture))
 
-      (;;:helm
-       [remap occur]               #'helm-occur
+ (;;:helm
+  [remap occur]               #'helm-occur
 
-       (:map minibuffer-local-map
+  (:map minibuffer-local-map
         "C-c C-l"                 #'helm-minibuffer-history)
-       (:map isearch-mode-map
+  (:map isearch-mode-map
         "C-o"                     #'helm-occur-from-isearch)
-       (:map shell-mode-map
+  (:map shell-mode-map
         "C-c C-l"                 #'helm-comint-input-ring))
 
-      (;;: crux and stuff
-       (:leader
+ (;;: crux and stuff
+  (:leader
         ;;;  <leader> b --- prelude
-        (:prefix-map ("b" . "prelude")
-         :desc "crux-cleanup-buffer-or-region"          "c" #'crux-cleanup-buffer-or-region
-         :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
-         :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-         :desc "helm-imenu"                             "i" #'helm-imenu
-         :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-         :desc "crux-open-with"                         "o" #'crux-open-with
-         :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
-         :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
-         :desc "treemacs-select-window"                 "t" #'treemacs-select-window
-         :desc "crux-view-url"                          "u" #'crux-view-url
-         :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
-         :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
-      ) ;; END MAP
+   (:prefix-map ("b" . "prelude")
+    :desc "crux-cleanup-buffer-or-region"          "c" #'crux-cleanup-buffer-or-region
+    :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
+    :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
+    :desc "helm-imenu"                             "i" #'helm-imenu
+    :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+    :desc "crux-open-with"                         "o" #'crux-open-with
+    :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+    :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
+    :desc "treemacs-select-window"                 "t" #'treemacs-select-window
+    :desc "crux-view-url"                          "u" #'crux-view-url
+    :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
+    :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
+ ) ;; END MAP
 
 ;;;
 ;;;
@@ -458,18 +359,10 @@
 
 ;; For org-ref and helm-bibtex
 (setq bibtex-dialect 'biblatex)
-;;(setq bibtex-dialect 'BibTeX)
-
-;; TODO Why can I not use add-to-list for this
-(setq org-roam-capture-templates
-      '(("d" "default" plain
-         "%?"
-         :if-new (file+head "${slug}.org"
-                            "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-         :unnarrowed t)))
 
 (after! org-roam
-  (org-roam-db-autosync-mode)
+  ;; TODO turn on autosync
+  ;;(org-roam-db-autosync-mode)
   (setq org-roam-directory (file-truename my-roam-dir)
         org-roam-link-title-format "R:%s" ;;Distinguish internal Roam links from external links
         +org-roam-open-buffer-on-find-file nil
@@ -477,6 +370,14 @@
         org-id-link-to-org-use-id t
         org-roam-extract-new-file-path "${slug}.org"
         org-roam-database-connector 'sqlite3)
+
+  ;; TODO Why can I not use add-to-list for this
+  (setq org-roam-capture-templates
+        '(("d" "default" plain
+           "%?"
+           :if-new (file+head "${slug}.org"
+                              "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+           :unnarrowed t)))
 
   (setq org-roam-capture-ref-templates
         '(("r" "ref" plain
@@ -491,62 +392,45 @@
                               "#+title: %<%Y-%m-%d>\n")))))
 
 (use-package! websocket
-    :after org-roam)
+  :after org-roam)
 
 (use-package! org-roam-ui
-    :after org-roam
-    :commands (org-roam-ui-mode))
+  :after org-roam
+  :commands (org-roam-ui-mode))
 
 (use-package! org-roam-bibtex
-   :when (modulep! :lang org +roam2)
-   :after org-roam
-   :preface
-   ;; if the user has not set a template mechanism set a reasonable one of them
-   ;; The package already tests for nil itself so we define a dummy tester
-   (defvar orb-preformat-keywords
-     '("title" "url" "file" "author-or-editor" "keywords" "citekey" "pdf"))
-   :hook (org-roam-mode . org-roam-bibtex-mode)
-   :custom
-   (orb-note-actions-interface (cond ((modulep! :completion ivy)  'ivy)
-                                     ((modulep! :completion helm) 'helm)
-                                     ((t                           'default))))
-   :config
-   (setq orb-insert-interface (cond ((modulep! :completion ivy)  'ivy-bibtex)
-                                    ((modulep! :completion helm) 'helm-bibtex)
-                                    ((t                           'generic))))
-   (setq orb-process-file-keyword t
-         orb-file-field-extensions '("pdf"))
+  :when (modulep! :lang org +roam2)
+  :after org-roam
+  :preface
+  ;; if the user has not set a template mechanism set a reasonable one of them
+  ;; The package already tests for nil itself so we define a dummy tester
+  (defvar orb-preformat-keywords
+    '("title" "url" "file" "author-or-editor" "keywords" "citekey" "pdf"))
+  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :custom
+  (orb-note-actions-interface (cond ((modulep! :completion ivy)  'ivy)
+                                    ((modulep! :completion helm) 'helm)
+                                    ((t                           'default))))
+  :config
+  (setq orb-insert-interface (cond ((modulep! :completion ivy)  'ivy-bibtex)
+                                   ((modulep! :completion helm) 'helm-bibtex)
+                                   ((t                           'generic))))
+  (setq orb-process-file-keyword t
+        orb-file-field-extensions '("pdf"))
 
-   ;; TODO remove the hard coded path, should use a concatination instead of doc..org..
-   (add-to-list 'org-roam-capture-templates
-                '("b" "Bibliography note" plain
-                   (file "~/Documents/org/ORB_template.org")
-                  :if-new (file+head "${citekey}.org" ":PROPERTIES:
+  ;; TODO remove the hard coded path, should use a concatination instead of doc..org..
+  (add-to-list 'org-roam-capture-templates
+               '("b" "Bibliography note" plain
+                 (file "~/Documents/org/ORB_template.org")
+                 :if-new (file+head "${citekey}.org" ":PROPERTIES:
  :ROAM_REFS: cite:${citekey}
  :END:
  ,#+TITLE: ${title}\n")
-                  :unnarrowed t)))
+                 :unnarrowed t)))
 
 ;; For use with org-reveal to export as htlm and ppt
 (after! org
   (load-library "ox-reveal"))
-
-;;TODO Add some more of the org-ref helpers here
-;; (after! org-ref
-;;   (setq bibtex-autokey-year-length 4
-;;         bibtex-autokey-name-year-separator nil
-;;         bibtex-autokey-year-title-separator nil
-;;         bibtex-autokey-titleword-separator nil
-;;         bibtex-autokey-titlewords 0
-;;         bibtex-autokey-titlewords-stretch nil
-;;         bibtex-autokey-titleword-length 0)
-;;   (require 'doi-utils)
-;;   (require 'org-ref-arxiv)
-;;   (require 'org-ref-pdf)
-;; )
-
-;; Let org-ref know we are using mendeley
-;;(setq org-ref-get-pdf-filename-function 'org-ref-get-mendeley-filename)
 
 ;;;
 ;;;
@@ -578,26 +462,26 @@
   :after org-capture)
 
 (after! org-capture
- (defun org-capture-select-template-prettier (&optional keys)
-      "Select a capture template, in a prettier way than default
+  (defun org-capture-select-template-prettier (&optional keys)
+    "Select a capture template, in a prettier way than default
     Lisp programs can force the template by setting KEYS to a string."
-      (let ((org-capture-templates
-             (or (org-contextualize-keys
-                  (org-capture-upgrade-templates org-capture-templates)
-                  org-capture-templates-contexts)
-                 '(("t" "Task" entry (file+headline "" "Tasks")
-                    "* TODO %?\n  %u\n  %a")))))
-        (if keys
-            (or (assoc keys org-capture-templates)
-                (error "No capture template referred to by \"%s\" keys" keys))
-          (org-mks org-capture-templates
-                   "Select a capture template\n━━━━━━━━━━━━━━━━━━━━━━━━━"
-                   "Template key: "
-                   `(("q" ,(concat (all-the-icons-octicon "stop" :face 'all-the-icons-red :v-adjust 0.01) "\tAbort")))))))
-    (advice-add 'org-capture-select-template :override #'org-capture-select-template-prettier)
+    (let ((org-capture-templates
+           (or (org-contextualize-keys
+                (org-capture-upgrade-templates org-capture-templates)
+                org-capture-templates-contexts)
+               '(("t" "Task" entry (file+headline "" "Tasks")
+                  "* TODO %?\n  %u\n  %a")))))
+      (if keys
+          (or (assoc keys org-capture-templates)
+              (error "No capture template referred to by \"%s\" keys" keys))
+        (org-mks org-capture-templates
+                 "Select a capture template\n━━━━━━━━━━━━━━━━━━━━━━━━━"
+                 "Template key: "
+                 `(("q" ,(concat (all-the-icons-octicon "stop" :face 'all-the-icons-red :v-adjust 0.01) "\tAbort")))))))
+  (advice-add 'org-capture-select-template :override #'org-capture-select-template-prettier)
 
-    (defun org-mks-pretty (table title &optional prompt specials)
-      "Select a member of an alist with multiple keys. Prettified.
+  (defun org-mks-pretty (table title &optional prompt specials)
+    "Select a member of an alist with multiple keys. Prettified.
 
     TABLE is the alist which should contain entries where the car is a string.
     There should be two types of entries.
@@ -620,94 +504,94 @@
     PROMPT will be used when prompting for a key.  SPECIALS is an
     alist with (\"key\" \"description\") entries.  When one of these
     is selected, only the bare key is returned."
-      (save-window-excursion
-        (let ((inhibit-quit t)
-              (buffer (org-switch-to-buffer-other-window "*Org Select*"))
-              (prompt (or prompt "Select: "))
-              case-fold-search
-              current)
-          (unwind-protect
-              (catch 'exit
-                (while t
-                  (setq-local evil-normal-state-cursor (list nil))
-                  (erase-buffer)
-                  (insert title "\n\n")
-                  (let ((des-keys nil)
-                        (allowed-keys '("\C-g"))
-                        (tab-alternatives '("\s" "\t" "\r"))
-                        (cursor-type nil))
-                    ;; Populate allowed keys and descriptions keys
-                    ;; available with CURRENT selector.
-                    (let ((re (format "\\`%s\\(.\\)\\'"
-                                      (if current (regexp-quote current) "")))
-                          (prefix (if current (concat current " ") "")))
-                      (dolist (entry table)
-                        (pcase entry
-                          ;; Description.
-                          (`(,(and key (pred (string-match re))) ,desc)
-                           (let ((k (match-string 1 key)))
-                             (push k des-keys)
-                             ;; Keys ending in tab, space or RET are equivalent.
-                             (if (member k tab-alternatives)
-                                 (push "\t" allowed-keys)
-                               (push k allowed-keys))
-                             (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) (propertize "›" 'face 'font-lock-comment-face) "  " desc "…" "\n")))
-                          ;; Usable entry.
-                          (`(,(and key (pred (string-match re))) ,desc . ,_)
-                           (let ((k (match-string 1 key)))
-                             (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) "   " desc "\n")
-                             (push k allowed-keys)))
-                          (_ nil))))
-                    ;; Insert special entries, if any.
-                    (when specials
-                      (insert "─────────────────────────\n")
-                      (pcase-dolist (`(,key ,description) specials)
-                        (insert (format "%s   %s\n" (propertize key 'face '(bold all-the-icons-red)) description))
-                        (push key allowed-keys)))
-                    ;; Display UI and let user select an entry or
-                    ;; a sub-level prefix.
-                    (goto-char (point-min))
-                    (unless (pos-visible-in-window-p (point-max))
-                      (org-fit-window-to-buffer))
-                    (let ((pressed (org--mks-read-key allowed-keys
-                                                      prompt
-                                                      (not (pos-visible-in-window-p (1- (point-max)))))))
-                      (setq current (concat current pressed))
-                      (cond
-                       ((equal pressed "\C-g") (user-error "Abort"))
-                       ;; Selection is a prefix: open a new menu.
-                       ((member pressed des-keys))
-                       ;; Selection matches an association: return it.
-                       ((let ((entry (assoc current table)))
-                          (and entry (throw 'exit entry))))
-                       ;; Selection matches a special entry: return the
-                       ;; selection prefix.
-                       ((assoc current specials) (throw 'exit current))
-                       (t (error "No entry available")))))))
-            (when buffer (kill-buffer buffer))))))
-    (advice-add 'org-mks :override #'org-mks-pretty)
+    (save-window-excursion
+      (let ((inhibit-quit t)
+            (buffer (org-switch-to-buffer-other-window "*Org Select*"))
+            (prompt (or prompt "Select: "))
+            case-fold-search
+            current)
+        (unwind-protect
+            (catch 'exit
+              (while t
+                (setq-local evil-normal-state-cursor (list nil))
+                (erase-buffer)
+                (insert title "\n\n")
+                (let ((des-keys nil)
+                      (allowed-keys '("\C-g"))
+                      (tab-alternatives '("\s" "\t" "\r"))
+                      (cursor-type nil))
+                  ;; Populate allowed keys and descriptions keys
+                  ;; available with CURRENT selector.
+                  (let ((re (format "\\`%s\\(.\\)\\'"
+                                    (if current (regexp-quote current) "")))
+                        (prefix (if current (concat current " ") "")))
+                    (dolist (entry table)
+                      (pcase entry
+                        ;; Description.
+                        (`(,(and key (pred (string-match re))) ,desc)
+                         (let ((k (match-string 1 key)))
+                           (push k des-keys)
+                           ;; Keys ending in tab, space or RET are equivalent.
+                           (if (member k tab-alternatives)
+                               (push "\t" allowed-keys)
+                             (push k allowed-keys))
+                           (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) (propertize "›" 'face 'font-lock-comment-face) "  " desc "…" "\n")))
+                        ;; Usable entry.
+                        (`(,(and key (pred (string-match re))) ,desc . ,_)
+                         (let ((k (match-string 1 key)))
+                           (insert (propertize prefix 'face 'font-lock-comment-face) (propertize k 'face 'bold) "   " desc "\n")
+                           (push k allowed-keys)))
+                        (_ nil))))
+                  ;; Insert special entries, if any.
+                  (when specials
+                    (insert "─────────────────────────\n")
+                    (pcase-dolist (`(,key ,description) specials)
+                      (insert (format "%s   %s\n" (propertize key 'face '(bold all-the-icons-red)) description))
+                      (push key allowed-keys)))
+                  ;; Display UI and let user select an entry or
+                  ;; a sub-level prefix.
+                  (goto-char (point-min))
+                  (unless (pos-visible-in-window-p (point-max))
+                    (org-fit-window-to-buffer))
+                  (let ((pressed (org--mks-read-key allowed-keys
+                                                    prompt
+                                                    (not (pos-visible-in-window-p (1- (point-max)))))))
+                    (setq current (concat current pressed))
+                    (cond
+                     ((equal pressed "\C-g") (user-error "Abort"))
+                     ;; Selection is a prefix: open a new menu.
+                     ((member pressed des-keys))
+                     ;; Selection matches an association: return it.
+                     ((let ((entry (assoc current table)))
+                        (and entry (throw 'exit entry))))
+                     ;; Selection matches a special entry: return the
+                     ;; selection prefix.
+                     ((assoc current specials) (throw 'exit current))
+                     (t (error "No entry available")))))))
+          (when buffer (kill-buffer buffer))))))
+  (advice-add 'org-mks :override #'org-mks-pretty)
 
-    (defun +doct-icon-declaration-to-icon (declaration)
-      "Convert :icon declaration to icon"
-      (let ((name (pop declaration))
-            (set  (intern (concat "all-the-icons-" (plist-get declaration :set))))
-            (face (intern (concat "all-the-icons-" (plist-get declaration :color))))
-            (v-adjust (or (plist-get declaration :v-adjust) 0.01)))
-        (apply set `(,name :face ,face :v-adjust ,v-adjust))))
+  (defun +doct-icon-declaration-to-icon (declaration)
+    "Convert :icon declaration to icon"
+    (let ((name (pop declaration))
+          (set  (intern (concat "all-the-icons-" (plist-get declaration :set))))
+          (face (intern (concat "all-the-icons-" (plist-get declaration :color))))
+          (v-adjust (or (plist-get declaration :v-adjust) 0.01)))
+      (apply set `(,name :face ,face :v-adjust ,v-adjust))))
 
-    (defun +doct-iconify-capture-templates (groups)
-      "Add declaration's :icon to each template group in GROUPS."
-      (let ((templates (doct-flatten-lists-in groups)))
-        (setq doct-templates (mapcar (lambda (template)
-                                       (when-let* ((props (nthcdr (if (= (length template) 4) 2 5) template))
-                                                   (spec (plist-get (plist-get props :doct) :icon)))
-                                         (setf (nth 1 template) (concat (+doct-icon-declaration-to-icon spec)
-                                                                        "\t"
-                                                                        (nth 1 template))))
-                                       template)
-                                     templates))))
+  (defun +doct-iconify-capture-templates (groups)
+    "Add declaration's :icon to each template group in GROUPS."
+    (let ((templates (doct-flatten-lists-in groups)))
+      (setq doct-templates (mapcar (lambda (template)
+                                     (when-let* ((props (nthcdr (if (= (length template) 4) 2 5) template))
+                                                 (spec (plist-get (plist-get props :doct) :icon)))
+                                       (setf (nth 1 template) (concat (+doct-icon-declaration-to-icon spec)
+                                                                      "\t"
+                                                                      (nth 1 template))))
+                                     template)
+                                   templates))))
 
-    (setq doct-after-conversion-functions '(+doct-iconify-capture-templates))
+  (setq doct-after-conversion-functions '(+doct-iconify-capture-templates))
 
   (defun set-org-capture-templates ()
     (setq org-capture-templates
@@ -848,12 +732,13 @@
   (add-to-list 'org-tags-exclude-from-inheritance "bmg-org-roam-agenda"))
 
 (use-package! vulpea
-  :commands (bmg/vulpea-agenda-files-update bmg/vulpea-project-update-tag)
-  :init
-  (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
-  (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
-  (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
-  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable))
+  :after (org-agenda org-roam)
+  ;;:commands (bmg/vulpea-agenda-files-update bmg/vulpea-project-update-tag)
+  ;; :init
+  ;; (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
+  ;; (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
+  ;; (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
+  ;; :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable))
   :config
   (defun bmg/vulpea-project-p ()
     "Return non-nil if current buffer has any todo entry.
@@ -1045,10 +930,6 @@ Refer to `org-agenda-prefix-format' for more information."
 (defun bmg/switch-to-agenda ()
   (interactive)
   (org-agenda nil "o"))
-
-(after! org-agenda
-  (org-super-agenda-mode))
-
 
 ;;;
 ;;;
