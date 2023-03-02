@@ -55,8 +55,8 @@
 
 ;; Autosave files when switching buffers
 (use-package! super-save
-  :ensure t
   :config
+  (message "Super save enabled")
   (setq auto-save-default nil)
   (setq super-save-exclude '(".gpg" ".age"))
   (super-save-mode +1))
@@ -316,6 +316,7 @@
     :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
     :desc "helm-imenu"                             "i" #'helm-imenu
     :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
+    :desc "helm-nixos-options"                     "n" #'helm-nixos-options
     :desc "crux-open-with"                         "o" #'crux-open-with
     :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
@@ -733,12 +734,12 @@
 
 (use-package! vulpea
   :after (org-agenda org-roam)
-  ;;:commands (bmg/vulpea-agenda-files-update bmg/vulpea-project-update-tag)
-  ;; :init
-  ;; (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
-  ;; (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
-  ;; (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
-  ;; :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable))
+  :commands (bmg/vulpea-agenda-files-update bmg/vulpea-project-update-tag)
+  :init
+  (add-hook 'find-file-hook #'bmg/vulpea-project-update-tag)
+  (add-hook 'before-save-hook #'bmg/vulpea-project-update-tag)
+  (advice-add 'org-agenda :before #'bmg/vulpea-agenda-files-update)
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable))
   :config
   (defun bmg/vulpea-project-p ()
     "Return non-nil if current buffer has any todo entry.
