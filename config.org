@@ -459,6 +459,11 @@
       org-log-into-drawer t
       org-log-state-notes-insert-after-drawers nil)
 
+;; TODO When opening org-capture first the doct templates are called and enabled nicely
+;; TODO When called after e.g. org-agenda the default non formatted list is in use
+;; TODO What is the timing issue and look at debug-init to see if it has a big impact on performacs to move these out of use package
+;; TODO this sets the org-capture templates. so this needs to be moved out of function scope
+;;
 (use-package! doct
   :after org-capture)
 
