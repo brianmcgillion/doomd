@@ -1,7 +1,0 @@
-* Inbox
-** TODO Fixgure out doing presentations with org
-- Look at reference from spacekookie
-** TODO Setup Library directory
-Include org-noter and org-roam-bibtex
-
-[[id:b889f253-3691-41e3-a2ca-7f1c76f10d7d][Org]]

@@ -175,7 +175,9 @@
 (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
 
 ;; Set your own banner to replace the default doom one
-;;(setq fancy-splash-image "~/.doom.d/banner/MyBanner.png")
+;; "convert image.png -resize 600 -quality 75 OUTPUT.png"
+;; try resize 400 for smaller resolutions e.g. 1080p
+(setq fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
