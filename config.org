@@ -27,7 +27,13 @@
   :config
   (setq my-repo-pins-code-root "~/projects/code"))
 
-(set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
+;; TODO Revisit this when https://github.com/doomemacs/doomemacs/issues/6936 is fixed
+;;(set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
+(after! nix-mode
+  (set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
+  (puthash 'alejandra "alejandra" format-all--executable-table))
+
+(setq-hook! 'nix-mode-hook +format-with-lsp nil)
 
 ;;;
 ;;;
