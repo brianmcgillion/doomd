@@ -80,3 +80,4 @@
 
 (package! org-reveal)
 (package! ox-reveal)
+(package! license-snippets)

@@ -115,6 +115,9 @@
 ;; TODO set this back to t
 (setq projectile-auto-discover nil)
 
+
+(after! license-snippets
+  (license-snippets-init))
 ;;;
 ;;;
 ;;; END_General
