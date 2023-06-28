@@ -62,7 +62,7 @@
   :recipe (:host github :repo "progfolio/doct"))
 
 ;; roam and related packages
-;;(unpin! org-roam)
+(unpin! org-roam)
 (package! websocket)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 (package! org-roam-bibtex)
@@ -76,7 +76,7 @@
 (package! my-repo-pins)
 
 ;; Get the latest completion
-;;(unpin! helm)
+(unpin! helm)
 
 (package! org-reveal)
 (package! ox-reveal)
