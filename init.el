@@ -21,7 +21,7 @@
        ;;layout            ; auie,ctsrnm is the superior home row
 
        :completion
-       company ; the ultimate code completion backend
+       (company +tng) ; the ultimate code completion backend
        (helm +fuzzy +icons)  ; the *other* search engine for love and life
        ;;ido                 ; the other *other* search engine...
        ;;ivy                 ; a search engine for love and life
@@ -117,7 +117,7 @@
        ;;beancount         ; mind the GAAP
        (cc +lsp +tree-sitter)               ; C/C++/Obj-C madness
        ;;clojure           ; java with a lisp
-       ;;common-lisp       ; if you've seen one lisp, you've seen them all
+       common-lisp       ; if you've seen one lisp, you've seen them all
        ;;coq               ; proofs-as-programs
        ;;crystal           ; ruby at the speed of c
        ;;csharp            ; unity, .NET, and mono shenanigans
@@ -137,7 +137,7 @@
        ;;gdscript          ; the language you waited for
        ;;(go +lsp +tree-sitter)         ; the hipster dialect
        ;;(graphql +lsp)    ; Give queries a REST
-       ;;(haskell +lsp)  ; a language that's lazier than I am
+       (haskell +lsp +treesitter)  ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
        ;;json              ; At least it ain't XML
