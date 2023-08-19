@@ -78,6 +78,4 @@
 ;; Get the latest completion
 (unpin! helm)
 
-(package! org-reveal)
-(package! ox-reveal)
 (package! license-snippets)

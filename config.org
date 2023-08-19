@@ -451,10 +451,6 @@
  ,#+TITLE: ${title}\n")
                  :unnarrowed t)))
 
-;; For use with org-reveal to export as htlm and ppt
-(after! org
-  (load-library "ox-reveal"))
-
 ;;;
 ;;;
 ;;; END_ORG
