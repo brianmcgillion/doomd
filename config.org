@@ -29,9 +29,10 @@
 
 ;; TODO Revisit this when https://github.com/doomemacs/doomemacs/issues/6936 is fixed
 ;;(set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
+;; format-all--executable-table started to fail now
 (after! nix-mode
-  (set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
-  (puthash 'alejandra "alejandra" format-all--executable-table))
+  (set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode)))
+;;  (puthash 'alejandra "alejandra" format-all--executable-table))
 
 (setq-hook! 'nix-mode-hook +format-with-lsp nil)
 
@@ -50,6 +51,10 @@
 ;;;
 ;;;
 #+END_SRC
+
+#+RESULTS:
+: 2
+
 * General
 :PROPERTIES:
 :ID:       5fa6e40a-6235-4da7-9c35-3df39775a7af
@@ -229,27 +234,34 @@
 
 (setq +doom-dashboard-menu-sections
       '(("Open org-agenda"
-         :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
          :action bmg/switch-to-agenda)
         ("Recently opened files"
-         :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
          :action recentf-open-files)
+        ("Reload last session"
+         :icon (nerd-icons-octicon "nf-oct-history" :face 'doom-dashboard-menu-title)
+         :when (cond ((modulep! :ui workspaces)
+                  (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
+                 ((require 'desktop nil t)
+                  (file-exists-p (desktop-full-file-name))))
+         :action doom/quickload-session)
         ("Open project"
-         :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
          :action projectile-switch-project)
-        ("RSS"
-         :icon (all-the-icons-octicon "rss" :face 'font-lock-keyword-face)
-         :action =rss)
         ("Open private configuration"
-         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
          :action doom/open-private-config)
         ("Open documentation"
-         :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-book" :face 'doom-dashboard-menu-title)
          :action doom/help)
         ;; ("Passwords"
-        ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+        ;;  :icon (icons-octicon "lock" :face 'font-lock-keyword-face)
         ;;  :action pass)
+        ;; ("RSS"
+        ;;  :icon (icons-octicon "rss" :face 'font-lock-keyword-face)
+        ;;  :action =rss)
 
         ))
 
@@ -489,8 +501,8 @@
   (defun +doct-icon-declaration-to-icon (declaration)
     "Convert :icon declaration to icon"
     (let ((name (pop declaration))
-          (set  (intern (concat "all-the-icons-" (plist-get declaration :set))))
-          (face (intern (concat "all-the-icons-" (plist-get declaration :color))))
+          (set  (intern (concat "nerd-icons-" (plist-get declaration :set))))
+          (face (intern (concat "nerd-icons-" (plist-get declaration :color))))
           (v-adjust (or (plist-get declaration :v-adjust) 0.01)))
       (apply set `(,name :face ,face :v-adjust ,v-adjust))))
 
@@ -511,7 +523,7 @@
   (defun set-org-capture-templates ()
     (setq org-capture-templates
           (doct `(("Personal todo" :keys "t"
-                   :icon ("checklist" :set "octicon" :color "green")
+                   :icon ("nf-oct-checklist" :set "octicon" :color "green")
                    :file +org-capture-todo-file
                    :prepend t
                    :headline "Inbox"
@@ -519,7 +531,7 @@
                    :template ("* TODO %?"
                               "%i %a"))
                   ("Personal note" :keys "n"
-                   :icon ("sticky-note-o" :set "faicon" :color "green")
+                   :icon ("nf-fa-sticky_note_o" :set "faicon" :color "green")
                    :file +org-capture-todo-file
                    :prepend t
                    :headline "Inbox"
@@ -527,7 +539,7 @@
                    :template ("* %?"
                               "%i %a"))
                   ("Email" :keys "e"
-                   :icon ("envelope" :set "faicon" :color "blue")
+                   :icon ("nf-fa-envelope" :set "faicon" :color "blue")
                    :file +org-capture-todo-file
                    :prepend t
                    :headline "Inbox"
@@ -537,7 +549,7 @@
                               "about %^{topic}"
                               "%U %i %a"))
                   ("Interesting" :keys "i"
-                   :icon ("eye" :set "faicon" :color "lcyan")
+                   :icon ("nf-fa-eye" :set "faicon" :color "lcyan")
                    :file +org-capture-todo-file
                    :prepend t
                    :headline "Interesting"
@@ -545,23 +557,23 @@
                    :template ("* [ ] %{desc}%? :%{i-type}:"
                               "%i %a")
                    :children (("Webpage" :keys "w"
-                               :icon ("globe" :set "faicon" :color "green")
+                               :icon ("nf-fa-globe" :set "faicon" :color "green")
                                :desc "%(org-cliplink-capture) "
                                :i-type "read:web")
                               ("Article" :keys "a"
-                               :icon ("file-text" :set "octicon" :color "yellow")
+                               :icon ("nf-fa-file_text" :set "faicon" :color "yellow")
                                :desc ""
                                :i-type "read:reaserch")
                               ("Information" :keys "i"
-                               :icon ("info-circle" :set "faicon" :color "blue")
+                               :icon ("nf-fa-info_circle" :set "faicon" :color "blue")
                                :desc ""
                                :i-type "read:info")
                               ("Idea" :keys "I"
-                               :icon ("bubble_chart" :set "material" :color "silver")
+                               :icon ("nf-md-chart_bubble" :set "mdicon" :color "silver")
                                :desc ""
                                :i-type "idea")))
                   ("Tasks" :keys "k"
-                   :icon ("inbox" :set "octicon" :color "yellow")
+                   :icon ("nf-oct-inbox" :set "octicon" :color "yellow")
                    :file +org-capture-todo-file
                    :prepend t
                    :headline "Tasks"
@@ -569,16 +581,16 @@
                    :template ("* TODO %? %^G%{extra}"
                               "%i %a")
                    :children (("General Task" :keys "k"
-                               :icon ("inbox" :set "octicon" :color "yellow")
+                               :icon ("nf-oct-inbox" :set "octicon" :color "yellow")
                                :extra "")
                               ("Task with deadline" :keys "d"
-                               :icon ("timer" :set "material" :color "orange" :v-adjust -0.1)
+                               :icon ("nf-md-timer" :set "mdicon" :color "orange" :v-adjust -0.1)
                                :extra "\nDEADLINE: %^{Deadline:}t")
                               ("Scheduled Task" :keys "s"
-                               :icon ("calendar" :set "octicon" :color "orange")
+                               :icon ("nf-oct-calendar" :set "octicon" :color "orange")
                                :extra "\nSCHEDULED: %^{Start time:}t")))
                   ("Project" :keys "p"
-                   :icon ("repo" :set "octicon" :color "silver")
+                   :icon ("nf-oct-repo" :set "octicon" :color "silver")
                    :prepend t
                    :type entry
                    :headline "Inbox"
@@ -588,15 +600,15 @@
                    :file ""
                    :custom (:time-or-todo "")
                    :children (("Project-local todo" :keys "t"
-                               :icon ("checklist" :set "octicon" :color "green")
+                               :icon ("nf-oct-checklist" :set "octicon" :color "green")
                                :time-or-todo "TODO"
                                :file +org-capture-project-todo-file)
                               ("Project-local note" :keys "n"
-                               :icon ("sticky-note" :set "faicon" :color "yellow")
+                               :icon ("nf-fa-sticky_note" :set "faicon" :color "yellow")
                                :time-or-todo "%U"
                                :file +org-capture-project-notes-file)
                               ("Project-local changelog" :keys "c"
-                               :icon ("list" :set "faicon" :color "blue")
+                               :icon ("nf-fa-list" :set "faicon" :color "blue")
                                :time-or-todo "%U"
                                :heading "Unreleased"
                                :file +org-capture-project-changelog-file)))
@@ -652,7 +664,7 @@ Lisp programs can force the template by setting KEYS to a string."
       (org-mks org-capture-templates
                "Select a capture template\n━━━━━━━━━━━━━━━━━━━━━━━━━"
                "Template key: "
-               `(("q" ,(concat (all-the-icons-octicon "stop" :face 'all-the-icons-red :v-adjust 0.01) "\tAbort")))))))
+               `(("q" ,(concat (nerd-icons-octicon "nf-oct-stop" :face 'nerd-icons-red :v-adjust 0.01) "\tAbort")))))))
 (advice-add 'org-capture-select-template :override #'org-capture-select-template-prettier)
 
 (defun org-mks-pretty (table title &optional prompt specials)
@@ -721,7 +733,7 @@ is selected, only the bare key is returned."
                 (when specials
                   (insert "─────────────────────────\n")
                   (pcase-dolist (`(,key ,description) specials)
-                    (insert (format "%s   %s\n" (propertize key 'face '(bold all-the-icons-red)) description))
+                    (insert (format "%s   %s\n" (propertize key 'face '(bold nerd-icons-red)) description))
                     (push key allowed-keys)))
                 ;; Display UI and let user select an entry or
                 ;; a sub-level prefix.
