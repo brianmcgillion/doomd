@@ -31,7 +31,7 @@
 ;;(set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
 ;; format-all--executable-table started to fail now
 (after! nix-mode
-  (set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode)))
+  (set-formatter! 'alejandra '("alejandra" "--quiet") :modes '(nix-mode)))
 ;;  (puthash 'alejandra "alejandra" format-all--executable-table))
 
 (setq-hook! 'nix-mode-hook +format-with-lsp nil)
