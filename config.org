@@ -52,9 +52,6 @@
 ;;;
 #+END_SRC
 
-#+RESULTS:
-: 2
-
 * General
 :PROPERTIES:
 :ID:       5fa6e40a-6235-4da7-9c35-3df39775a7af
@@ -75,13 +72,18 @@
 ;; TODO WTF is happening here ?? enable word-wrap (almost) everywhere
 ;;(+global-word-wrap-mode +1)
 
+;; TODO re-enable??
+;; this is anoying when format-on-save is enabled
+;; but still a nice to have feature (though there are many times
+;; files have not been saved)
+
 ;; Autosave files when switching buffers
-(use-package! super-save
-  :config
-  (message "Super save enabled")
-  (setq auto-save-default nil)
-  (setq super-save-exclude '(".gpg" ".age"))
-  (super-save-mode +1))
+;; (use-package! super-save
+;;   :config
+;;   (message "Super save enabled")
+;;   (setq auto-save-default nil)
+;;   (setq super-save-exclude '(".gpg" ".age"))
+;;   (super-save-mode +1))
 
 (use-package! crux
   :defer t)
@@ -160,14 +162,16 @@
   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
   ;; for helm-find-files
   (customize-set-variable 'helm-ff-lynx-style-map t)
-  ;; for helm-imenu
-  (customize-set-variable 'helm-imenu-lynx-style-map t)
-  ;; for semantic
-  (customize-set-variable 'helm-semantic-lynx-style-map t)
   ;; for helm-occur
   (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
   ;; for helm-grep
   (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
+  ;;TODO Seems these variables have been removed
+  ;;TODO deleteme on next cleanup
+  ;; for helm-imenu
+  ;;(customize-set-variable 'helm-imenu-lynx-style-map t)
+  ;; for semantic
+  ;;(customize-set-variable 'helm-semantic-lynx-style-map t)
 
   ;; helm-rg can be limited by helm-candidate-number-limit which is set to
   ;; 50 in doom, so increase that, but cap it at 5000 just not to crash emacs
@@ -185,6 +189,7 @@
 ;;;
 
 #+END_SRC
+
 * Interface Tweaks
 :PROPERTIES:
 :ID:       7d3f0a7b-101c-44cd-920c-65a82bc21877
@@ -215,6 +220,11 @@
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
 ;;(setq doom-font (font-spec :family "monospace" :size 14))
+
+;;(setq doom-font (font-spec :family "Fira Code" :size 14))
+(setq doom-font (font-spec :family "Fira Code" :size 13)
+      doom-variable-pitch-font (font-spec :family "Overpass")
+      doom-big-font (font-spec :family "Fira Code" :size 19))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -331,6 +341,13 @@
         "R"                       #'org-agenda-refile
         "c"                       #'bmg/org-inbox-capture))
 
+ (;;: open submenu
+  (:leader
+        ;;; <leader> n --- notes
+   (:prefix-map ("o" . "open")
+    :desc "Url"  "u" #'browse-url
+    :desc "Web"  "w" #'browse-url)))
+
  (;;:helm
   [remap occur]               #'helm-occur
 
@@ -348,7 +365,6 @@
     :desc "crux-cleanup-buffer-or-region"          "c" #'crux-cleanup-buffer-or-region
     :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
     :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
-    :desc "helm-imenu"                             "i" #'helm-imenu
     :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
     :desc "helm-nixos-options"                     "n" #'helm-nixos-options
     :desc "crux-open-with"                         "o" #'crux-open-with
@@ -382,7 +398,8 @@
 (setq! org-directory "~/Documents/org/"
        org-ellipsis " ▾ "
        org-startup-folded t
-       org-src-fontify-natively t)
+       org-src-fontify-natively t
+       org-hide-emphasis-markers t)
 
 (defvar my-roam-dir (concat org-directory "roam/"))
 
