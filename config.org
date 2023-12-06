@@ -112,6 +112,14 @@
       langtool-http-server-port 8081
       langtool-default-language nil)
 
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
+
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
