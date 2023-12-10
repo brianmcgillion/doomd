@@ -34,7 +34,16 @@
   (set-formatter! 'alejandra '("alejandra" "--quiet") :modes '(nix-mode)))
 ;;  (puthash 'alejandra "alejandra" format-all--executable-table))
 
+;; Allow alejandra to format the code
 (setq-hook! 'nix-mode-hook +format-with-lsp nil)
+
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
 
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
@@ -112,14 +121,6 @@
       langtool-http-server-port 8081
       langtool-default-language nil)
 
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("<tab>" . 'copilot-accept-completion)
-              ("TAB" . 'copilot-accept-completion)
-              ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)))
-
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
@@ -133,6 +134,10 @@
 
 (after! license-snippets
   (license-snippets-init))
+
+;; TODO change this in dotfiles
+(setq auth-sources '("~/.netrc"))
+
 ;;;
 ;;;
 ;;; END_General
@@ -151,44 +156,44 @@
 ;;;
 ;;;
 
-(use-package! helm
-  ;; recent changes to helm have removed the left and right arrow keys
-  ;; returning to that functionality
-  ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-  :bind (:map helm-map ;; Seems that it needs to be done in init
-              ("<left>" . #'helm-previous-source)
-              ("<right>" . #'helm-next-source)))
+;; (use-package! helm
+;;   ;; recent changes to helm have removed the left and right arrow keys
+;;   ;; returning to that functionality
+;;   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+;;   :bind (:map helm-map ;; Seems that it needs to be done in init
+;;               ("<left>" . #'helm-previous-source)
+;;               ("<right>" . #'helm-next-source)))
 
-(after! helm
-  (setq helm-google-suggest-use-curl-p        t
-        helm-move-to-line-cycle-in-source     t
-        helm-ff-search-library-in-sexp        t
-        helm-ff-file-name-history-use-recentf t)
+;; (after! helm
+;;   (setq helm-google-suggest-use-curl-p        t
+;;         helm-move-to-line-cycle-in-source     t
+;;         helm-ff-search-library-in-sexp        t
+;;         helm-ff-file-name-history-use-recentf t)
 
-  ;; recent changes to helm have removed the left and right arrow keys
-  ;; returning to that functionality
-  ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-  ;; for helm-find-files
-  (customize-set-variable 'helm-ff-lynx-style-map t)
-  ;; for helm-occur
-  (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
-  ;; for helm-grep
-  (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
-  ;;TODO Seems these variables have been removed
-  ;;TODO deleteme on next cleanup
-  ;; for helm-imenu
-  ;;(customize-set-variable 'helm-imenu-lynx-style-map t)
-  ;; for semantic
-  ;;(customize-set-variable 'helm-semantic-lynx-style-map t)
+;;   ;; recent changes to helm have removed the left and right arrow keys
+;;   ;; returning to that functionality
+;;   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
+;;   ;; for helm-find-files
+;;   (customize-set-variable 'helm-ff-lynx-style-map t)
+;;   ;; for helm-occur
+;;   (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
+;;   ;; for helm-grep
+;;   (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
+;;   ;;TODO Seems these variables have been removed
+;;   ;;TODO deleteme on next cleanup
+;;   ;; for helm-imenu
+;;   ;;(customize-set-variable 'helm-imenu-lynx-style-map t)
+;;   ;; for semantic
+;;   ;;(customize-set-variable 'helm-semantic-lynx-style-map t)
 
   ;; helm-rg can be limited by helm-candidate-number-limit which is set to
   ;; 50 in doom, so increase that, but cap it at 5000 just not to crash emacs
   ;; when there is a massive amount of returns
-  (defadvice! +helm--increase-limit-for-helm-rg-a (orig-fn &rest args)
-    :around #'helm-rg
-    (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
-      (apply orig-fn args)))
-  )
+  ;; (defadvice! +helm--increase-limit-for-helm-rg-a (orig-fn &rest args)
+  ;;   :around #'helm-rg
+  ;;   (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
+  ;;     (apply orig-fn args)))
+  ;; )
 
 ;;;
 ;;;

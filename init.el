@@ -96,7 +96,7 @@
        ;; gist              ; interacting with github gists
        (lookup +dictionary +offline +wordnet +docsets)              ; navigate your code and its documentation
        (lsp +peek)
-       magit             ; a git porcelain for Emacs
+       (magit +forge)      ; a git porcelain for Emacs
        make              ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
        pdf               ; pdf enhancements
@@ -155,15 +155,16 @@
        ;;ocaml             ; an objective camel
        ;; START HERE
        (org                ; organize your plain life in plain text
-        ;;+dragndrop         ; drag & drop files/images into org buffers
+        ;;+dragndrop       ; drag & drop files/images into org buffers
         ;;+hugo            ; use Emacs for hugo blogging
         +pandoc            ; export-with-pandoc support
         +pretty            ; org-superstar-mode
         +present           ; using org-mode for presentations
         ;;+gnuplot
         ;;+journal
-        +roam2              ; add org-roam support
-        +noter)             ; org-noter for annotating pdfs in an org doc
+        +roam2             ; add org-roam support
+        +noter)            ; org-noter for annotating pdfs in an org doc
+       ;;+tree-sitter)
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
