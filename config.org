@@ -22,9 +22,10 @@
 
 ;; Clone git repos or jump to the project in the code path
 ;; https://github.com/NinjaTrappeur/my-repo-pins
-(use-package my-repo-pins
+(use-package! my-repo-pins
+  :after-call my-repo-pins
   :defer t
-  :config
+  :init
   (setq my-repo-pins-code-root "~/projects/code"))
 
 ;; TODO Revisit this when https://github.com/doomemacs/doomemacs/issues/6936 is fixed
