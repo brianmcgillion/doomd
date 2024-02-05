@@ -94,7 +94,7 @@
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        ;; gist              ; interacting with github gists
-       (lookup +dictionary +offline +wordnet +docsets)              ; navigate your code and its documentation
+       (lookup +dictionary +offline +wordnet)              ; navigate your code and its documentation
        (lsp +peek)
        (magit +forge)      ; a git porcelain for Emacs
        make              ; run make tasks from Emacs
@@ -109,7 +109,7 @@
        ;;upload            ; map local to remote projects via ssh/ftp
 
        :os
-       (:if IS-MAC macos)  ; improve compatibility with macOS
+       (:if (featurep :system 'macos) macos)  ; improve compatibility with macOS
        (tty +osc)          ; improve the terminal Emacs experience
 
        :lang

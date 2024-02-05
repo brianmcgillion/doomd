@@ -38,6 +38,8 @@
 ;; Allow alejandra to format the code
 (setq-hook! 'nix-mode-hook +format-with-lsp nil)
 
+(setq copilot-indent-offset-warning-disable t)
+
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
@@ -203,6 +205,8 @@
 ;;;
 
 #+END_SRC
+
+#+RESULTS:
 
 * Interface Tweaks
 :PROPERTIES:
