@@ -141,6 +141,8 @@
 ;; TODO change this in dotfiles
 (setq auth-sources '("~/.netrc"))
 
+(setq helm-descbinds-disable-which-key nil)
+
 ;;;
 ;;;
 ;;; END_General
