@@ -102,10 +102,6 @@
 (use-package! imenu-anywhere
   :defer t)
 
-;; Change the name from "Makefile<1>" to "dir/Makefile"
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
-
 ;; Who remembers all the commands :)
 (setq which-key-idle-delay 0.5)
 
@@ -140,8 +136,6 @@
 
 ;; TODO change this in dotfiles
 (setq auth-sources '("~/.netrc"))
-
-(setq helm-descbinds-disable-which-key nil)
 
 ;;;
 ;;;
