@@ -28,15 +28,12 @@
   :init
   (setq my-repo-pins-code-root "~/projects/code"))
 
-;; TODO Revisit this when https://github.com/doomemacs/doomemacs/issues/6936 is fixed
-;;(set-formatter! 'alejandra "alejandra --quiet" :modes '(nix-mode))
-;; format-all--executable-table started to fail now
+;; alejandra nix formatter
+;; This uses apheleia underneath, which preserves point position.
 (after! nix-mode
   (set-formatter! 'alejandra '("alejandra" "--quiet") :modes '(nix-mode)))
-;;  (puthash 'alejandra "alejandra" format-all--executable-table))
 
-;; Allow alejandra to format the code
-(setq-hook! 'nix-mode-hook +format-with-lsp nil)
+(setq-hook! 'nix-mode-hook +format-with 'alejandra)
 
 (setq copilot-indent-offset-warning-disable t)
 
@@ -63,6 +60,8 @@
 ;;;
 ;;;
 #+END_SRC
+
+#+RESULTS:
 
 * General
 :PROPERTIES:
