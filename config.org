@@ -28,13 +28,6 @@
   :init
   (setq my-repo-pins-code-root "~/projects/code"))
 
-;; alejandra nix formatter
-;; This uses apheleia underneath, which preserves point position.
-(after! nix-mode
-  (set-formatter! 'alejandra '("alejandra" "--quiet") :modes '(nix-mode)))
-
-(setq-hook! 'nix-mode-hook +format-with 'alejandra)
-
 (setq copilot-indent-offset-warning-disable t)
 
 (use-package! copilot
