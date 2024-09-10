@@ -383,6 +383,12 @@
  ) ;; END MAP
 
 (map! :map dirvish-mode-map
+      ;; left click for expand/collapse dir or open file
+      "<mouse-1>" #'dirvish-subtree-toggle-or-open
+      ;; middle click for opening file / entering dir in other window
+      "<mouse-2>" #'dired-mouse-find-file-other-window
+      ;; right click for opening file / entering dir
+      "<mouse-3>" #'dired-mouse-find-file
       "?"   #'dirvish-dispatch
       "q"   #'dirvish-quit
       "b"   #'dirvish-quick-access
