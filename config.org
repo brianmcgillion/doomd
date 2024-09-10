@@ -98,8 +98,8 @@
 (setq which-key-idle-delay 0.5)
 
 ;; Stop undo-tree storing persistent history
-(after! undo-tree
-  (setq undo-tree-auto-save-history nil))
+;;(after! undo-tree
+;;(setq undo-tree-auto-save-history nil))
 
 ;; Use a custom dictionary on linux
 (if IS-MAC (setq ispell-dictionary "en_GB"))
@@ -238,8 +238,8 @@
 (setq doom-theme 'doom-dracula)
 
 ;; Configure treemacs theme and git highlighting
-(setq doom-themes-treemacs-theme "doom-colors")
-(setq +treemacs-git-mode 'deferred)
+;;(setq doom-themes-treemacs-theme "doom-colors")
+;;(setq +treemacs-git-mode 'deferred)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -376,12 +376,39 @@
     :desc "crux-open-with"                         "o" #'crux-open-with
     :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
-    :desc "treemacs-select-window"                 "t" #'treemacs-select-window
+;;    :desc "treemacs-select-window"                 "t" #'treemacs-select-window
     :desc "crux-view-url"                          "u" #'crux-view-url
     :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
  ) ;; END MAP
 
+(map! :map dirvish-mode-map
+      "?"   #'dirvish-dispatch
+      "q"   #'dirvish-quit
+      "b"   #'dirvish-quick-access
+      "f"   #'dirvish-file-info-menu
+      "p"   #'dirvish-yank
+      "S"   #'dirvish-quicksort
+      "F"   #'dirvish-layout-toggle
+      "z"   #'dirvish-history-jump
+      "TAB" #'dirvish-subtree-toggle
+      "M-b" #'dirvish-history-go-backward
+      "M-f" #'dirvish-history-go-forward
+      "M-n" #'dirvish-narrow
+      "M-m" #'dirvish-mark-menu
+      "M-s" #'dirvish-setup-menu
+      "M-e" #'dirvish-emerge-menu
+      (:prefix ("y" . "yank")
+               "l"   #'dirvish-copy-file-true-path
+               "n"   #'dirvish-copy-file-name
+               "p"   #'dirvish-copy-file-path
+               "r"   #'dirvish-copy-remote-path
+               "y"   #'dired-do-copy)
+      (:prefix ("s" . "symlinks")
+               "s"   #'dirvish-symlink
+               "S"   #'dirvish-relative-symlink
+               "h"   #'dirvish-hardlink))
+;
 ;;;
 ;;;
 ;;; END_MAP
