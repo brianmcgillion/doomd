@@ -75,9 +75,6 @@
 ;; Download repos from git forges into local dirs under a main repo structure
 (package! my-repo-pins)
 
-;; Get the latest completion
-(unpin! helm)
-
 (package! license-snippets)
 
 ;; Copilot

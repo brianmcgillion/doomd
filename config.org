@@ -97,10 +97,6 @@
 ;; Who remembers all the commands :)
 (setq which-key-idle-delay 0.5)
 
-;; Stop undo-tree storing persistent history
-;;(after! undo-tree
-;;(setq undo-tree-auto-save-history nil))
-
 ;; Use a custom dictionary on linux
 (if IS-MAC (setq ispell-dictionary "en_GB"))
 ;;  (setq ispell-dictionary "en-custom"))
@@ -122,7 +118,6 @@
 ;; TODO set this back to t
 (setq projectile-auto-discover nil)
 
-
 (after! license-snippets
   (license-snippets-init))
 
@@ -135,66 +130,6 @@
 ;;;
 ;;;
 #+END_SRC
-
-* Helm
-:PROPERTIES:
-:ID:       6b424a31-028d-4f08-9514-32185b39f914
-:END:
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_Helm
-;;;
-;;;
-
-;; (use-package! helm
-;;   ;; recent changes to helm have removed the left and right arrow keys
-;;   ;; returning to that functionality
-;;   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-;;   :bind (:map helm-map ;; Seems that it needs to be done in init
-;;               ("<left>" . #'helm-previous-source)
-;;               ("<right>" . #'helm-next-source)))
-
-;; (after! helm
-;;   (setq helm-google-suggest-use-curl-p        t
-;;         helm-move-to-line-cycle-in-source     t
-;;         helm-ff-search-library-in-sexp        t
-;;         helm-ff-file-name-history-use-recentf t)
-
-;;   ;; recent changes to helm have removed the left and right arrow keys
-;;   ;; returning to that functionality
-;;   ;; https://github.com/emacs-helm/helm/wiki/FAQ#arrow-keys-behavior-have-changed
-;;   ;; for helm-find-files
-;;   (customize-set-variable 'helm-ff-lynx-style-map t)
-;;   ;; for helm-occur
-;;   (customize-set-variable 'helm-occur-use-ioccur-style-keys t)
-;;   ;; for helm-grep
-;;   (customize-set-variable 'helm-grep-use-ioccur-style-keys t)
-;;   ;;TODO Seems these variables have been removed
-;;   ;;TODO deleteme on next cleanup
-;;   ;; for helm-imenu
-;;   ;;(customize-set-variable 'helm-imenu-lynx-style-map t)
-;;   ;; for semantic
-;;   ;;(customize-set-variable 'helm-semantic-lynx-style-map t)
-
-  ;; helm-rg can be limited by helm-candidate-number-limit which is set to
-  ;; 50 in doom, so increase that, but cap it at 5000 just not to crash emacs
-  ;; when there is a massive amount of returns
-  ;; (defadvice! +helm--increase-limit-for-helm-rg-a (orig-fn &rest args)
-  ;;   :around #'helm-rg
-  ;;   (let ((helm-candidate-number-limit 5000)) ;; can try replace 5000 for nil if needed
-  ;;     (apply orig-fn args)))
-  ;; )
-
-;;;
-;;;
-;;; END_Helm
-;;;
-;;;
-
-#+END_SRC
-
-#+RESULTS:
 
 * Interface Tweaks
 :PROPERTIES:
@@ -227,7 +162,6 @@
 ;; font string. You generally only need these two:
 ;;(setq doom-font (font-spec :family "monospace" :size 14))
 
-;;(setq doom-font (font-spec :family "Fira Code" :size 14))
 (setq doom-font (font-spec :family "Fira Code" :size 13)
       doom-variable-pitch-font (font-spec :family "Overpass")
       doom-big-font (font-spec :family "Fira Code" :size 19))
@@ -236,10 +170,6 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-dracula)
-
-;; Configure treemacs theme and git highlighting
-;;(setq doom-themes-treemacs-theme "doom-colors")
-;;(setq +treemacs-git-mode 'deferred)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -354,16 +284,6 @@
     :desc "Url"  "u" #'browse-url
     :desc "Web"  "w" #'browse-url)))
 
- (;;:helm
-  [remap occur]               #'helm-occur
-
-  (:map minibuffer-local-map
-        "C-c C-l"                 #'helm-minibuffer-history)
-  (:map isearch-mode-map
-        "C-o"                     #'helm-occur-from-isearch)
-  (:map shell-mode-map
-        "C-c C-l"                 #'helm-comint-input-ring))
-
  (;;: crux and stuff
   (:leader
         ;;;  <leader> b --- prelude
@@ -372,13 +292,10 @@
     :desc "crux-duplicate-current-line-or-region"  "d" #'crux-duplicate-current-line-or-region
     :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
     :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
-    :desc "helm-nixos-options"                     "n" #'helm-nixos-options
     :desc "crux-open-with"                         "o" #'crux-open-with
     :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
-;;    :desc "treemacs-select-window"                 "t" #'treemacs-select-window
     :desc "crux-view-url"                          "u" #'crux-view-url
-    :desc "helm-imenu-anywhere"                    "y" #'helm-imenu-anywhere
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
  ) ;; END MAP
 
@@ -454,10 +371,8 @@
 ;; TODO turn on autosync
 ;;(org-roam-db-autosync-mode)
 (setq org-roam-directory (file-truename my-roam-dir)
-      ;;org-roam-completion-everywhere nil
       org-id-link-to-org-use-id t
       org-roam-extract-new-file-path "${slug}.org"
-      ;;org-roam-database-connector 'sqlite3)
       )
 
 ;; TODO Why can I not use add-to-list for this
