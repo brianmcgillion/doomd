@@ -57,15 +57,15 @@
 (package! org-super-agenda)
 (package! vulpea)
 
+
 ;; Add style to org
-(package! doct
-  :recipe (:host github :repo "progfolio/doct"))
+;; (package! doct
+;;   :recipe (:host github :repo "progfolio/doct"))
 
 ;; roam and related packages
 (unpin! org-roam)
 (package! websocket)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
-(package! org-roam-bibtex)
 (package! emacsql-sqlite3)
 
 ;; General helper packages
