@@ -144,10 +144,11 @@
 
 ;; When starting a new frame make it maximized
 (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
+(push '(fullscreen . fullboth)   default-frame-alist)
 
-;; Set your own banner to replace the default doom one
-;; "convert image.png -resize 600 -quality 75 OUTPUT.png"
-;; try resize 400 for smaller resolutions e.g. 1080p
+;; Set your own banner to replace the default doom one "convert image.png
+;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
+;; e.g. 1080p
 (setq fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
@@ -404,6 +405,14 @@
   :after org-roam
   :commands (org-roam-ui-mode))
 
+(use-package! org-appear ; better markup edit
+  :hook (org-mode . org-appear-mode))
+
+(use-package! org-modern ; some styles for the stars and priorities
+  :hook (org-mode . global-org-modern-mode)
+  :config
+  (setq org-modern-star 'replace))
+
 ;;;
 ;;;
 ;;; END_ORG
@@ -426,6 +435,19 @@
 (setq org-log-done 'time
       org-log-into-drawer t
       org-log-state-notes-insert-after-drawers nil)
+
+;; (after! org
+;;   (add-to-list 'org-capture-templates
+;;                '(("r" "Review Templates for use with GTD")
+;;                  ("rm" "Review Morning" entry
+;;                   (file+headline org-archive-location "Review")
+;;                   (file "~/Documents/org/morning_template.org"))
+;;                  ("re" "Review Evening" entry
+;;                   (file+headline org-archive-location "Review")
+;;                   (file "~/Documents/org/evening_template.org"))
+;;                  ("rw" "Review Weekly" entry
+;;                   (file+headline org-archive-location "Review")
+;;                   (file "~/Documents/org/weekly_template.org")))))
 #+end_src
 
 #+begin_src emacs-lisp

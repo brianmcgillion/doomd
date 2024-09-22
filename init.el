@@ -140,9 +140,9 @@
        ;;(haskell +lsp +treesitter)  ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
-       ;;json              ; At least it ain't XML
+       (json +lsp +tree-sitter)              ; At least it ain't XML
        ;;(java +lsp) ; the poster child for carpal tunnel syndrome
-       ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
+       (javascript +lsp +tree-sitter)        ; all(hope(abandon(ye(who(enter(here))))))
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
        (latex +lsp)  ; (latex +cdlatex +latexmk +fold)           ; writing papers in Emacs has never been so fun
@@ -158,7 +158,7 @@
         ;;+dragndrop       ; drag & drop files/images into org buffers
         ;;+hugo            ; use Emacs for hugo blogging
         +pandoc            ; export-with-pandoc support
-        +pretty            ; org-superstar-mode
+        ;; +pretty            ; org-superstar-mode
         +present           ; using org-mode for presentations
         ;;+gnuplot
         ;;+journal
