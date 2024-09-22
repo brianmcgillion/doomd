@@ -4,6 +4,7 @@
 :ID:       4460f37d-9944-4717-acf5-e2ab1e410787
 :END:
 #+BEGIN_SRC emacs-lisp
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
 ;;;
 ;;;
