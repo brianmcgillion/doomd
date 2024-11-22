@@ -48,6 +48,11 @@
           "--header-insertion=never"
           "--header-insertion-decorators=0"))
   (set-lsp-priority! 'clangd 2))
+
+;; use just mode for setting tasks to run at the cmdline
+(use-package! justl
+  :config
+  (map! :n "e" 'justl-exec-recipe))
 ;;;
 ;;;
 ;;; END_code
