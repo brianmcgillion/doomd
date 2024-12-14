@@ -53,6 +53,13 @@
 (use-package! justl
   :config
   (map! :n "e" 'justl-exec-recipe))
+
+(after! nix-mode
+  (setq lsp-nix-nixd-server-path "nixd"
+      lsp-nix-nixd-formatting-command [ "nixfmt" ]
+      lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
+      lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
+      ;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
 ;;;
 ;;;
 ;;; END_code
@@ -413,11 +420,6 @@
 
 (use-package! org-appear ; better markup edit
   :hook (org-mode . org-appear-mode))
-
-(use-package! org-modern ; some styles for the stars and priorities
-  :hook (org-mode . global-org-modern-mode)
-  :config
-  (setq org-modern-star 'replace))
 
 ;;;
 ;;;
