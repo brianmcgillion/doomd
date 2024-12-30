@@ -72,7 +72,6 @@
 ;; General helper packages
 (package! super-save)
 (package! crux)
-(package! imenu-anywhere)
 ;; Download repos from git forges into local dirs under a main repo structure
 (package! my-repo-pins)
 

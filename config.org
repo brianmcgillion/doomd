@@ -54,7 +54,7 @@
   :config
   (map! :n "e" 'justl-exec-recipe))
 
-(after! nix-mode
+(after! lsp-mode
   (setq lsp-nix-nixd-server-path "nixd"
       lsp-nix-nixd-formatting-command [ "nixfmt" ]
       lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
@@ -127,7 +127,7 @@
 ;; hopefully projectile auto finds the projects
 ;; M-x projectile-discover-projects-in-directory
 ;; M-x projectile-discover-projects-in-search-path
-(setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 5)("~/.config" . 2)("~/Documents/org" . 2)))
+(setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 6)("~/.config" . 2)("~/Documents/org" . 2)))
 ;; TODO set this back to t
 (setq projectile-auto-discover nil)
 
