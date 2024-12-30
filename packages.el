@@ -58,6 +58,7 @@
 (package! org-appear)
 (package! vulpea)
 
+(package! inheritenv)
 
 ;; Add style to org
 ;; (package! doct

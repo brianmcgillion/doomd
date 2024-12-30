@@ -60,6 +60,14 @@
       lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
       lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
       ;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
+
+(use-package! inheritenv
+  :config
+  ;; ensure that the environment is carried over to the subshell that is called.
+  ;; this was tested against go-mode specifically go-import-add
+  (inheritenv-add-advice #'process-lines)
+  (inheritenv-add-advice #'shell-command-to-string))
+
 ;;;
 ;;;
 ;;; END_code
