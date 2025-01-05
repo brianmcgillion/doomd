@@ -112,8 +112,6 @@
 
 (use-package! crux
   :defer t)
-(use-package! imenu-anywhere
-  :defer t)
 
 ;; Who remembers all the commands :)
 (setq which-key-idle-delay 0.5)
