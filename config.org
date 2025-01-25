@@ -39,6 +39,7 @@
               ("C-TAB" . 'copilot-accept-completion-by-word)
               ("C-<tab>" . 'copilot-accept-completion-by-word)))
 
+;;setup clangd lsp
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
         '("-j=3"
@@ -297,7 +298,7 @@
  (;;: org-agenda
   (:leader
         ;;; <leader> n --- notes
-   (:prefix-map ("n" . "notes")
+   (:prefix ("n" . "notes")
     :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
 
   (:map org-agenda-mode-map
@@ -309,7 +310,7 @@
  (;;: open submenu
   (:leader
         ;;; <leader> o --- open
-   (:prefix-map ("o" . "open")
+   (:prefix ("o" . "open")
     :desc "Url"  "u" #'browse-url
     :desc "Web"  "w" #'browse-url)))
 
