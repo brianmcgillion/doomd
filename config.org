@@ -149,6 +149,10 @@
 ;; TODO change this in dotfiles
 (setq auth-sources '("~/.netrc"))
 
+;; update elfeed when opened or at least every 8 hours
+(add-hook 'elfeed-search-mode-hook #'elfeed-update)
+(run-at-time nil (* 8 60 60) #'elfeed-update)
+
 ;;;
 ;;;
 ;;; END_General
@@ -231,10 +235,9 @@
         ;; ("Passwords"
         ;;  :icon (icons-octicon "lock" :face 'font-lock-keyword-face)
         ;;  :action pass)
-        ;; ("RSS"
-        ;;  :icon (icons-octicon "rss" :face 'font-lock-keyword-face)
-        ;;  :action =rss)
-
+        ("RSS"
+         :icon (nerd-icons-octicon "nf-oct-rss" :face 'doom-dashboard-menu-title)
+         :action =rss)
         ))
 
 (after! consult
@@ -331,7 +334,8 @@
     :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
     :desc "crux-view-url"                          "u" #'crux-view-url
-    :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun)))
+    :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
+    :desc "Elfeed RSS enter"                       "e" #'=rss)))
  ) ;; END MAP
 
 (map! :map dirvish-mode-map

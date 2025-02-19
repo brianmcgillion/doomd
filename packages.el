@@ -52,6 +52,7 @@
 
 ;; For RSS and Atom feeds
 ;;(package! elfeed-goodies)
+(package! elfeed-score)
 
 ;; a modern agenda and styled capture
 (package! org-super-agenda)
