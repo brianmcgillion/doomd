@@ -40,7 +40,7 @@
               ("C-<tab>" . 'copilot-accept-completion-by-word)))
 
 (use-package copilot-chat
-  :commands (copilot-chat-display copilot-chat-switch-to-buffer)
+  :commands (copilot-chat-display copilot-chat-switch-to-buffer copilot-chat-insert-commit-message)
   :config
   (add-hook 'git-commit-setup-hook 'copilot-chat-insert-commit-message))
 
@@ -335,7 +335,8 @@
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
     :desc "crux-view-url"                          "u" #'crux-view-url
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
-    :desc "Elfeed RSS enter"                       "e" #'=rss)))
+    :desc "Elfeed RSS enter"                       "e" #'=rss
+    :desc "copilot-chat-transient"                 "t" #'copilot-chat-transient)))
  ) ;; END MAP
 
 (map! :map dirvish-mode-map
