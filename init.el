@@ -43,7 +43,7 @@
        ;;neotree           ; a project drawer, like NERDTree for vim
        ophints           ; highlight the region an operation acts on
        (popup +defaults)   ; tame sudden yet inevitable temporary windows
-       smooth-scroll     ; So smooth you won't believe it's not butter
+       (smooth-scroll);; +interpolate)     ; So smooth you won't believe it's not butter
        ;;tabs              ; a tab bar for Emacs
        ;;(treemacs +lsp)          ; a project drawer, like neotree but cooler
        unicode           ; extended unicode support for various languages
@@ -159,7 +159,7 @@
         ;;+dragndrop       ; drag & drop files/images into org buffers
         ;;+hugo            ; use Emacs for hugo blogging
         +pandoc            ; export-with-pandoc support
-        ;; +pretty            ; org-superstar-mode
+        +pretty            ; org-modern
         +present           ; using org-mode for presentations
         ;;+gnuplot
         ;;+journal

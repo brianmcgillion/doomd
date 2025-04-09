@@ -435,9 +435,6 @@
   :after org-roam
   :commands (org-roam-ui-mode))
 
-(use-package! org-appear ; better markup edit
-  :hook (org-mode . org-appear-mode))
-
 ;;;
 ;;;
 ;;; END_ORG
