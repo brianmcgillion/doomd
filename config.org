@@ -1,88 +1,4 @@
 ;;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-* Code
-:PROPERTIES:
-:ID:       4460f37d-9944-4717-acf5-e2ab1e410787
-:END:
-#+BEGIN_SRC emacs-lisp
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-
-;;;
-;;;
-;;; BEGIN_code
-;;;
-;;;
-
-;; Add handlers SELinux files
-(add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
-
-;; make a shell script executable automatically on save
-(add-hook 'after-save-hook
-          'executable-make-buffer-file-executable-if-script-p)
-
-(setq c-default-style "linux") ;; set style to "linux"
-
-;; Clone git repos or jump to the project in the code path
-;; https://github.com/NinjaTrappeur/my-repo-pins
-(use-package! my-repo-pins
-  :after-call my-repo-pins
-  :defer t
-  :init
-  (setq my-repo-pins-code-root "~/projects/code"))
-
-(setq copilot-indent-offset-warning-disable t)
-
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("<tab>" . 'copilot-accept-completion)
-              ("TAB" . 'copilot-accept-completion)
-              ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)))
-
-(after! gptel
-  ;; Set copilot as the default llm interface and claude as the talker
-  (setq gptel-model 'claude-3.7-sonnet
-      gptel-backend (gptel-make-gh-copilot "Copilot")))
-
-;;setup clangd lsp
-(after! lsp-clangd
-  (setq lsp-clients-clangd-args
-        '("-j=3"
-          "--background-index"
-          "--clang-tidy"
-          "--completion-style=detailed"
-          "--header-insertion=never"
-          "--header-insertion-decorators=0"))
-  (set-lsp-priority! 'clangd 2))
-
-;; use just mode for setting tasks to run at the cmdline
-(use-package! justl
-  :config
-  (map! :n "e" 'justl-exec-recipe))
-
-(after! lsp-mode
-  (setq lsp-nix-nixd-server-path "nixd"
-      lsp-nix-nixd-formatting-command [ "nixfmt" ]
-      lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
-      lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
-      ;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
-
-(use-package! inheritenv
-  :config
-  ;; ensure that the environment is carried over to the subshell that is called.
-  ;; this was tested against go-mode specifically go-import-add
-  (inheritenv-add-advice #'process-lines)
-  (inheritenv-add-advice #'shell-command-to-string))
-
-;;;
-;;;
-;;; END_code
-;;;
-;;;
-#+END_SRC
-
-#+RESULTS:
-
 * General
 :PROPERTIES:
 :ID:       5fa6e40a-6235-4da7-9c35-3df39775a7af
@@ -149,6 +65,24 @@
 ;; TODO change this in dotfiles
 (setq auth-sources '("~/.netrc"))
 
+;;;###autoload
+(defun bmg/api-key-from-auth-source (&optional host user)
+  "Lookup api key in the auth source.
+By default, the LLM host for the active backend is used as HOST,
+and \"apikey\" as USER."
+  (if-let ((secret
+            (plist-get
+             (car (auth-source-search
+                   :host (or host)
+                   :user (or user "apikey")
+                   :require '(:secret)))
+             :secret)))
+      (if (functionp secret)
+          (encode-coding-string (funcall secret) 'utf-8)
+        secret)
+    (user-error "No `api-key' found in the auth source")))
+
+
 ;; update elfeed when opened or at least every 8 hours
 (add-hook 'elfeed-search-mode-hook #'elfeed-update)
 (run-at-time nil (* 8 60 60) #'elfeed-update)
@@ -161,6 +95,104 @@
 ;;;
 ;;;
 #+END_SRC
+
+
+* Code
+:PROPERTIES:
+:ID:       4460f37d-9944-4717-acf5-e2ab1e410787
+:END:
+#+BEGIN_SRC emacs-lisp
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+;;;
+;;;
+;;; BEGIN_code
+;;;
+;;;
+
+;; Add handlers SELinux files
+(add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
+
+;; make a shell script executable automatically on save
+(add-hook 'after-save-hook
+          'executable-make-buffer-file-executable-if-script-p)
+
+(setq c-default-style "linux") ;; set style to "linux"
+
+;; Clone git repos or jump to the project in the code path
+;; https://github.com/NinjaTrappeur/my-repo-pins
+(use-package! my-repo-pins
+  :after-call my-repo-pins
+  :defer t
+  :init
+  (setq my-repo-pins-code-root "~/projects/code"))
+
+(setq copilot-indent-offset-warning-disable t)
+
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
+
+(after! gptel
+  ;; Set copilot as the default llm interface and claude as the talker
+  (setq gptel-model 'claude-3.7-sonnet
+        gptel-backend (gptel-make-gh-copilot "Copilot"))
+  (setq gptel-default-mode 'org-mode)
+  ;;(require 'gptel-integrations)
+  )
+
+;; TODO monitor this for when it is released on melpa or similar
+(use-package! mcp
+  :config
+  (require 'mcp-hub)
+  (require 'gptel-integrations)
+  (setq mcp-hub-servers
+        `(("nixos" :command "mcp-nixos")
+          ("github" :command "github-mcp-server" :args ("stdio") :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(bmg/api-key-from-auth-source "api.github.com" "brianmcgillion^mcp")))))
+  )
+
+;;setup clangd lsp
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
+
+;; use just mode for setting tasks to run at the cmdline
+(use-package! justl
+  :config
+  (map! :n "e" 'justl-exec-recipe))
+
+(after! lsp-mode
+  (setq lsp-nix-nixd-server-path "nixd"
+        lsp-nix-nixd-formatting-command [ "nixfmt" ]
+        lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
+        lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
+;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
+
+(use-package! inheritenv
+  :config
+  ;; ensure that the environment is carried over to the subshell that is called.
+  ;; this was tested against go-mode specifically go-import-add
+  (inheritenv-add-advice #'process-lines)
+  (inheritenv-add-advice #'shell-command-to-string))
+
+;;;
+;;;
+;;; END_code
+;;;
+;;;
+#+END_SRC
+
+#+RESULTS:
 
 * Interface Tweaks
 :PROPERTIES:

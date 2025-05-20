@@ -82,6 +82,10 @@
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 
+;; mcp for gptel
+(package! mcp
+  :recipe (:host github :repo "lizqwerscott/mcp.el" :files ("*.el")))
+
 ;; Yuck mode is for ew
 (package! yuck-mode)
 
