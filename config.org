@@ -152,8 +152,10 @@ and \"apikey\" as USER."
   (require 'gptel-integrations)
   (setq mcp-hub-servers
         `(("nixos" :command "mcp-nixos")
-          ("github" :command "github-mcp-server" :args ("stdio") :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(bmg/api-key-from-auth-source "api.github.com" "brianmcgillion^mcp")))))
-  )
+          ("github" :command "github-mcp-server" :args ("stdio") :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(bmg/api-key-from-auth-source "api.github.com" "brianmcgillion^mcp")))
+          ("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/projects")))
+          ("sequential" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-sequential-thinking")))
+          ("context7" . (:command "npx" :args ("-y" "@upstash/context7-mcp"))))))
 
 ;;setup clangd lsp
 (after! lsp-clangd
