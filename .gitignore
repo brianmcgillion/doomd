@@ -1,2 +1,4 @@
 config.el
 custom.el
+.aider.*
+.aider*

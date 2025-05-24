@@ -141,9 +141,7 @@ and \"apikey\" as USER."
   ;; Set copilot as the default llm interface and claude as the talker
   (setq gptel-model 'claude-3.7-sonnet
         gptel-backend (gptel-make-gh-copilot "Copilot"))
-  (setq gptel-default-mode 'org-mode)
-  ;;(require 'gptel-integrations)
-  )
+  (setq gptel-default-mode 'org-mode))
 
 ;; TODO monitor this for when it is released on melpa or similar
 (use-package! mcp
@@ -156,6 +154,26 @@ and \"apikey\" as USER."
           ("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/projects")))
           ("sequential" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-sequential-thinking")))
           ("context7" . (:command "npx" :args ("-y" "@upstash/context7-mcp"))))))
+
+(use-package! aidermacs
+  :commands aidermacs-transient-menu
+  :init
+  (setenv "OPENAI_API_KEY" (bmg/api-key-from-auth-source "api.githubcopilot.com" "brianmcgillion"))
+  (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
+  (require 'vterm nil t)
+  :config
+  ;; Use vterm backend (default is comint)
+  (setq aidermacs-backend 'vterm)
+  ;; Enable file watching only works with vterm
+  (setq aidermacs-watch-files t)
+  ;; TODO see https://aider.chat/2024/09/26/architect.html
+  ;; Optional: Set specific model for architect reasoning
+  (setq aidermacs-architect-model  "openai/claude-3.5-sonnet")
+  ;; Optional: Set specific model for code generation
+  (setq aidermacs-editor-model  "openai/claude-3.5-sonnet")
+  :custom
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "openai/claude-3.5-sonnet"))
 
 ;;setup clangd lsp
 (after! lsp-clangd
@@ -384,7 +402,8 @@ and \"apikey\" as USER."
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
     :desc "crux-view-url"                          "u" #'crux-view-url
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
-    :desc "Elfeed RSS enter"                       "e" #'=rss)))
+    :desc "Elfeed RSS enter"                       "e" #'=rss
+    :desc "Aidermacs transient"                    "a" #'aidermacs-transient-menu)))
  ) ;; END MAP
 
 (map! :map dirvish-mode-map

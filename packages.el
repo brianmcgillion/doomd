@@ -86,6 +86,7 @@
 (package! mcp
   :recipe (:host github :repo "lizqwerscott/mcp.el" :files ("*.el")))
 
+(package! aidermacs)
 ;; Yuck mode is for ew
 (package! yuck-mode)
 
