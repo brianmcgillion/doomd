@@ -87,6 +87,9 @@
   :recipe (:host github :repo "lizqwerscott/mcp.el" :files ("*.el")))
 
 (package! aidermacs)
+;; Example of overloading a package to do local development
+;;(package! aidermacs :recipe (:local-repo "/home/brian/projects/code/github.com/MatthewZMD/aidermacs"))
+
 ;; Yuck mode is for ew
 (package! yuck-mode)
 

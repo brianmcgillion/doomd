@@ -160,7 +160,7 @@ and \"apikey\" as USER."
   :init
   (setenv "OPENAI_API_KEY" (bmg/api-key-from-auth-source "api.githubcopilot.com" "brianmcgillion"))
   (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-  (require 'vterm nil t)
+  ;;(require 'vterm nil t)
   :config
   ;; Use vterm backend (default is comint)
   (setq aidermacs-backend 'vterm)
