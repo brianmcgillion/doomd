@@ -52,6 +52,9 @@
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
+;; Make treesit more colorful and highlight more cases
+;;(customize-set-variable 'treesit-font-lock-level 4)
+
 ;; hopefully projectile auto finds the projects
 ;; M-x projectile-discover-projects-in-directory
 ;; M-x projectile-discover-projects-in-search-path
