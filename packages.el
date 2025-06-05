@@ -56,7 +56,6 @@
 
 ;; a modern agenda and styled capture
 (package! org-super-agenda)
-(package! vulpea)
 
 (package! inheritenv)
 

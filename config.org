@@ -356,6 +356,14 @@ and \"apikey\" as USER."
   (interactive)
   (org-agenda nil "o"))
 
+(defun bmg/archive-all-done ()
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (org-archive-subtree)
+     (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
+   "/DONE" 'file))
+
 ;; change `org-directory'. It must be set before org loads!
 (setq! org-directory "~/Documents/org/"
        org-archive-location (concat org-directory "/archive.org_archive::datetree/")
@@ -441,6 +449,7 @@ and \"apikey\" as USER."
                        ("@Reading" . ?r)
                        ("@Someday" . ?s)
                        ("@Training" . ?t)
+                       ("@Courses" . ?c)
                        ("uni" . ?u)
                        ("@Research" . ?R)
                        ("Emacs" . ?e)
@@ -535,6 +544,9 @@ and \"apikey\" as USER."
                              (:name "Research"
                               :tag "@Research"
                               :order 15)
+                              (:name "Training/Courses"
+                              :tag ("@Training" "@Courses")
+                              :order 16)
                              (:name "To read"
                               :tag "@Reading"
                               :order 30)
