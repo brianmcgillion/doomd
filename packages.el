@@ -70,6 +70,11 @@
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 (package! emacsql-sqlite3)
 
+(package! org-mem)
+
+;; roam and org related packages for literature
+(package! biblio)
+
 ;; General helper packages
 (package! super-save)
 (package! crux)

@@ -152,6 +152,20 @@
 ;;  #+TITLE: ${title}\n")
 ;;                  :unnarrowed t)))
 
+* vulpea
+# #+begin_src emacs-lisp
+
+# ;; (use-package! vulpea
+# ;;   :after org-roam
+# ;;   :init
+# ;;   (setq vulpea-directory org-roam-directory)
+# ;;   :config
+# ;;   (load! "roam-agenda.el") ;; a separate file containing the gist in my private doom directory
+
+# ;;   ;; prevent headings from clogging tag
+# ;;   (add-to-list 'org-tags-exclude-from-inheritance "project"))
+
+# #+end_src
 * pretty org capture menu
 
 # #+begin_src emacs-lisp

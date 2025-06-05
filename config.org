@@ -1,5 +1,104 @@
 ;;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
+* Interface Tweaks
+:PROPERTIES:
+:ID:       7d3f0a7b-101c-44cd-920c-65a82bc21877
+:END:
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Interface_Tweaks
+;;;
+;;;
+
+;; When starting a new frame make it maximized
+(add-to-list 'initial-frame-alist '(fullscreen . fullboth))
+(push '(fullscreen . fullboth)   default-frame-alist)
+
+;; Set your own banner to replace the default doom one "convert image.png
+;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
+;; e.g. 1080p
+(setq! fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
+;; are the three important ones:
+;;
+;; + `doom-font'
+;; + `doom-variable-pitch-font'
+;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;;
+;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
+;; font string. You generally only need these two:
+;;(setq doom-font (font-spec :family "monospace" :size 14))
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq! doom-theme 'doom-dracula)
+
+(setq! doom-font (font-spec :family "FiraCode Nerd Font" :size 13)
+       doom-variable-pitch-font (font-spec :family "FiraGO" :size 13)
+       doom-big-font (font-spec :family "FiraCode Nerd Font" :size 19)
+       doom-serif-font (font-spec :family "Source Serif 4" :size 13)
+       doom-symbol-font (font-spec :family "Font Awesome 6"))
+
+(after! doom-themes
+  (setq! doom-themes-enable-bold t
+         doom-themes-enable-italic t))
+
+(after! org-modern
+  (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 6")
+  (set-face-attribute 'org-modern-label nil :height 1.0)
+  (set-face-attribute 'org-modern-block-name nil :height 1.0))
+
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq! display-line-numbers-type t)
+
+;; Blinking cursors are annoying
+(blink-cursor-mode -1)
+
+(setq! +doom-dashboard-menu-sections
+       '(("Open org-agenda"
+          :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+          :action bmg/switch-to-agenda)
+         ("Recently opened files"
+          :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
+          :action recentf-open-files)
+         ("Reload last session"
+          :icon (nerd-icons-octicon "nf-oct-history" :face 'doom-dashboard-menu-title)
+          :when (cond ((modulep! :ui workspaces)
+                       (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
+                      ((require 'desktop nil t)
+                       (file-exists-p (desktop-full-file-name))))
+          :action doom/quickload-session)
+         ("Open project"
+          :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
+          :action projectile-switch-project)
+         ("Open private configuration"
+          :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
+          :when (file-directory-p doom-private-dir)
+          :action doom/open-private-config)
+         ("Open documentation"
+          :icon (nerd-icons-octicon "nf-oct-book" :face 'doom-dashboard-menu-title)
+          :action doom/help)
+         ;; ("Passwords"
+         ;;  :icon (icons-octicon "lock" :face 'font-lock-keyword-face)
+         ;;  :action pass)
+         ("RSS"
+          :icon (nerd-icons-octicon "nf-oct-rss" :face 'doom-dashboard-menu-title)
+          :action =rss)
+         ))
+;;;
+;;;
+;;; END_Interface_Tweaks
+;;;
+;;;
+
+#+END_SRC
+
 * General
 :PROPERTIES:
 :ID:       5fa6e40a-6235-4da7-9c35-3df39775a7af
@@ -14,8 +113,16 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
-(setq user-full-name "Brian McGillion"
-      user-mail-address "brian@ssrc.tii.ae")
+(setq! user-full-name "Brian McGillion"
+       user-mail-address "brian@ssrc.tii.ae"
+       ;; Who remembers all the commands :)
+       which-key-idle-delay 0.5
+       ;; TODO change this in dotfiles
+       auth-sources '("~/.netrc")
+       ;; M-x projectile-discover-projects-in-directory
+       ;; M-x projectile-discover-projects-in-search-path
+       projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 6)("~/.config" . 2)("~/Documents/org" . 2))
+       projectile-auto-discover nil)
 
 ;; TODO WTF is happening here ?? enable word-wrap (almost) everywhere
 ;;(+global-word-wrap-mode +1)
@@ -33,41 +140,68 @@
 ;;   (setq super-save-exclude '(".gpg" ".age"))
 ;;   (super-save-mode +1))
 
-(use-package! crux
-  :defer t)
 
-;; Who remembers all the commands :)
-(setq which-key-idle-delay 0.5)
+;; If a file changes on disk update the buffer to match
+(global-auto-revert-mode t)
+
+(dirvish-side-follow-mode t)
 
 ;; Use a custom dictionary on linux
-(if IS-MAC (setq ispell-dictionary "en_GB"))
+(if IS-MAC (setq! ispell-dictionary "en_GB"))
 ;;  (setq ispell-dictionary "en-custom"))
 
 (set-language-environment-charset "UTF-8")
 
 ;; Use the Languagetool only in server mode
-(setq langtool-http-server-host "localhost"
-      langtool-http-server-port 8081
-      langtool-default-language nil)
-
-;; If a file changes on disk update the buffer to match
-(global-auto-revert-mode t)
-
-;; Make treesit more colorful and highlight more cases
-;;(customize-set-variable 'treesit-font-lock-level 4)
-
-;; hopefully projectile auto finds the projects
-;; M-x projectile-discover-projects-in-directory
-;; M-x projectile-discover-projects-in-search-path
-(setq projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 6)("~/.config" . 2)("~/Documents/org" . 2)))
-;; TODO set this back to t
-(setq projectile-auto-discover nil)
+(setq! langtool-http-server-host "localhost"
+       langtool-http-server-port 8081
+       langtool-default-language nil)
 
 (after! license-snippets
   (license-snippets-init))
 
-;; TODO change this in dotfiles
-(setq auth-sources '("~/.netrc"))
+;; update elfeed when opened or at least every 8 hours
+(add-hook 'elfeed-search-mode-hook #'elfeed-update)
+(run-at-time nil (* 8 60 60) #'elfeed-update)
+
+;; misc selection of useful functions
+(use-package! crux
+  :defer t)
+
+;; Clone git repos or jump to the project in the code path
+;; https://github.com/NinjaTrappeur/my-repo-pins
+(use-package! my-repo-pins
+  :after-call my-repo-pins
+  :defer t
+  :init
+  (setq my-repo-pins-code-root "~/projects/code"))
+
+(use-package! inheritenv
+  :config
+  ;; ensure that the environment is carried over to the subshell that is called.
+  ;; this was tested against go-mode specifically go-import-add
+  (inheritenv-add-advice #'process-lines)
+  (inheritenv-add-advice #'shell-command-to-string))
+
+(after! consult
+  (consult-customize
+   +default/search-project +default/search-other-project
+   +default/search-project-for-symbol-at-point
+   +default/search-cwd +default/search-other-cwd
+   +default/search-notes-for-symbol-at-point
+   +default/search-emacsd
+   :preview-key (list "C-SPC" :debounce 0.1 'any)))
+
+
+;; Try to stop killing emacs with C-x C-c and use C-c q f
+;; when using the daemon mode.
+(defun my-confirm-kill-daemon (prompt)
+  "Ask whether to kill daemon Emacs with PROMPT.
+Intended as a predicate for `confirm-kill-emacs'."
+  (or (not (daemonp))
+      (yes-or-no-p prompt)))
+
+(setq! confirm-kill-emacs #'my-confirm-kill-daemon)
 
 ;;;###autoload
 (defun bmg/api-key-from-auth-source (&optional host user)
@@ -86,13 +220,6 @@ and \"apikey\" as USER."
         secret)
     (user-error "No `api-key' found in the auth source")))
 
-
-;; update elfeed when opened or at least every 8 hours
-(add-hook 'elfeed-search-mode-hook #'elfeed-update)
-(run-at-time nil (* 8 60 60) #'elfeed-update)
-
-(dirvish-side-follow-mode t)
-
 ;;;
 ;;;
 ;;; END_General
@@ -100,14 +227,11 @@ and \"apikey\" as USER."
 ;;;
 #+END_SRC
 
-
 * Code
 :PROPERTIES:
 :ID:       4460f37d-9944-4717-acf5-e2ab1e410787
 :END:
 #+BEGIN_SRC emacs-lisp
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-
 ;;;
 ;;;
 ;;; BEGIN_code
@@ -122,62 +246,6 @@ and \"apikey\" as USER."
           'executable-make-buffer-file-executable-if-script-p)
 
 (setq c-default-style "linux") ;; set style to "linux"
-
-;; Clone git repos or jump to the project in the code path
-;; https://github.com/NinjaTrappeur/my-repo-pins
-(use-package! my-repo-pins
-  :after-call my-repo-pins
-  :defer t
-  :init
-  (setq my-repo-pins-code-root "~/projects/code"))
-
-(setq copilot-indent-offset-warning-disable t)
-
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("<tab>" . 'copilot-accept-completion)
-              ("TAB" . 'copilot-accept-completion)
-              ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)))
-
-(after! gptel
-  ;; Set copilot as the default llm interface and claude as the talker
-  (setq gptel-model 'claude-3.7-sonnet
-        gptel-backend (gptel-make-gh-copilot "Copilot"))
-  (setq gptel-default-mode 'org-mode))
-
-;; TODO monitor this for when it is released on melpa or similar
-(use-package! mcp
-  :config
-  (require 'mcp-hub)
-  (require 'gptel-integrations)
-  (setq mcp-hub-servers
-        `(("nixos" :command "mcp-nixos")
-          ("github" :command "github-mcp-server" :args ("stdio") :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(bmg/api-key-from-auth-source "api.github.com" "brianmcgillion^mcp")))
-          ("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/projects")))
-          ("sequential" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-sequential-thinking")))
-          ("context7" . (:command "npx" :args ("-y" "@upstash/context7-mcp"))))))
-
-(use-package! aidermacs
-  :commands aidermacs-transient-menu
-  :init
-  (setenv "OPENAI_API_KEY" (bmg/api-key-from-auth-source "api.githubcopilot.com" "brianmcgillion"))
-  (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
-  ;;(require 'vterm nil t)
-  :config
-  ;; Use vterm backend (default is comint)
-  (setq aidermacs-backend 'vterm)
-  ;; Enable file watching only works with vterm
-  (setq aidermacs-watch-files t)
-  ;; TODO see https://aider.chat/2024/09/26/architect.html
-  ;; Optional: Set specific model for architect reasoning
-  (setq aidermacs-architect-model  "openai/claude-3.5-sonnet")
-  ;; Optional: Set specific model for code generation
-  (setq aidermacs-editor-model  "openai/claude-3.5-sonnet")
-  :custom
-  (aidermacs-use-architect-mode t)
-  (aidermacs-default-model "openai/claude-3.5-sonnet"))
 
 ;;setup clangd lsp
 (after! lsp-clangd
@@ -202,12 +270,6 @@ and \"apikey\" as USER."
         lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
 ;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
 
-(use-package! inheritenv
-  :config
-  ;; ensure that the environment is carried over to the subshell that is called.
-  ;; this was tested against go-mode specifically go-import-add
-  (inheritenv-add-advice #'process-lines)
-  (inheritenv-add-advice #'shell-command-to-string))
 
 ;;;
 ;;;
@@ -216,117 +278,289 @@ and \"apikey\" as USER."
 ;;;
 #+END_SRC
 
-#+RESULTS:
+* LLM/ML
+#+begin_src emacs-lisp
+;;;
+;;;
+;;; BEGIN_llm
+;;;
+;;;
 
-* Interface Tweaks
+(setq! copilot-indent-offset-warning-disable t)
+
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
+
+(after! gptel
+  ;; Set copilot as the default llm interface and claude as the talker
+  (setq! gptel-model 'claude-3.7-sonnet
+         gptel-backend (gptel-make-gh-copilot "Copilot"))
+  (setq! gptel-default-mode 'org-mode))
+
+;; TODO monitor this for when it is released on melpa or similar
+(use-package! mcp
+  :config
+  (require 'mcp-hub)
+  (require 'gptel-integrations)
+  (setq! mcp-hub-servers
+         `(("nixos" :command "mcp-nixos")
+           ("github" :command "github-mcp-server" :args ("stdio") :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(bmg/api-key-from-auth-source "api.github.com" "brianmcgillion^mcp")))
+           ("filesystem" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/projects")))
+           ("sequential" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-sequential-thinking")))
+           ("context7" . (:command "npx" :args ("-y" "@upstash/context7-mcp"))))))
+
+(use-package! aidermacs
+  :commands aidermacs-transient-menu
+  :init
+  (setenv "OPENAI_API_KEY" (bmg/api-key-from-auth-source "api.githubcopilot.com" "brianmcgillion"))
+  (setenv "OPENAI_API_BASE" "https://api.githubcopilot.com")
+  ;;(require 'vterm nil t)
+  :config
+  ;; Use vterm backend (default is comint)
+  (setq! aidermacs-backend 'vterm
+         ;; Enable file watching only works with vterm
+         setq aidermacs-watch-files t
+         ;; TODO see https://aider.chat/2024/09/26/architect.html
+         ;; Optional: Set specific model for architect reasoning
+         setq aidermacs-architect-model  "openai/claude-3.5-sonnet"
+         ;; Optional: Set specific model for code generation
+         setq aidermacs-editor-model  "openai/claude-3.5-sonnet")
+  :custom
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "openai/claude-3.5-sonnet"))
+
+;;;
+;;;
+;;; END_llm
+;;;
+;;;
+#+end_src
+
+* Org
 :PROPERTIES:
-:ID:       7d3f0a7b-101c-44cd-920c-65a82bc21877
+:ID:       b889f253-3691-41e3-a2ca-7f1c76f10d7d
 :END:
 #+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
-;;; BEGIN_Interface_Tweaks
+;;; BEGIN_ORG
 ;;;
 ;;;
 
-;; When starting a new frame make it maximized
-(add-to-list 'initial-frame-alist '(fullscreen . fullboth))
-(push '(fullscreen . fullboth)   default-frame-alist)
+(defun bmg/switch-to-agenda ()
+  (interactive)
+  (org-agenda nil "o"))
 
-;; Set your own banner to replace the default doom one "convert image.png
-;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
-;; e.g. 1080p
-(setq fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
-
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
-;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string. You generally only need these two:
-;;(setq doom-font (font-spec :family "monospace" :size 14))
-
-(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 13)
-      doom-variable-pitch-font (font-spec :family "FiraGO" :size 13)
-      doom-big-font (font-spec :family "FiraCode Nerd Font" :size 19)
-      doom-serif-font (font-spec :family "Source Serif 4" :size 13)
-      doom-symbol-font (font-spec :family "Font Awesome 6"))
-
-(after! doom-themes
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t))
-
-(after! org-modern
-  (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 6")
-  (set-face-attribute 'org-modern-label nil :height 1.0)
-  (set-face-attribute 'org-modern-block-name nil :height 1.0))
+;; change `org-directory'. It must be set before org loads!
+(setq! org-directory "~/Documents/org/"
+       org-archive-location (concat org-directory "/archive.org_archive::datetree/")
+       org-id-link-to-org-use-id t
+       org-ellipsis " ▾ "
+       org-startup-folded t
+       org-src-fontify-natively t
+       org-hide-emphasis-markers t
+       org-modern-star 'replace)
 
 
+(setq! org-roam-directory (file-truename (concat org-directory "roam/"))
+       org-roam-extract-new-file-path "${slug}.org"
+       org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) org-roam-directory)
+       org-noter-notes-search-path org-roam-directory
+       )
 
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-dracula)
+(setq! +org-capture-todo-file org-default-notes-file
+       +org-capture-notes-file org-default-notes-file
+       +org-capture-projects-file org-default-notes-file)
 
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+;; TODO Why can I not use add-to-list for this
+(setq! org-roam-capture-templates
+       '(("d" "default" plain
+          "%?"
+          :if-new (file+head "${slug}.org"
+                             "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+          :unnarrowed t)))
 
-;; Blinking cursors are annoying
-(blink-cursor-mode -1)
+;; TODO is this still supported
+(setq! org-roam-capture-ref-templates
+       '(("r" "ref" plain
+          "%?"
+          :if-new (file+head "${slug}.org"
+                             "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+          :unnarrowed t)))
 
-(setq +doom-dashboard-menu-sections
-      '(("Open org-agenda"
-         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
-         :action bmg/switch-to-agenda)
-        ("Recently opened files"
-         :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
-         :action recentf-open-files)
-        ("Reload last session"
-         :icon (nerd-icons-octicon "nf-oct-history" :face 'doom-dashboard-menu-title)
-         :when (cond ((modulep! :ui workspaces)
-                  (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
-                 ((require 'desktop nil t)
-                  (file-exists-p (desktop-full-file-name))))
-         :action doom/quickload-session)
-        ("Open project"
-         :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
-         :action projectile-switch-project)
-        ("Open private configuration"
-         :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
-         :when (file-directory-p doom-private-dir)
-         :action doom/open-private-config)
-        ("Open documentation"
-         :icon (nerd-icons-octicon "nf-oct-book" :face 'doom-dashboard-menu-title)
-         :action doom/help)
-        ;; ("Passwords"
-        ;;  :icon (icons-octicon "lock" :face 'font-lock-keyword-face)
-        ;;  :action pass)
-        ("RSS"
-         :icon (nerd-icons-octicon "nf-oct-rss" :face 'doom-dashboard-menu-title)
-         :action =rss)
-        ))
+;; org-mem https://github.com/meedstrom/org-mem is a complimentary package to org roam
+;; can use it ot extract certain properties of the roam db. In addition it also provides fast search functionality,
+;; such as the ability to populate the org aganda file list with only relevant TODO items
+(use-package! org-mem
+  :after org
+  :config
+  (setq! org-mem-watch-dirs (list org-roam-directory)
+         ;;org-mem-do-sync-with-org-id t
+         org-roam-db-update-on-save nil
+         org-mem-roamy-do-overwrite-real-db t)
 
-(after! consult
-  (consult-customize
-   +default/search-project +default/search-other-project
-   +default/search-project-for-symbol-at-point
-   +default/search-cwd +default/search-other-cwd
-   +default/search-notes-for-symbol-at-point
-   +default/search-emacsd
-   :preview-key (list "C-SPC" :debounce 0.1 'any)))
+  (defun my-set-agenda-files (&rest _)
+    (setq! org-agenda-files
+           (cl-loop
+            for file in (org-mem-all-files)
+            unless (string-search "archive" file)
+            when (seq-find (lambda (entry)
+                             (or (org-mem-entry-active-timestamps entry)
+                                 (org-mem-entry-todo-state entry)
+                                 (org-mem-entry-scheduled entry)
+                                 (org-mem-entry-deadline entry)))
+                           (org-mem-entries-in file))
+            collect file)))
+  (add-hook 'org-mem-post-full-scan-functions #'my-set-agenda-files)
+  (org-mem-roamy-db-mode))
+
+(setq! org-log-done 'time
+       org-log-into-drawer t
+       org-log-state-notes-insert-after-drawers nil)
+
+(use-package! websocket
+  :after org-roam)
+
+(use-package! org-roam-ui
+  :after org-roam
+  :commands (org-roam-ui-mode))
+
+;; citations and reference managment
+(setq! citar-bibliography (concat org-directory "emacs_lit.bib")
+       citar-library-paths '("~/Documents/Papers/")
+       citar-notes-paths org-roam-directory)
+
+
+(setq! org-tag-alist '((:startgroup . nil)
+                       ("@Project" . ?p)
+                       ("@Reading" . ?r)
+                       ("@Someday" . ?s)
+                       ("@Training" . ?t)
+                       ("uni" . ?u)
+                       ("@Research" . ?R)
+                       ("Emacs" . ?e)
+                       ("@Issue" . ?i)
+                       ("Important" . ?I)
+                       (:endgroup . nil)
+                       (:startgroup . nil)
+                       ("PERSONAL" . ?P)
+                       (:endgroup . nil)))
+
+(use-package! org-super-agenda
+  :after org-agenda
+  :init
+  (setq!
+   ;; more structured view
+   org-agenda-prefix-format
+   '((agenda . " %i %-20:c %?-12t %12s")
+     (todo . " %i %-20:c ")
+     (tags . " %i %-20:c ")
+     (search . " %i %-20:c "))
+   org-agenda-todo-keyword-format "%-6s"
+   org-agenda-tags-column -120)
+
+  (setq! org-agenda-time-grid '((daily today require-timed)
+                                (800 1200 1600 2000)
+                                "......"
+                                "----------------")
+         org-agenda-skip-scheduled-if-done t
+         org-agenda-skip-deadline-if-done t
+         org-agenda-include-deadlines t
+         org-agenda-include-diary nil
+         org-agenda-block-separator nil
+         org-agenda-compact-blocks t
+         org-agenda-start-with-log-mode t
+         org-agenda-span 1
+         org-agenda-start-day nil) ;; i.e. today
+
+  ;;TODO fix the sections so that the match the todo-list (lang/org/config.el)
+  (setq! org-agenda-custom-commands
+         '(("o" "Overview"
+            ((agenda "" ((org-agenda-span 'week)
+                         (org-agenda-start-on-weekday 0) ;; Sunday
+                         (org-super-agenda-groups
+                          '((:name "Today"
+                             :time-grid t
+                             :date today
+                             :todo "TODAY"
+                             :scheduled today
+                             :order 1)))))
+             (alltodo "" ((org-agenda-overriding-header "")
+                          (org-super-agenda-groups
+                           '((:name "To Refile"
+                              :tag ("REFILE" "IDEA" "DONE" "KILL")
+                              :order 1)
+                             (:name "Next to do"
+                              :todo "NEXT"
+                              :tag "NEXT"
+                              :order 3)
+                             (:name "Ongoing"
+                              :todo "STRT"
+                              :order 3)
+                             (:name "Recurring"
+                              :todo "LOOP"
+                              :order 4)
+                             (:name "Personal"
+                              :tag "PERSONAL"
+                              :order 12)
+                             (:name "Important"
+                              :tag "Important"
+                              :priority "A"
+                              :order 6)
+                             (:name "Due Today"
+                              :deadline today
+                              :order 2)
+                             (:name "Due Soon"
+                              :deadline future
+                              :order 8)
+                             (:name "Overdue"
+                              :deadline past
+                              :face error
+                              :order 7)
+                             (:name "Issues"
+                              :tag "@Issue"
+                              :order 12)
+                             (:name "Emacs"
+                              :tag "Emacs"
+                              :order 13)
+                             (:name "Projects"
+                              :todo "PROJ"
+                              :tag "@Project"
+                              :order 14)
+                             (:name "Research"
+                              :tag "@Research"
+                              :order 15)
+                             (:name "To read"
+                              :tag "@Reading"
+                              :order 30)
+                             (:name "Waiting"
+                              :todo "HOLD"
+                              :todo "WAIT"
+                              :order 20)
+                             (:name "University"
+                              :tag "uni"
+                              :order 32)
+                             (:name "Someday"
+                              :priority<= "C"
+                              :tag "@Someday"
+                              :todo "SOMEDAY"
+                              :order 90)
+                             (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
+  :config
+  (org-super-agenda-mode))
 
 ;;;
 ;;;
-;;; END_Interface_Tweaks
+;;; END_ORG
 ;;;
 ;;;
-
 #+END_SRC
+
 * Map
 :PROPERTIES:
 :ID:       629b4ae3-039b-4729-b3f6-1ae18ed50d13
@@ -382,7 +616,6 @@ and \"apikey\" as USER."
 
   (:map org-agenda-mode-map
         "i"                       #'org-agenda-clock-in
-        ;;"r"                       #'bmg/org-process-inbox
         "R"                       #'org-agenda-refile
         "c"                       #'bmg/org-inbox-capture))
 
@@ -442,266 +675,10 @@ and \"apikey\" as USER."
                "s"   #'dirvish-symlink
                "S"   #'dirvish-relative-symlink
                "h"   #'dirvish-hardlink))
-;
+
 ;;;
 ;;;
 ;;; END_MAP
 ;;;
 ;;;
-#+END_SRC
-* Org
-:PROPERTIES:
-:ID:       b889f253-3691-41e3-a2ca-7f1c76f10d7d
-:END:
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_ORG
-;;;
-;;;
-
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq! org-directory "~/Documents/org/"
-       org-ellipsis " ▾ "
-       org-startup-folded t
-       org-src-fontify-natively t
-       org-hide-emphasis-markers t
-       org-modern-star 'replace)
-
-(defvar my-roam-dir (concat org-directory "roam/"))
-
-(setq! org-noter-notes-search-path my-roam-dir)
-
-(setq! citar-bibliography (concat org-directory "emacs_lit.bib")
-       citar-library-paths '("~/Documents/Papers/")
-       citar-notes-paths my-roam-dir)
-
-;; TODO turn on autosync
-;;(org-roam-db-autosync-mode)
-(setq org-roam-directory (file-truename my-roam-dir)
-      org-id-link-to-org-use-id t
-      org-roam-extract-new-file-path "${slug}.org"
-      )
-
-;; TODO Why can I not use add-to-list for this
-(setq org-roam-capture-templates
-      '(("d" "default" plain
-         "%?"
-         :if-new (file+head "${slug}.org"
-                            "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-         :unnarrowed t)))
-
-;; TODO is this still supported
-(setq org-roam-capture-ref-templates
-      '(("r" "ref" plain
-         "%?"
-         :if-new (file+head "${slug}.org"
-                            "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-         :unnarrowed t)))
-
-(use-package! websocket
-  :after org-roam)
-
-(use-package! org-roam-ui
-  :after org-roam
-  :commands (org-roam-ui-mode))
-
-;;;
-;;;
-;;; END_ORG
-;;;
-;;;
-#+END_SRC
-** Org Capture
-#+begin_src emacs-lisp
-;;;
-;;;
-;;; BEGIN_ORG_CAPTURE
-;;;
-;;;
-
-(setq org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) my-roam-dir))
-(setq +org-capture-todo-file org-default-notes-file
-      +org-capture-notes-file org-default-notes-file
-      +org-capture-projects-file org-default-notes-file)
-
-(setq org-log-done 'time
-      org-log-into-drawer t
-      org-log-state-notes-insert-after-drawers nil)
-
-;; (after! org
-;;   (add-to-list 'org-capture-templates
-;;                '(("r" "Review Templates for use with GTD")
-;;                  ("rm" "Review Morning" entry
-;;                   (file+headline org-archive-location "Review")
-;;                   (file "~/Documents/org/morning_template.org"))
-;;                  ("re" "Review Evening" entry
-;;                   (file+headline org-archive-location "Review")
-;;                   (file "~/Documents/org/evening_template.org"))
-;;                  ("rw" "Review Weekly" entry
-;;                   (file+headline org-archive-location "Review")
-;;                   (file "~/Documents/org/weekly_template.org")))))
-#+end_src
-
-#+begin_src emacs-lisp
-;;;
-;;;
-;;; END_ORG_Capture
-;;;
-;;;
-#+END_SRC
-
-** Org GTD
-:PROPERTIES:
-:ID:       515ef8a5-cc71-4ad8-a24b-aa0b758e7bd4
-:END:
-#+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_ORG_GTD
-;;;
-;;;
-
-;;(setq bmg/org-agenda-directory (concat org-directory "/gtd/"))
-(setq org-archive-location (concat org-directory "/archive.org_archive::datetree/"))
-
-(defun bmg/switch-to-agenda ()
-  (interactive)
-  (org-agenda nil "o"))
-
-(use-package! vulpea
-  :after org-roam
-  :init
-  (setq vulpea-directory org-roam-directory)
-  :config
-  (load! "roam-agenda.el") ;; a separate file containing the gist in my private doom directory
-
-  ;; prevent headings from clogging tag
-  (add-to-list 'org-tags-exclude-from-inheritance "project"))
-
-(setq org-tag-alist '((:startgroup . nil)
-                      ("@Project" . ?p)
-                      ("@Reading" . ?r)
-                      ("@Someday" . ?s)
-                      ("@Training" . ?t)
-                      ("uni" . ?u)
-                      ("@Research" . ?R)
-                      ("Emacs" . ?e)
-                      ("@Issue" . ?i)
-                      ("Important" . ?I)
-                      (:endgroup . nil)
-                      (:startgroup . nil)
-                      ("PERSONAL" . ?P)
-                      (:endgroup . nil)))
-
-(use-package! org-super-agenda
-  :after org-agenda
-  :init
-  (setq
-   ;; more structured view
-   org-agenda-prefix-format
-   '((agenda . " %(vulpea-agenda-category 30) %?-12t %12s")
-     (todo . " %(vulpea-agenda-category 20) ")
-     (tags . " %(vulpea-agenda-category 25) ")
-     (search . " %(vulpea-agenda-category 20) "))
-   org-agenda-todo-keyword-format "%-6s"
-   org-agenda-tags-column -120)
-
-  (setq org-agenda-time-grid '((daily today require-timed)
-                               (800 1200 1600 2000)
-                               "......"
-                               "----------------")
-        org-agenda-skip-scheduled-if-done t
-        org-agenda-skip-deadline-if-done t
-        org-agenda-include-deadlines t
-        org-agenda-include-diary nil
-        org-agenda-block-separator nil
-        org-agenda-compact-blocks t
-        org-agenda-start-with-log-mode t
-        org-agenda-span 1
-        org-agenda-start-day nil) ;; i.e. today
-
-  ;;TODO fix the sections so that the match the todo-list (lang/org/config.el)
-  (setq org-agenda-custom-commands
-        '(("o" "Overview"
-           ((agenda "" ((org-agenda-span 'week)
-                        (org-agenda-start-on-weekday 0) ;; Sunday
-                        (org-super-agenda-groups
-                         '((:name "Today"
-                            :time-grid t
-                            :date today
-                            :todo "TODAY"
-                            :scheduled today
-                            :order 1)))))
-            (alltodo "" ((org-agenda-overriding-header "")
-                         (org-super-agenda-groups
-                          '((:name "To Refile"
-                             :tag ("REFILE" "IDEA" "DONE" "KILL")
-                             :order 1)
-                            (:name "Next to do"
-                             :todo "NEXT"
-                             :tag "NEXT"
-                             :order 3)
-                            (:name "Ongoing"
-                             :todo "STRT"
-                             :order 3)
-                            (:name "Recurring"
-                             :todo "LOOP"
-                             :order 4)
-                            (:name "Personal"
-                             :tag "PERSONAL"
-                             :order 12)
-                            (:name "Important"
-                             :tag "Important"
-                             :priority "A"
-                             :order 6)
-                            (:name "Due Today"
-                             :deadline today
-                             :order 2)
-                            (:name "Due Soon"
-                             :deadline future
-                             :order 8)
-                            (:name "Overdue"
-                             :deadline past
-                             :face error
-                             :order 7)
-                            (:name "Issues"
-                             :tag "@Issue"
-                             :order 12)
-                            (:name "Emacs"
-                             :tag "Emacs"
-                             :order 13)
-                            (:name "Projects"
-                             :todo "PROJ"
-                             :tag "@Project"
-                             :order 14)
-                            (:name "Research"
-                             :tag "@Research"
-                             :order 15)
-                            (:name "To read"
-                             :tag "@Reading"
-                             :order 30)
-                            (:name "Waiting"
-                             :todo "HOLD"
-                             :todo "WAIT"
-                             :order 20)
-                            (:name "University"
-                             :tag "uni"
-                             :order 32)
-                            (:name "Someday"
-                             :priority<= "C"
-                             :tag "@Someday"
-                             :todo "SOMEDAY"
-                             :order 90)
-                            (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
-  :config
-  (org-super-agenda-mode))
-
-;;;
-;;;
-;;; END_ORG_GTD
-;;;
-;;;
-
 #+END_SRC
