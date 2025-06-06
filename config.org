@@ -160,9 +160,8 @@
 (after! license-snippets
   (license-snippets-init))
 
-;; update elfeed when opened or at least every 8 hours
-(add-hook 'elfeed-search-mode-hook #'elfeed-update)
-(run-at-time nil (* 8 60 60) #'elfeed-update)
+;; load all the elfeed configurations
+(load! "elfeed-config.el")
 
 ;; misc selection of useful functions
 (use-package! crux
@@ -442,6 +441,25 @@ and \"apikey\" as USER."
 (setq! citar-bibliography (concat org-directory "emacs_lit.bib")
        citar-library-paths '("~/Documents/Papers/")
        citar-notes-paths org-roam-directory)
+
+(after! citar
+  ;; define the keymap to allow citar to hand over to biblio to do
+  ;; a reference lookup
+  (defvar bmg/my-citar-embark-become-map
+    (let ((map (make-sparse-keymap)))
+      (define-key map (kbd "f") 'citar-open-library-files)
+      (define-key map (kbd "x") 'biblio-arxiv-lookup)
+      (define-key map (kbd "c") 'biblio-crossref-lookup)
+      (define-key map (kbd "i") 'biblio-ieee-lookup)
+      (define-key map (kbd "h") 'biblio-hal-lookup)
+      (define-key map (kbd "s") 'biblio-dissemin-lookup)
+      (define-key map (kbd "b") 'biblio-dblp-lookup)
+      (define-key map (kbd "o") 'biblio-doi-insert-bibtex)
+      map)
+    "Citar Embark become keymap for biblio lookup.")
+
+  ;; tell embark about the keymap
+  (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
 (setq! org-tag-alist '((:startgroup . nil)

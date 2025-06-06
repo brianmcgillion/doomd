@@ -51,7 +51,6 @@
 ;;(package! builtin-package :recipe (:branch "develop"))
 
 ;; For RSS and Atom feeds
-;;(package! elfeed-goodies)
 (package! elfeed-score)
 
 ;; a modern agenda and styled capture
@@ -73,6 +72,7 @@
 
 ;; roam and org related packages for literature
 (package! biblio)
+(package! org-ref)
 
 ;; General helper packages
 (package! super-save)
