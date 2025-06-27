@@ -58,7 +58,7 @@
 
 (package! inheritenv)
 
-;; Add style to org
+;; Add style to org-capture-templattes. similar to org-custom-agenda
 ;; (package! doct
 ;;   :recipe (:host github :repo "progfolio/doct"))
 
