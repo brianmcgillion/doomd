@@ -68,12 +68,14 @@
        ;;parinfer          ; turn lisp into python, sort of
        ;;rotate-text       ; cycle region at point between text candidates
        snippets          ; my elves. They type so I don't have to
+       (whitespace +guess +trim)  ; a butler for your whitespace
        word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
        (dired +icons +dirvish)      ; making dired pretty [functional]
        electric            ; smarter, keyword-based electric-indent
        (ibuffer +icons)    ; interactive buffer management
+       tramp             ; remote files at your arthritic fingertips
        (undo)        ; persistent, smarter undo for your inevitable mistakes
        vc                  ; version-control and Emacs, sitting in a tree
 
