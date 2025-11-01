@@ -37,18 +37,18 @@
 ;; `load-theme' function. This is the default:
 (setq! doom-theme 'doom-dracula)
 
-(setq! doom-font (font-spec :family "FiraCode Nerd Font" :size 13)
-       doom-variable-pitch-font (font-spec :family "FiraGO" :size 13)
-       doom-big-font (font-spec :family "FiraCode Nerd Font" :size 19)
+(setq! doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 13)
+       doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13)
+       doom-big-font (font-spec :family "FiraCode Nerd Font Mono" :size 19)
        doom-serif-font (font-spec :family "Source Serif 4" :size 13)
-       doom-symbol-font (font-spec :family "Font Awesome 6"))
+       doom-symbol-font (font-spec :family "Font Awesome 7 Free"))
 
 (after! doom-themes
   (setq! doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
 (after! org-modern
-  (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 6")
+  (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 7 Free")
   (set-face-attribute 'org-modern-label nil :height 1.0)
   (set-face-attribute 'org-modern-block-name nil :height 1.0))
 
