@@ -52,6 +52,8 @@
   (set-face-attribute 'org-modern-label nil :height 1.0)
   (set-face-attribute 'org-modern-block-name nil :height 1.0))
 
+;; be as colorful as possible.
+(setq treesit-font-lock-level 4)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -263,11 +265,14 @@ and \"apikey\" as USER."
   (map! :n "e" 'justl-exec-recipe))
 
 (after! lsp-mode
-  (setq lsp-nix-nixd-server-path "nixd"
-        lsp-nix-nixd-formatting-command [ "nixfmt" ]
+  (setq lsp-nix-server 'nixd
+        lsp-nix-nixd-server-path "nixd"
+        lsp-nix-nixd-formatting-command ["nixfmt"]
         lsp-nix-nixd-nixpkgs-expr "import (builtins.getFlake \"/home/brian/.dotfiles\").inputs.nixpkgs { }"
         lsp-nix-nixd-nixos-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").nixosConfigurations.arcadia.options"))
-;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/nb/nixos\").homeConfigurations.\"brian@arcadia\".options"))
+;; Note: home-manager options commented out - home-manager appears to be integrated as a NixOS module
+;; If you have standalone home-manager configs, use:
+;; lsp-nix-nixd-home-manager-options-expr "(builtins.getFlake \"/home/brian/.dotfiles\").homeConfigurations.\"user@host\".options")
 
 
 ;;;

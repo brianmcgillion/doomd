@@ -100,3 +100,8 @@
 ;; just file mode
 (package! justl :recipe (:host github :repo "psibi/justl.el"))
 (package! just-mode)
+
+(package! nix-ts-mode
+  :recipe (:type local
+           :local-repo "/home/brian/projects/code/github.com/nix-community/nix-ts-mode"
+           :files ("*.el" "lisp/*.el")))
