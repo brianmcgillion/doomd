@@ -119,8 +119,8 @@
        user-mail-address "brian@ssrc.tii.ae"
        ;; Who remembers all the commands :)
        which-key-idle-delay 0.5
-       ;; TODO change this in dotfiles
-       auth-sources '("~/.netrc")
+       ;; Prefer encrypted auth source
+       auth-sources '("~/.authinfo.gpg" "~/.netrc")
        ;; M-x projectile-discover-projects-in-directory
        ;; M-x projectile-discover-projects-in-search-path
        projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 6)("~/.config" . 2)("~/Documents/org" . 2))
@@ -129,28 +129,18 @@
 ;; TODO WTF is happening here ?? enable word-wrap (almost) everywhere
 ;;(+global-word-wrap-mode +1)
 
-;; TODO re-enable??
-;; this is anoying when format-on-save is enabled
-;; but still a nice to have feature (though there are many times
-;; files have not been saved)
-
-;; Autosave files when switching buffers
-;; (use-package! super-save
-;;   :config
-;;   (message "Super save enabled")
-;;   (setq auto-save-default nil)
-;;   (setq super-save-exclude '(".gpg" ".age"))
-;;   (super-save-mode +1))
-
+;; TODO: Enable word-wrap for text modes manually if global wrap fails
+;; (add-hook 'org-mode-hook #'visual-line-mode)
+;; (add-hook 'markdown-mode-hook #'visual-line-mode)
+;; (add-hook 'text-mode-hook #'visual-line-mode)
 
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
 (dirvish-side-follow-mode t)
 
-;; Use a custom dictionary on linux
-(if IS-MAC (setq! ispell-dictionary "en_GB"))
-;;  (setq ispell-dictionary "en-custom"))
+;; Use a custom dictionary
+(setq! ispell-dictionary (if IS-MAC "en_GB" "en_US"))
 
 (set-language-environment-charset "UTF-8")
 
@@ -219,7 +209,8 @@ and \"apikey\" as USER."
       (if (functionp secret)
           (encode-coding-string (funcall secret) 'utf-8)
         secret)
-    (user-error "No `api-key' found in the auth source")))
+    (user-error "No API key found for host: %s, user: %s. Check your auth-source file."
+                (or host "default") (or user "apikey"))))
 
 ;;;
 ;;;
@@ -328,15 +319,15 @@ and \"apikey\" as USER."
   ;; Use vterm backend (default is comint)
   (setq! aidermacs-backend 'vterm
          ;; Enable file watching only works with vterm
-         setq aidermacs-watch-files t
+         aidermacs-watch-files t
          ;; TODO see https://aider.chat/2024/09/26/architect.html
          ;; Optional: Set specific model for architect reasoning
-         setq aidermacs-architect-model  "openai/claude-3.5-sonnet"
+         aidermacs-architect-model "openai/claude-4.5-sonnet"
          ;; Optional: Set specific model for code generation
-         setq aidermacs-editor-model  "openai/claude-3.5-sonnet")
+         aidermacs-editor-model "openai/claude-4.5-sonnet")
   :custom
   (aidermacs-use-architect-mode t)
-  (aidermacs-default-model "openai/claude-3.5-sonnet"))
+  (aidermacs-default-model "openai/claude-4.5-sonnet"))
 
 ;;;
 ;;;
@@ -357,16 +348,23 @@ and \"apikey\" as USER."
 ;;;
 
 (defun bmg/switch-to-agenda ()
+  "Switch to org-agenda overview view.
+Opens the custom 'o' agenda command configured in
+`org-agenda-custom-commands'."
   (interactive)
   (org-agenda nil "o"))
 
 (defun bmg/archive-all-done ()
+  "Archive all DONE tasks in the current buffer to the archive file."
   (interactive)
-  (org-map-entries
-   (lambda ()
-     (org-archive-subtree)
-     (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
-   "/DONE" 'file))
+  (let ((count 0))
+    (org-map-entries
+     (lambda ()
+       (org-archive-subtree)
+       (setq count (1+ count))
+       (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
+     "/DONE" 'file)
+    (message "Archived %d DONE tasks" count)))
 
 ;; change `org-directory'. It must be set before org loads!
 (setq! org-directory "~/Documents/org/"
@@ -389,17 +387,16 @@ and \"apikey\" as USER."
        +org-capture-notes-file org-default-notes-file
        +org-capture-projects-file org-default-notes-file)
 
-;; TODO Why can I not use add-to-list for this
+;; Org-roam capture templates
+;; Note: Using setq! to completely replace default templates
+;; To add templates, use (add-to-list 'org-roam-capture-templates ...) after this
 (setq! org-roam-capture-templates
        '(("d" "default" plain
           "%?"
           :if-new (file+head "${slug}.org"
                              "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-          :unnarrowed t)))
-
-;; TODO is this still supported
-(setq! org-roam-capture-ref-templates
-       '(("r" "ref" plain
+          :unnarrowed t)
+         ("r" "ref" plain
           "%?"
           :if-new (file+head "${slug}.org"
                              "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
@@ -441,6 +438,11 @@ and \"apikey\" as USER."
 (use-package! org-roam-ui
   :after org-roam
   :commands (org-roam-ui-mode))
+
+;; TODO: see if this works Org-roam performance optimizations
+(after! org-roam
+  (setq org-roam-db-gc-threshold most-positive-fixnum
+        org-roam-db-update-method 'immediate))
 
 ;; citations and reference managment
 (setq! citar-bibliography (concat org-directory "emacs_lit.bib")
@@ -589,6 +591,25 @@ and \"apikey\" as USER."
   :config
   (org-super-agenda-mode))
 
+;; Helper functions for org workflow
+
+(defun bmg/org-roam-review-week ()
+  "Open all daily notes from the past week for review."
+  (interactive)
+  (require 'org-roam-dailies)
+  (let ((files '()))
+    (dotimes (i 7)
+      (let* ((date (time-subtract (current-time) (days-to-time i)))
+             (file (org-roam-dailies--daily-note-path date)))
+        (when (file-exists-p file)
+          (push file files))))
+    (if files
+        (progn
+          (dolist (file (reverse files))
+            (find-file-other-window file))
+          (message "Opened %d daily notes from the past week" (length files)))
+      (message "No daily notes found for the past week"))))
+
 ;;;
 ;;;
 ;;; END_ORG
@@ -651,8 +672,7 @@ and \"apikey\" as USER."
 
   (:map org-agenda-mode-map
         "i"                       #'org-agenda-clock-in
-        "R"                       #'org-agenda-refile
-        "c"                       #'bmg/org-inbox-capture))
+        "R"                       #'org-agenda-refile))
 
  (;;: open submenu
   (:leader
@@ -714,6 +734,40 @@ and \"apikey\" as USER."
 ;;;
 ;;;
 ;;; END_MAP
+;;;
+;;;
+#+END_SRC
+
+* Elfeed Enhancements
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Elfeed_Enhancements
+;;;
+;;;
+
+(defun bmg/elfeed-mark-all-as-read ()
+  "Mark all entries in current elfeed filter as read."
+  (interactive)
+  (when (yes-or-no-p "Mark all visible entries as read? ")
+    (let ((count 0))
+      (save-excursion
+        (goto-char (point-min))
+        (while (not (eobp))
+          (when-let ((entry (elfeed-search-selected :ignore-region)))
+            (elfeed-untag entry 'unread)
+            (setq count (1+ count)))
+          (forward-line)))
+      (elfeed-search-update--force)
+      (message "Marked %d entries as read" count))))
+
+(after! elfeed
+  (map! :map elfeed-search-mode-map
+        :n "R" #'bmg/elfeed-mark-all-as-read))
+
+;;;
+;;;
+;;; END_Elfeed_Enhancements
 ;;;
 ;;;
 #+END_SRC

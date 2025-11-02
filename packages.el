@@ -75,7 +75,7 @@
 (package! org-ref)
 
 ;; General helper packages
-(package! super-save)
+;; (package! super-save)  ; Commented out - not in use
 (package! crux)
 ;; Download repos from git forges into local dirs under a main repo structure
 (package! my-repo-pins)
