@@ -175,12 +175,18 @@
   (inheritenv-add-advice #'shell-command-to-string))
 
 (after! consult
+  ;; Needed to ensure that preview is working live, without the need to
+  ;; C-SPC everytime you need to see a preview. see vertico/config.el
+  ;; where we are overriding the override :)
   (consult-customize
    +default/search-project +default/search-other-project
    +default/search-project-for-symbol-at-point
    +default/search-cwd +default/search-other-cwd
    +default/search-notes-for-symbol-at-point
    +default/search-emacsd
+   consult-ripgrep consult-git-grep consult-grep
+   consult-bookmark consult-recent-file
+   consult--source-recent-file consult--source-project-recent-file consult--source-bookmark
    :preview-key (list "C-SPC" :debounce 0.1 'any)))
 
 
@@ -383,9 +389,8 @@ Opens the custom 'o' agenda command configured in
        org-noter-notes-search-path org-roam-directory
        )
 
-(setq! +org-capture-todo-file org-default-notes-file
-       +org-capture-notes-file org-default-notes-file
-       +org-capture-projects-file org-default-notes-file)
+;; (setq! +org-capture-todo-file org-default-notes-file
+;;        +org-capture-notes-file org-default-notes-file)
 
 ;; Org-roam capture templates
 ;; Note: Using setq! to completely replace default templates

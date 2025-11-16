@@ -100,7 +100,7 @@
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        ;; gist              ; interacting with github gists
-       (lookup +dictionary +offline +wordnet)              ; navigate your code and its documentation
+       (lookup +dictionary +docsets +offline)              ; navigate your code and its documentation
        llm                 ; language model interface
        (lsp +peek)
        (magit +forge)      ; a git porcelain for Emacs
@@ -169,7 +169,7 @@
         +present           ; using org-mode for presentations
         ;;+gnuplot
         ;;+journal
-        +roam2             ; add org-roam support
+        +roam              ; add org-roam support
         +noter)            ; org-noter for annotating pdfs in an org doc
        ;;+tree-sitter)
        ;;php               ; perl's insecure younger brother
@@ -182,7 +182,7 @@
        ;;rest              ; Emacs as a REST client
        ;;rst               ; ReST in peace
        ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       ;;(rust +lsp)         ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+       (rust +lsp  +tree-sitter)         ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
        ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        (sh +lsp +tree-sitter)                ; she sells {ba,z,fi}sh shells on the C xor
