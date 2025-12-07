@@ -238,6 +238,8 @@ and \"apikey\" as USER."
 
 ;; Add handlers SELinux files
 (add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode)) ;; GitHub Flavored Markdown
 
 ;; make a shell script executable automatically on save
 (add-hook 'after-save-hook
