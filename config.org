@@ -261,7 +261,7 @@ and \"apikey\" as USER."
 ;; use just mode for setting tasks to run at the cmdline
 (use-package! justl
   :config
-  (map! :n "e" 'justl-exec-recipe))
+  (map! :map justl-mode-map "e" 'justl-exec-recipe))
 
 (after! lsp-mode
   (setq lsp-nix-nixd-server-path "nixd"
@@ -382,7 +382,9 @@ Opens the custom 'o' agenda command configured in
   (setq! org-mem-watch-dirs (list org-roam-directory)
          ;;org-mem-do-sync-with-org-id t
          org-roam-db-update-on-save nil
-         org-mem-roamy-do-overwrite-real-db t)
+         org-mem-roamy-do-overwrite-real-db t
+         ;; Reduce GC during org-roam operations
+         org-roam-db-gc-threshold most-positive-fixnum)
 
   (defun my-set-agenda-files (&rest _)
     (setq! org-agenda-files
@@ -409,11 +411,6 @@ Opens the custom 'o' agenda command configured in
 (use-package! org-roam-ui
   :after org-roam
   :commands (org-roam-ui-mode))
-
-;; TODO: see if this works Org-roam performance optimizations
-(after! org-roam
-  (setq org-roam-db-gc-threshold most-positive-fixnum
-        org-roam-db-update-method 'immediate))
 
 ;; citations and reference managment
 (setq! citar-bibliography (concat org-directory "emacs_lit.bib")
@@ -483,7 +480,7 @@ Opens the custom 'o' agenda command configured in
          org-agenda-span 1
          org-agenda-start-day nil) ;; i.e. today
 
-  ;;TODO fix the sections so that the match the todo-list (lang/org/config.el)
+  ;; Custom agenda view aligned with Doom's org-todo-keywords
   (setq! org-agenda-custom-commands
          '(("o" "Overview"
             ((agenda "" ((org-agenda-span 'week)
@@ -501,8 +498,7 @@ Opens the custom 'o' agenda command configured in
                               :tag ("REFILE" "IDEA" "DONE" "KILL")
                               :order 1)
                              (:name "Next to do"
-                              :todo "NEXT"
-                              :tag "NEXT"
+                              :todo "TODO"
                               :order 3)
                              (:name "Ongoing"
                               :todo "STRT"
@@ -556,7 +552,7 @@ Opens the custom 'o' agenda command configured in
                              (:name "Someday"
                               :priority<= "C"
                               :tag "@Someday"
-                              :todo "SOMEDAY"
+                              :todo "IDEA"
                               :order 90)
                              (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
   :config
@@ -599,42 +595,43 @@ Opens the custom 'o' agenda command configured in
 ;;;
 ;;;
 
-(map!
- (;;:org-roam
-  :leader
-  (:prefix-map ("z" . "org-roam")
-               "c" #'org-roam-capture
-               "D" #'org-roam-demote-entire-buffer
-               "f" #'org-roam-node-find
-               "F" #'org-roam-ref-find
-               "g" #'org-roam-graph
-               "i" #'org-roam-node-insert
-               "I" #'org-id-get-create
-               "t" #'org-roam-buffer-toggle
-               "T" #'org-roam-buffer-display-dedicated
-               "r" #'org-roam-refile
-               "R" #'org-roam-link-replace-all
-               (:prefix ("d" . "by date")
-                :desc "Goto previous note" "b" #'org-roam-dailies-goto-previous-note
-                :desc "Goto date"          "d" #'org-roam-dailies-goto-date
-                :desc "Capture date"       "D" #'org-roam-dailies-capture-date
-                :desc "Goto next note"     "f" #'org-roam-dailies-goto-next-note
-                :desc "Goto tomorrow"      "m" #'org-roam-dailies-goto-tomorrow
-                :desc "Capture tomorrow"   "M" #'org-roam-dailies-capture-tomorrow
-                :desc "Capture today"      "n" #'org-roam-dailies-capture-today
-                :desc "Goto today"         "t" #'org-roam-dailies-goto-today
-                :desc "Capture today"      "T" #'org-roam-dailies-capture-today
-                :desc "Goto yesterday"     "y" #'org-roam-dailies-goto-yesterday
-                :desc "Capture yesterday"  "Y" #'org-roam-dailies-capture-yesterday
-                :desc "Find directory"     "-" #'org-roam-dailies-find-directory)
-               (:prefix ("n" . "node properties")
-                        "a" #'org-roam-alias-add
-                        "A" #'org-roam-alias-remove
-                        "t" #'org-roam-tag-add
-                        "T" #'org-roam-tag-remove
-                        "r" #'org-roam-ref-add
-                        "R" #'org-roam-ref-remove)))
+;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
+(after! org-roam
+  (map! :leader
+        (:prefix-map ("z" . "org-roam")
+         "c" #'org-roam-capture
+         "D" #'org-roam-demote-entire-buffer
+         "f" #'org-roam-node-find
+         "F" #'org-roam-ref-find
+         "g" #'org-roam-graph
+         "i" #'org-roam-node-insert
+         "I" #'org-id-get-create
+         "t" #'org-roam-buffer-toggle
+         "T" #'org-roam-buffer-display-dedicated
+         "r" #'org-roam-refile
+         "R" #'org-roam-link-replace-all
+         (:prefix ("d" . "dailies")
+          "b" #'org-roam-dailies-goto-previous-note
+          "d" #'org-roam-dailies-goto-date
+          "D" #'org-roam-dailies-capture-date
+          "f" #'org-roam-dailies-goto-next-note
+          "m" #'org-roam-dailies-goto-tomorrow
+          "M" #'org-roam-dailies-capture-tomorrow
+          "n" #'org-roam-dailies-capture-today
+          "t" #'org-roam-dailies-goto-today
+          "T" #'org-roam-dailies-capture-today
+          "y" #'org-roam-dailies-goto-yesterday
+          "Y" #'org-roam-dailies-capture-yesterday
+          "-" #'org-roam-dailies-find-directory)
+         (:prefix ("o" . "node properties")
+          "a" #'org-roam-alias-add
+          "A" #'org-roam-alias-remove
+          "t" #'org-roam-tag-add
+          "T" #'org-roam-tag-remove
+          "r" #'org-roam-ref-add
+          "R" #'org-roam-ref-remove))))
 
+(map!
  (;;: org-agenda
   (:leader
         ;;; <leader> n --- notes
@@ -734,7 +731,7 @@ Opens the custom 'o' agenda command configured in
 
 (after! elfeed
   (map! :map elfeed-search-mode-map
-        :n "R" #'bmg/elfeed-mark-all-as-read))
+        "R" #'bmg/elfeed-mark-all-as-read))
 
 ;;;
 ;;;
