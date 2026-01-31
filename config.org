@@ -47,6 +47,13 @@
   (setq! doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
+;; Fix gnus face inheritance cycle that breaks corfu child frames
+;; The doom-dracula theme creates a circular inheritance in gnus faces
+(after! gnus
+  (custom-set-faces!
+    '(gnus-group-news-low :inherit nil)
+    '(gnus-group-news-low-empty :inherit gnus-group-news-low :weight normal)))
+
 (after! org-modern
   (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 7 Free")
   (set-face-attribute 'org-modern-label nil :height 1.0)
@@ -141,6 +148,10 @@
 
 ;; Use a custom dictionary
 (setq! ispell-dictionary (if IS-MAC "en_GB" "en_US"))
+
+;; NixOS doesn't have /usr/share/dict/words, disable word-list completion in text-mode
+;; (aspell handles spell-checking, this only affects M-TAB word completion)
+(setq! text-mode-ispell-word-completion nil)
 
 (set-language-environment-charset "UTF-8")
 
@@ -352,26 +363,170 @@ Opens the custom 'o' agenda command configured in
 (setq! org-roam-directory (file-truename (concat org-directory "roam/"))
        org-roam-extract-new-file-path "${slug}.org"
        org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) org-roam-directory)
-       org-noter-notes-search-path org-roam-directory
-       )
+       org-noter-notes-search-path org-roam-directory)
 
-;; (setq! +org-capture-todo-file org-default-notes-file
-;;        +org-capture-notes-file org-default-notes-file)
+;; Point Doom's org-capture templates to roam inbox for unified capture
+(setq! +org-capture-todo-file org-default-notes-file
+       +org-capture-notes-file org-default-notes-file)
 
 ;; Org-roam capture templates
-;; Note: Using setq! to completely replace default templates
-;; To add templates, use (add-to-list 'org-roam-capture-templates ...) after this
+;; Uses subdirectories for organization + filetags for filtering
+;; :mkdir t ensures directories are created on first use (multi-machine support)
 (setq! org-roam-capture-templates
-       '(("d" "default" plain
-          "%?"
+       '(;; Default note - flat in roam directory
+         ("d" "default" plain "%?"
           :if-new (file+head "${slug}.org"
-                             "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
+                   "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n#+filetags:\n\n")
           :unnarrowed t)
-         ("r" "ref" plain
-          "%?"
-          :if-new (file+head "${slug}.org"
-                             "#+title: ${title}\n#+roam_key: ${ref}\n#+created: %u\n#+last_modified: %U\n\n - related :: ")
-          :unnarrowed t)))
+
+         ;; Fleeting/quick note - appends to inbox with REFILE tag for GTD processing
+         ("f" "fleeting" entry
+          (file+headline org-default-notes-file "Inbox")
+          "* %? :REFILE:\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i"
+          :prepend t)
+
+         ;; Literature/reference note
+         ("r" "reference" plain "%?"
+          :if-new (file+head "refs/${slug}.org"
+                   "#+title: ${title}\n#+created: %u\n#+roam_refs: ${ref}\n#+filetags: :reference:\n\n* Summary\n\n* Notes\n%?")
+          :unnarrowed t
+          :mkdir t)
+
+         ;; Meeting note
+         ("m" "meeting" plain "%?"
+          :if-new (file+head "meetings/%<%Y%m%d>-${slug}.org"
+                   "#+title: ${title}\n#+date: %<%Y-%m-%d>\n#+created: %u\n#+filetags: :meeting:\n\n* Attendees\n\n* Agenda\n\n* Notes\n%?\n\n* Action Items\n")
+          :unnarrowed t
+          :mkdir t)))
+
+;; Org-roam dailies configuration
+(setq! org-roam-dailies-directory "daily/")
+(setq! org-roam-dailies-capture-templates
+       '(("d" "default" entry
+          "* %?"
+          :target (file+head "%<%Y-%m-%d>.org"
+                   "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n")
+          :mkdir t)
+         ("t" "task" entry
+          "* TODO %?"
+          :target (file+head+olp "%<%Y-%m-%d>.org"
+                   "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"
+                   ("Tasks"))
+          :mkdir t)
+         ("j" "journal" entry
+          "* %<%H:%M> %?"
+          :target (file+head+olp "%<%Y-%m-%d>.org"
+                   "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"
+                   ("Journal"))
+          :mkdir t)))
+
+;; Per-project capture system
+;; Stores project files under roam/projects/{project-name}/ instead of in code repos
+;; This keeps org files out of shared repositories while maintaining project organization
+
+(defun bmg/get-project-name ()
+  "Get current project name or prompt for one.
+Uses projectile if in a project, otherwise offers existing project directories."
+  (or (and (fboundp 'projectile-project-p)
+           (projectile-project-p)
+           (projectile-project-name))
+      (completing-read "Project: "
+                       (when (file-directory-p (expand-file-name "projects" org-roam-directory))
+                         (directory-files
+                          (expand-file-name "projects" org-roam-directory)
+                          nil "^[^.]")))))
+
+(defun bmg/project-org-file (filename)
+  "Return path to FILENAME in current project's org directory.
+Creates directory and initializes file with proper headers if needed."
+  (let* ((project (bmg/get-project-name))
+         (dir (expand-file-name (concat "projects/" project) org-roam-directory))
+         (file (expand-file-name filename dir)))
+    (unless (file-directory-p dir)
+      (make-directory dir t))
+    ;; Initialize file with proper headers if it doesn't exist
+    (unless (file-exists-p file)
+      (with-temp-file file
+        (pcase filename
+          ("todo.org"
+           (insert (format "#+title: %s Tasks\n#+created: %s\n#+filetags: :project:todo:\n\n* Inbox\n\n* Active\n\n* Completed\n"
+                           project (format-time-string "[%Y-%m-%d %a]"))))
+          ("notes.org"
+           (insert (format "#+title: %s Notes\n#+created: %s\n#+filetags: :project:notes:\n\n* Inbox\n\n* Notes\n"
+                           project (format-time-string "[%Y-%m-%d %a]"))))
+          ("changelog.org"
+           (insert (format "#+title: %s Changelog\n#+created: %s\n#+filetags: :project:changelog:\n\n* Unreleased\n\n"
+                           project (format-time-string "[%Y-%m-%d %a]"))))
+          (_
+           (insert (format "#+title: %s - %s\n#+created: %s\n#+filetags: :project:\n\n"
+                           project (file-name-sans-extension filename)
+                           (format-time-string "[%Y-%m-%d %a]")))))))
+    file))
+
+(defun bmg/capture-project-todo ()
+  "Capture a TODO for the current project.
+Adds to Inbox heading with REFILE tag for GTD processing."
+  (interactive)
+  (let ((file (bmg/project-org-file "todo.org")))
+    (find-file file)
+    (goto-char (point-min))
+    (re-search-forward "^\\* Inbox" nil t)
+    (org-end-of-subtree)
+    (insert "\n** TODO  :REFILE:")
+    (backward-char 8)))
+
+(defun bmg/capture-project-note ()
+  "Capture a note for the current project.
+Adds to Inbox heading with REFILE tag for GTD processing."
+  (interactive)
+  (let ((file (bmg/project-org-file "notes.org")))
+    (find-file file)
+    (goto-char (point-min))
+    (re-search-forward "^\\* Inbox" nil t)
+    (org-end-of-subtree)
+    (insert (format "\n** %s  :REFILE:" (format-time-string "[%Y-%m-%d %a]")))
+    (backward-char 9)))
+
+(defun bmg/capture-project-roam-note ()
+  "Capture a roam note for the current project.
+Creates a new org-roam node in projects/{project-name}/ directory."
+  (interactive)
+  (let* ((project (bmg/get-project-name))
+         (org-roam-capture-templates
+          `(("p" "project note" plain "%?"
+             :if-new (file+head
+                      ,(format "projects/%s/${slug}.org" project)
+                      ,(format "#+title: ${title}\n#+created: %%u\n#+filetags: :project:%s:\n\n" project))
+             :unnarrowed t
+             :mkdir t))))
+    (org-roam-capture nil "p")))
+
+(defun bmg/open-project-todo ()
+  "Open the TODO file for the current project."
+  (interactive)
+  (find-file (bmg/project-org-file "todo.org")))
+
+(defun bmg/open-project-notes ()
+  "Open the notes file for the current project."
+  (interactive)
+  (find-file (bmg/project-org-file "notes.org")))
+
+;; Override Doom's project capture functions to use roam/projects/ instead of project-root
+;; This makes C-c n n → p → t/n/c use our roam directory
+(defadvice! bmg/org-capture-project-todo-file-a ()
+  "Override to use roam/projects/{project}/todo.org instead of project-root."
+  :override #'+org-capture-project-todo-file
+  (bmg/project-org-file "todo.org"))
+
+(defadvice! bmg/org-capture-project-notes-file-a ()
+  "Override to use roam/projects/{project}/notes.org instead of project-root."
+  :override #'+org-capture-project-notes-file
+  (bmg/project-org-file "notes.org"))
+
+(defadvice! bmg/org-capture-project-changelog-file-a ()
+  "Override to use roam/projects/{project}/changelog.org instead of project-root."
+  :override #'+org-capture-project-changelog-file
+  (bmg/project-org-file "changelog.org"))
 
 ;; org-mem https://github.com/meedstrom/org-mem is a complimentary package to org roam
 ;; can use it ot extract certain properties of the roam db. In addition it also provides fast search functionality,
@@ -431,9 +586,10 @@ Opens the custom 'o' agenda command configured in
       (define-key map (kbd "b") 'biblio-dblp-lookup)
       (define-key map (kbd "o") 'biblio-doi-insert-bibtex)
       map)
-    "Citar Embark become keymap for biblio lookup.")
+    "Citar Embark become keymap for biblio lookup."))
 
-  ;; tell embark about the keymap
+;; tell embark about the citar keymap after embark loads
+(after! embark
   (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
@@ -481,6 +637,7 @@ Opens the custom 'o' agenda command configured in
          org-agenda-start-day nil) ;; i.e. today
 
   ;; Custom agenda view aligned with Doom's org-todo-keywords
+  ;; GTD workflow: Inbox/REFILE items appear at top for processing
   (setq! org-agenda-custom-commands
          '(("o" "Overview"
             ((agenda "" ((org-agenda-span 'week)
@@ -494,9 +651,9 @@ Opens the custom 'o' agenda command configured in
                              :order 1)))))
              (alltodo "" ((org-agenda-overriding-header "")
                           (org-super-agenda-groups
-                           '((:name "To Refile"
-                              :tag ("REFILE" "IDEA" "DONE" "KILL")
-                              :order 1)
+                           '((:name "📥 Inbox - Process these first"
+                              :tag "REFILE"
+                              :order 0)
                              (:name "Next to do"
                               :todo "TODO"
                               :order 3)
@@ -629,7 +786,13 @@ Opens the custom 'o' agenda command configured in
           "t" #'org-roam-tag-add
           "T" #'org-roam-tag-remove
           "r" #'org-roam-ref-add
-          "R" #'org-roam-ref-remove))))
+          "R" #'org-roam-ref-remove)
+         (:prefix ("p" . "project")
+          :desc "Project todo"      "t" #'bmg/capture-project-todo
+          :desc "Project note"      "n" #'bmg/capture-project-note
+          :desc "Project roam note" "p" #'bmg/capture-project-roam-note
+          :desc "Open project todo" "T" #'bmg/open-project-todo
+          :desc "Open project notes" "N" #'bmg/open-project-notes))))
 
 (map!
  (;;: org-agenda
