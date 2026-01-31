@@ -82,19 +82,11 @@
 
 (package! license-snippets)
 
-;; Copilot
+;; Copilot - inline completions
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 
-;; mcp for gptel
-(package! mcp
-  :recipe (:host github :repo "lizqwerscott/mcp.el" :files ("*.el")))
-
-(package! aidermacs)
-;; Example of overloading a package to do local development
-;;(package! aidermacs :recipe (:local-repo "/home/brian/projects/code/github.com/MatthewZMD/aidermacs"))
-
-;; Yuck mode is for ew
+;; Yuck mode is for eww
 (package! yuck-mode)
 
 ;; just file mode
