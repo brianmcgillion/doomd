@@ -369,6 +369,27 @@ Opens the custom 'o' agenda command configured in
 (setq! +org-capture-todo-file org-default-notes-file
        +org-capture-notes-file org-default-notes-file)
 
+;; org-protocol for browser integration (Chrome/Firefox capture)
+;; Requires desktop file handler configured in NixOS/home-manager
+(require 'org-protocol)
+
+;; Add org-protocol capture templates for web capture
+;; "w" - Web page capture (link + optional selection)
+;; "W" - Web page capture with immediate finish (quick bookmark)
+(after! org
+  (setq! org-protocol-default-template-key "w")
+  (add-to-list 'org-capture-templates
+               '("w" "Web Capture" entry
+                 (file+headline org-default-notes-file "Inbox")
+                 "* %?[[%:link][%:description]] :REFILE:web:\n:PROPERTIES:\n:CREATED: %U\n:SOURCE: %:link\n:END:\n%i"
+                 :prepend t))
+  (add-to-list 'org-capture-templates
+               '("W" "Web Capture (quick)" entry
+                 (file+headline org-default-notes-file "Inbox")
+                 "* [[%:link][%:description]] :REFILE:web:\n:PROPERTIES:\n:CREATED: %U\n:SOURCE: %:link\n:END:\n%i"
+                 :prepend t
+                 :immediate-finish t)))
+
 ;; Org-roam capture templates
 ;; Uses subdirectories for organization + filetags for filtering
 ;; :mkdir t ensures directories are created on first use (multi-machine support)
