@@ -98,3 +98,6 @@
 ;;   :recipe (:type local
 ;;            :local-repo "/home/brian/projects/code/github.com/nix-community/nix-ts-mode"
 ;;            :files ("*.el" "lisp/*.el")))
+
+;; Unified org-roam search with consult
+(package! consult-org-roam)

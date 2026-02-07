@@ -47,12 +47,12 @@
   (setq! doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
-;; Fix gnus face inheritance cycle that breaks corfu child frames
-;; The doom-dracula theme creates a circular inheritance in gnus faces
-(after! gnus
-  (custom-set-faces!
-    '(gnus-group-news-low :inherit nil)
-    '(gnus-group-news-low-empty :inherit gnus-group-news-low :weight normal)))
+;; Fix gnus face inheritance cycle - must run early before gnus loads
+;; The cycle is: gnus-group-news-low-empty inherits from gnus-group-news-low
+;; which inherits from gnus-group-news-low-empty
+(custom-set-faces!
+  '(gnus-group-news-low :weight normal :foreground "gray50")
+  '(gnus-group-news-low-empty :weight normal :foreground "gray40"))
 
 (after! org-modern
   (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 7 Free")
@@ -773,13 +773,21 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 ;;;
 ;;;
 
+;; consult-org-roam for enhanced search with live preview
+(use-package! consult-org-roam
+  :after org-roam
+  :config
+  (consult-org-roam-mode 1)
+  (setq consult-org-roam-grep-func #'consult-ripgrep))
+
 ;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
+;; Uses consult-org-roam for enhanced find/search with live preview
 (after! org-roam
   (map! :leader
         (:prefix-map ("z" . "org-roam")
          "c" #'org-roam-capture
          "D" #'org-roam-demote-entire-buffer
-         "f" #'org-roam-node-find
+         "f" #'consult-org-roam-file-find      ; Enhanced with preview
          "F" #'org-roam-ref-find
          "g" #'org-roam-graph
          "i" #'org-roam-node-insert
@@ -788,6 +796,9 @@ Creates a new org-roam node in projects/{project-name}/ directory."
          "T" #'org-roam-buffer-display-dedicated
          "r" #'org-roam-refile
          "R" #'org-roam-link-replace-all
+         "s" #'consult-org-roam-search         ; Full-text search
+         "b" #'consult-org-roam-backlinks      ; Interactive backlinks
+         "l" #'consult-org-roam-forward-links  ; Forward links
          (:prefix ("d" . "dailies")
           "b" #'org-roam-dailies-goto-previous-note
           "d" #'org-roam-dailies-goto-date
@@ -846,9 +857,23 @@ Creates a new org-roam node in projects/{project-name}/ directory."
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
     :desc "crux-view-url"                          "u" #'crux-view-url
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
-    :desc "Elfeed RSS enter"                       "e" #'=rss
-    :desc "Aidermacs transient"                    "a" #'aidermacs-transient-menu)))
+    :desc "Elfeed RSS enter"                       "e" #'=rss))
+
+  (:leader
+   (:prefix ("s" . "search")
+    :desc "Search papers (rga)"                    "P" #'bmg/rga-search)))
  ) ;; END MAP
+
+;; ripgrep-all for searching PDFs and documents
+(defun bmg/rga-search (query)
+  "Search PDFs and documents in Papers directory with ripgrep-all."
+  (interactive "sSearch papers: ")
+  (let ((default-directory "~/Documents/Papers/"))
+    (compilation-start
+     (format "rga --color=never --heading --line-number %s"
+             (shell-quote-argument query))
+     'grep-mode
+     (lambda (_) "*rga-search*"))))
 
 (map! :map dirvish-mode-map
       ;; left click for expand/collapse dir or open file
@@ -913,9 +938,41 @@ Creates a new org-roam node in projects/{project-name}/ directory."
       (elfeed-search-update--force)
       (message "Marked %d entries as read" count))))
 
+(defun bmg/elfeed-capture-arxiv ()
+  "Capture current elfeed arxiv entry to org-roam reference note."
+  (interactive)
+  (unless (bound-and-true-p elfeed-show-entry)
+    (user-error "Not in an elfeed entry buffer"))
+  (let* ((entry elfeed-show-entry)
+         (title (elfeed-entry-title entry))
+         (link (elfeed-entry-link entry))
+         (authors (or (elfeed-meta entry :authors) "Unknown"))
+         (authors-str (if (listp authors)
+                          (mapconcat (lambda (a) (or (plist-get a :name) "")) authors ", ")
+                        authors))
+         (abstract (elfeed-deref (elfeed-entry-content entry))))
+    (org-roam-capture-
+     :node (org-roam-node-create :title title)
+     :templates
+     `(("a" "arxiv paper" plain
+        ,(concat "- Source :: " link "\n"
+                 "- Authors :: " authors-str "\n\n"
+                 "* Abstract\n\n"
+                 (or abstract "") "\n\n"
+                 "* Notes\n\n%?")
+        :target (file+head "roam/${slug}.org"
+                           ,(concat ":PROPERTIES:\n"
+                                    ":ID: %(org-id-new)\n"
+                                    ":END:\n"
+                                    "#+title: ${title}\n"
+                                    "#+filetags: :arxiv:paper:\n\n"))
+        :unnarrowed t)))))
+
 (after! elfeed
   (map! :map elfeed-search-mode-map
-        "R" #'bmg/elfeed-mark-all-as-read))
+        "R" #'bmg/elfeed-mark-all-as-read)
+  (map! :map elfeed-show-mode-map
+        "C" #'bmg/elfeed-capture-arxiv))
 
 ;;;
 ;;;

@@ -153,9 +153,10 @@
 (use-package! elfeed-score
   :after elfeed
   :config
-  ;;(elfeed-score-load-score-file (file-truename (concat org-directory  "elfeed.score" ))) ; See the elfeed-score documentation for the score file syntax
   (setq elfeed-score-serde-score-file (concat org-directory "elfeed.score"))
   (elfeed-score-enable)
+  ;; Auto-sort by score (highest first)
+  (setq elfeed-search-sort-function #'elfeed-score-sort)
   (define-key elfeed-search-mode-map "=" elfeed-score-map))
 
 (use-package! org-ref
