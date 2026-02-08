@@ -1,4 +1,4 @@
-;;; elfeed-congig.el -*- lexical-binding: t; -*-
+;;; elfeed-config.el -*- lexical-binding: t; -*-
 
 (after! elfeed
   ;; update elfeed when opened or at least every 24 hours
@@ -94,6 +94,20 @@
         (insert (propertize "(empty)\n" 'face 'italic)))
       (goto-char (point-min))))
 
+  (defun bmg/elfeed-get-ai-tags-for-abstract (abstract callback)
+    "Use AI to suggest tags for paper ABSTRACT, call CALLBACK with result."
+    (require 'gptel)
+    (gptel-request abstract
+      :system "Suggest org-mode filetags for this paper abstract. Return ONLY a single line in colon-separated format like :paper:security:tpm: with no explanation.
+Focus on these categories:
+- Document type: paper
+- Security domains: security, tpm, tee, sgx, trustzone, confidential_computing, attestation, secure_boot
+- Attack types: exploit, side_channel, vulnerability, fuzzing
+- Systems: virtualization, containers, android, linux, firmware, hardware
+- Topics: cryptography, ml, networking, performance, architecture
+Keep to 3-5 most relevant tags. Always include :paper: tag."
+      :callback callback))
+
   (defun bmg/elfeed-entry-to-arxiv ()
     "Fetch an arXiv paper into the local library from the current elfeed entry.
 
@@ -102,13 +116,19 @@
 
   - Update the bib entry with the pdf file location
   - Add a TODO entry in my papers.org to read the paper
+  - AI-suggested tags based on abstract
   "
     (interactive)
+    (unless (bound-and-true-p elfeed-show-entry)
+      (user-error "Not in an elfeed entry buffer"))
     (let* ((link (elfeed-entry-link elfeed-show-entry))
            (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
-           (matched-arxiv-number (match-string 1 link))
+           (matched-arxiv-number (when match-idx (match-string 1 link)))
+           (abstract (elfeed-deref (elfeed-entry-content elfeed-show-entry)))
            (last-arxiv-key "")
            (last-arxiv-title ""))
+      (unless matched-arxiv-number
+        (user-error "Not an arXiv entry (URL: %s)" link))
       (when matched-arxiv-number
         (message "Going to arXiv: %s" matched-arxiv-number)
         (arxiv-get-pdf-add-bibtex-entry matched-arxiv-number citar-bibliography (nth 0 citar-library-paths))
@@ -127,18 +147,28 @@
             (message (concat "checking for key: " key))
             (setq last-arxiv-key key)
             (setq last-arxiv-title title)))
-        ;; (message (concat "outside of save window, key: " last-arxiv-key))
-        ;; Add a TODO entry with the cite key and title
-        ;; This is a bit hacky solution as I don't know how to add the org entry programmatically
-        (save-window-excursion
-          (find-file (concat org-roam-directory "papers.org"))
-          (goto-char (point-max))
-          (insert (format "** TODO Read paper [cite:@%s] %s" last-arxiv-key last-arxiv-title))
-          (save-buffer)
-          )
-        )
-      )
-    )
+        ;; Add a TODO entry with the cite key and title (check for duplicates)
+        (let ((papers-file (expand-file-name "papers.org" org-roam-directory)))
+          (save-window-excursion
+            (find-file papers-file)
+            ;; Check if this citation already exists
+            (goto-char (point-min))
+            (if (search-forward (format "[cite:@%s]" last-arxiv-key) nil t)
+                (message "Paper already in reading list: %s" last-arxiv-title)
+              ;; Not a duplicate, add it
+              (goto-char (point-max))
+              (insert (format "\n** TODO Read paper [cite:@%s] %s" last-arxiv-key last-arxiv-title))
+              (save-buffer)
+              (message "Added to reading list: %s" last-arxiv-title))))
+        ;; Get AI-suggested tags asynchronously
+        (when abstract
+          (bmg/elfeed-get-ai-tags-for-abstract
+           abstract
+           (lambda (response info)
+             (when response
+               (let ((tags (string-trim response)))
+                 (message "AI suggested tags: %s (copied to kill ring)" tags)
+                 (kill-new tags)))))))))
   (map! (:after elfeed
                 (:map elfeed-show-mode-map
                  :desc "Fetch arXiv paper to the local library" "a" #'bmg/elfeed-entry-to-arxiv)))

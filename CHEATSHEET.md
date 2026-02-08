@@ -196,6 +196,91 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 
 ---
 
+## AI-Powered Knowledge Management
+
+### Standard Emacs Bindings (`C-c a`)
+| Key | Action | Description |
+|-----|--------|-------------|
+| `C-c a t` | Suggest tags | AI suggests filetags for current buffer |
+| `C-c a s` | Summarize paper | Generate AI summary, insert at end |
+| `C-c a p` | Process inbox | GTD processing suggestions for item |
+| `C-c a r` | Find related | AI finds semantically related notes |
+| `C-c a q` | Ask KB | RAG-based Q&A over your notes |
+| `C-c a k` | Search KB | Multi-source search (notes, PDFs, bib) |
+| `C-c a w` | Weekly review | AI-generated weekly summary |
+| `C-c a c` | Check tags | Report tag frequency and duplicates |
+| `C-c a o` | Find orphans | Notes with no links in or out |
+
+### Org-Roam AI Bindings (`M-SPC z` or `SPC z`)
+| Key | Action |
+|-----|--------|
+| `z S` | Suggest tags for buffer |
+| `z R` | Find related notes |
+| `z w` | Generate weekly review |
+| `z a t` | Suggest tags |
+| `z a s` | Summarize paper |
+| `z a r` | Find related notes |
+| `z a w` | Weekly review |
+| `z a c` | Check tag consistency |
+| `z a o` | Find orphan notes |
+
+### Org-Roam UI (`M-SPC z u` or `SPC z u`)
+| Key | Action |
+|-----|--------|
+| `u u` | Open graph in browser |
+| `u m` | Toggle UI mode |
+
+### Search Bindings (`M-SPC s` or `SPC s`)
+| Key | Action |
+|-----|--------|
+| `s Q` | Ask knowledge base (RAG) |
+| `s k` | Search knowledge base |
+| `s P` | Search papers (rga) |
+
+### Org-mode Local (`C-c l` in org buffers)
+| Key | Action |
+|-----|--------|
+| `P` | Process inbox item |
+| `S` | Summarize paper |
+
+### AI Workflow Examples
+
+**Tag a new paper note:**
+```
+1. Open paper note
+2. C-c a t (or M-SPC z S)
+3. Tags copied to kill ring
+4. C-y to yank into #+filetags: line
+```
+
+**Process GTD inbox:**
+```
+1. In agenda, go to REFILE item
+2. Open the item (RET)
+3. C-c a p (or C-c l P in org buffer)
+4. Review AI suggestions for:
+   - Is it actionable?
+   - Suggested project
+   - Recommended tags
+   - Should it be a roam note?
+```
+
+**Ask your knowledge base:**
+```
+1. C-c a q (or M-SPC s Q)
+2. Type question: "What do my notes say about TPM attestation?"
+3. AI searches notes, retrieves context, answers with citations
+```
+
+**Weekly review:**
+```
+1. C-c a w (or M-SPC z w)
+2. AI summarizes notes modified this week
+3. Identifies themes, suggests connections
+```
+
+---
+
 ## Tips
 
 - **Quick find**: `SPC z f` then type part of title
@@ -203,3 +288,22 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 - **Backlinks**: `SPC z t` to see what links to current note
 - **Graph view**: `SPC z g` for visual connections
 - **Search all org**: `SPC s o` (org search)
+- **AI tag suggestions**: `C-c a t` for smart tagging
+- **Ask your notes**: `C-c a q` to query your knowledge base
+
+---
+
+## Setup Requirements
+
+### AI Features (gptel + Claude)
+Add Anthropic API key to `~/.netrc`:
+```
+machine api.anthropic.com login apikey password sk-ant-xxx
+```
+
+Ensure proper permissions:
+```bash
+chmod 600 ~/.netrc
+```
+
+Test with `M-x gptel` after running `doom sync`.
