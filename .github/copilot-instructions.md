@@ -40,29 +40,30 @@ This is **Brian McGillion's personal Doom Emacs configuration**, serving as the 
 ### Required Macros (NOT vanilla Emacs)
 
 ```elisp
-;; ✅ CORRECT - Use Doom macros
+;; ✅ CORRECT - Use Doom macros where still applicable
 (setq! variable value)           ; NOT setq
-(after! package-name ...)        ; NOT with-eval-after-load
-(use-package! name ...)          ; NOT use-package
+(with-eval-after-load 'pkg ...)  ; NOT after! (deprecated)
+(use-package name ...)           ; NOT use-package! (deprecated)
 (map! :leader ...)               ; NOT define-key
 (package! name)                  ; In packages.el only
 (doom! :module ...)              ; In init.el only
 
-;; ❌ WRONG - Don't use vanilla equivalents
+;; ❌ WRONG - Don't use these
 (setq variable value)            ; May be overridden
-(with-eval-after-load ...)       ; Timing issues
-(use-package name :ensure t)     ; ensure not needed
+(after! package-name ...)        ; Deprecated
+(use-package! name ...)          ; Deprecated
+(use-package name :ensure t)     ; ensure not needed in Doom
 ```
 
-### `after!` Usage
+### `with-eval-after-load` Usage
 
-Wrap package customization in `after!` blocks to ensure settings apply after the package loads:
+Wrap package customization in `with-eval-after-load` blocks to ensure settings apply after the package loads:
 
 ```elisp
-(after! org
+(with-eval-after-load 'org
   (setq! org-directory "~/Documents/org/"))
 
-(after! lsp-mode
+(with-eval-after-load 'lsp-mode
   (setq lsp-nix-server 'nixd))
 ```
 
@@ -291,7 +292,7 @@ Used for fast agenda file discovery - only includes files with active TODOs/time
    ```
 2. Configure in `config.org`:
    ```elisp
-   (use-package! new-package
+   (use-package new-package
      :config
      ...)
    ```
@@ -333,9 +334,9 @@ Used for fast agenda file discovery - only includes files with active TODOs/time
 When modifying this configuration:
 
 1. **⚠️ EDIT `config.org` ONLY** - This is a literate config; `config.el` is auto-generated and will be overwritten
-2. **Always use Doom macros** (`setq!`, `after!`, `use-package!`, `map!`)
+2. **Always use Doom macros** (`setq!`, `map!`) and standard Emacs (`with-eval-after-load`, `use-package`)
 3. **Use `bmg/` prefix** for new custom functions
-4. **Wrap package config** in `after!` blocks
+4. **Wrap package config** in `with-eval-after-load` blocks
 5. **Test with `doom doctor`** before considering complete
 6. **Preserve section markers** (BEGIN_/END_) for organization
 7. **Preserve org-mode structure** - Keep `#+begin_src emacs-lisp` blocks intact

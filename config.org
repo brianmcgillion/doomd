@@ -83,15 +83,15 @@
                                 (font-spec :family "Symbols Nerd Font" :size 13)
                                 (font-spec :family "Noto Color Emoji" :size 13))))
 
-(after! doom-themes
+(with-eval-after-load 'doom-themes
   (setq! doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
 ;; Fix gnus face inheritance cycle - must run early before gnus loads
 ;; The cycle is: gnus-group-news-low-empty inherits from gnus-group-news-low
 ;; which inherits from gnus-group-news-low-empty
-;; Use after! gnus to set faces only when gnus is actually loaded
-(after! gnus
+;; Use with-eval-after-load for gnus to set faces only when gnus is actually loaded
+(with-eval-after-load 'gnus
   (set-face-attribute 'gnus-group-news-low nil
                       :weight 'normal
                       :foreground "#565761")  ; doom-dracula base5
@@ -99,7 +99,7 @@
                       :weight 'normal
                       :foreground "#3d3f4c")) ; doom-dracula base4
 
-(after! org-modern
+(with-eval-after-load 'org-modern
   (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 7 Free")
   (set-face-attribute 'org-modern-label nil :height 1.0)
   (set-face-attribute 'org-modern-block-name nil :height 1.0))
@@ -198,32 +198,31 @@
        langtool-http-server-port 8081
        langtool-default-language nil)
 
-(after! license-snippets
+(with-eval-after-load 'license-snippets
   (license-snippets-init))
 
 ;; load all the elfeed configurations
 (load! "elfeed-config.el")
 
 ;; misc selection of useful functions
-(use-package! crux
+(use-package crux
   :defer t)
 
 ;; Clone git repos or jump to the project in the code path
 ;; https://github.com/NinjaTrappeur/my-repo-pins
-(use-package! my-repo-pins
-  :after-call my-repo-pins
-  :defer t
+(use-package my-repo-pins
+  :commands (my-repo-pins)
   :init
   (setq my-repo-pins-code-root "~/projects/code"))
 
-(use-package! inheritenv
+(use-package inheritenv
   :config
   ;; ensure that the environment is carried over to the subshell that is called.
   ;; this was tested against go-mode specifically go-import-add
   (inheritenv-add-advice #'process-lines)
   (inheritenv-add-advice #'shell-command-to-string))
 
-(after! consult
+(with-eval-after-load 'consult
   ;; Needed to ensure that preview is working live, without the need to
   ;; C-SPC everytime you need to see a preview. see vertico/config.el
   ;; where we are overriding the override :)
@@ -296,7 +295,7 @@ and \"apikey\" as USER."
 (setq c-default-style "linux") ;; set style to "linux"
 
 ;;setup clangd lsp
-(after! lsp-clangd
+(with-eval-after-load 'lsp-clangd
   (setq lsp-clients-clangd-args
         '("-j=3"
           "--background-index"
@@ -307,7 +306,7 @@ and \"apikey\" as USER."
   (set-lsp-priority! 'clangd 2))
 
 ;; use just mode for setting tasks to run at the cmdline
-(use-package! justl
+(use-package justl
   :config
   (map! :map justl-mode-map "e" 'justl-exec-recipe))
 
@@ -315,7 +314,7 @@ and \"apikey\" as USER."
 (defvar bmg/dotfiles-path (expand-file-name "~/.dotfiles")
   "Path to dotfiles repository for Nix flake expressions.")
 
-(after! lsp-mode
+(with-eval-after-load 'lsp-mode
   (setq lsp-nix-nixd-server-path "nixd"
         lsp-nix-nixd-formatting-command ["nixfmt"]
         lsp-nix-nixd-nixpkgs-expr (format "import (builtins.getFlake \"%s\").inputs.nixpkgs { }" bmg/dotfiles-path)
@@ -343,7 +342,7 @@ and \"apikey\" as USER."
 ;; Inline code completions via GitHub Copilot
 ;; Primary LLM interaction is via GitHub Copilot CLI (external)
 ;; Doom's :tools llm module provides gptel-magit for commit messages
-(use-package! copilot
+(use-package copilot
   :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
               ("<tab>" . 'copilot-accept-completion)
@@ -356,7 +355,7 @@ and \"apikey\" as USER."
 ;; Configure gptel with GitHub Copilot as the backend
 ;; Uses existing GitHub Copilot subscription - no separate API key needed
 ;; Authentication handled automatically via GitHub login
-(after! gptel
+(with-eval-after-load 'gptel
   (setq! gptel-model 'claude-opus-4.5
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
@@ -785,7 +784,7 @@ Opens the custom 'o' agenda command configured in
 ;; Add org-protocol capture templates for web capture
 ;; "w" - Web page capture (link + optional selection)
 ;; "W" - Web page capture with immediate finish (quick bookmark)
-(after! org
+(with-eval-after-load 'org
   (require 'org-protocol)
   (setq! org-protocol-default-template-key "w")
   (add-to-list 'org-capture-templates
@@ -833,7 +832,7 @@ Opens the custom 'o' agenda command configured in
 ;; Org-roam dailies configuration
 ;; Ensure daily notes directory exists
 (setq! org-roam-dailies-directory "daily/")
-(after! org-roam-dailies
+(with-eval-after-load 'org-roam-dailies
   (make-directory (expand-file-name org-roam-dailies-directory org-roam-directory) t))
 
 (setq! org-roam-dailies-capture-templates
@@ -966,7 +965,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 ;; org-mem https://github.com/meedstrom/org-mem is a complimentary package to org roam
 ;; can use it ot extract certain properties of the roam db. In addition it also provides fast search functionality,
 ;; such as the ability to populate the org aganda file list with only relevant TODO items
-(use-package! org-mem
+(use-package org-mem
   :after org
   :config
   (setq! org-mem-watch-dirs (list org-roam-directory)
@@ -995,10 +994,10 @@ Creates a new org-roam node in projects/{project-name}/ directory."
        org-log-into-drawer t
        org-log-state-notes-insert-after-drawers nil)
 
-(use-package! websocket
+(use-package websocket
   :after org-roam)
 
-(use-package! org-roam-ui
+(use-package org-roam-ui
   :after org-roam
   :commands (org-roam-ui-mode org-roam-ui-open)
   :config
@@ -1012,7 +1011,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
        citar-library-paths '("~/Documents/Papers/")
        citar-notes-paths org-roam-directory)
 
-(after! citar
+(with-eval-after-load 'citar
   ;; define the keymap to allow citar to hand over to biblio to do
   ;; a reference lookup
   (defvar bmg/my-citar-embark-become-map
@@ -1029,7 +1028,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
     "Citar Embark become keymap for biblio lookup."))
 
 ;; tell embark about the citar keymap after embark loads
-(after! embark
+(with-eval-after-load 'embark
   (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
@@ -1049,7 +1048,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
                        ("PERSONAL" . ?P)
                        (:endgroup . nil)))
 
-(use-package! org-super-agenda
+(use-package org-super-agenda
   :after org-agenda
   :init
   (setq!
@@ -1193,7 +1192,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 ;;;
 
 ;; consult-org-roam for enhanced search with live preview
-(use-package! consult-org-roam
+(use-package consult-org-roam
   :after org-roam
   :config
   (consult-org-roam-mode 1)
@@ -1201,7 +1200,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 
 ;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
 ;; Uses consult-org-roam for enhanced find/search with live preview
-(after! org-roam
+(with-eval-after-load 'org-roam
   (map! :leader
         (:prefix-map ("z" . "org-roam")
          "c" #'org-roam-capture
@@ -1298,7 +1297,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
  ) ;; END MAP
 
 ;; Localleader bindings for org-mode AI functions (C-c l in org-mode)
-(after! org
+(with-eval-after-load 'org
   (map! :map org-mode-map
         :localleader
         :desc "Process inbox item" "P" #'bmg/process-inbox-item
@@ -1465,7 +1464,7 @@ Presents results in a unified interface."
                                     "#+filetags: :arxiv:paper:\n\n"))
         :unnarrowed t)))))
 
-(after! elfeed
+(with-eval-after-load 'elfeed
   (map! :map elfeed-search-mode-map
         "R" #'bmg/elfeed-mark-all-as-read)
   (map! :map elfeed-show-mode-map

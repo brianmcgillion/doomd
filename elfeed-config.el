@@ -1,6 +1,6 @@
 ;;; elfeed-config.el -*- lexical-binding: t; -*-
 
-(after! elfeed
+(with-eval-after-load 'elfeed
   ;; update elfeed when opened or at least every 24 hours
   (add-hook! 'elfeed-search-mode-hook 'elfeed-update)
   (run-at-time nil (* 24 60 60) #'elfeed-update)
@@ -180,7 +180,7 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
 ;;; END elfeed
 
 ;; Try to add a weighting to the elfeeds
-(use-package! elfeed-score
+(use-package elfeed-score
   :after elfeed
   :config
   (setq elfeed-score-serde-score-file (concat org-directory "elfeed.score"))
@@ -189,7 +189,7 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
   (setq elfeed-search-sort-function #'elfeed-score-sort)
   (define-key elfeed-search-mode-map "=" elfeed-score-map))
 
-(use-package! org-ref
+(use-package org-ref
   :after org
   :config
   (defun bmg/reformat-bib-library (&optional filename)

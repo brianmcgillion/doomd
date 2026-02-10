@@ -29,15 +29,17 @@ doom env       # Regenerate environment snapshot
 
 ## Doom Conventions
 
-Use Doom macros, not vanilla Emacs equivalents:
+Use Doom macros where still applicable:
 - `setq!` not `setq`
-- `after!` not `with-eval-after-load`
-- `use-package!` not `use-package`
 - `map!` not `define-key`
 
-Wrap all package configuration in `after!` blocks:
+Use standard Emacs for deferred loading (Doom equivalents are deprecated):
+- `with-eval-after-load` not `after!`
+- `use-package` not `use-package!`
+
+Wrap all package configuration in `with-eval-after-load` blocks:
 ```elisp
-(after! org
+(with-eval-after-load 'org
   (setq! org-directory "~/Documents/org/"))
 ```
 
