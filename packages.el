@@ -66,7 +66,6 @@
 (unpin! org-roam)
 (package! websocket)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
-(package! emacsql-sqlite3)
 
 (package! org-mem)
 
@@ -101,3 +100,7 @@
 
 ;; Unified org-roam search with consult
 (package! consult-org-roam)
+
+;; Assembly language support
+(package! nasm-mode)
+(package! x86-lookup)
