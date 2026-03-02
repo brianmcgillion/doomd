@@ -18,7 +18,7 @@
 ;; Set your own banner to replace the default doom one "convert image.png
 ;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
 ;; e.g. 1080p
-(setq! fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
+(setopt fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -34,12 +34,12 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq! doom-theme 'doom-dracula)
+(setopt doom-theme 'doom-dracula)
 
 ;; Font configuration with fallbacks
 ;; Primary fonts: FiraCode Nerd Font, Fira Sans, Source Serif 4, Font Awesome
 ;; Fallbacks ensure graceful degradation if fonts are missing
-(setq! doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 13)
+(setopt doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 13)
        doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13)
        doom-big-font (font-spec :family "FiraCode Nerd Font Mono" :size 19)
        doom-serif-font (font-spec :family "Source Serif 4" :size 13)
@@ -84,7 +84,7 @@
                                 (font-spec :family "Noto Color Emoji" :size 13))))
 
 (with-eval-after-load 'doom-themes
-  (setq! doom-themes-enable-bold t
+  (setopt doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
 ;; Fix gnus face inheritance cycle - must run early before gnus loads
@@ -109,12 +109,12 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq! display-line-numbers-type t)
+(setopt display-line-numbers-type t)
 
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
 
-(setq! +doom-dashboard-menu-sections
+(setq +doom-dashboard-menu-sections
        '(("Open org-agenda"
           :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
           :action bmg/switch-to-agenda)
@@ -164,7 +164,7 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
-(setq! user-full-name "Brian McGillion"
+(setopt user-full-name "Brian McGillion"
        user-mail-address "brian@ssrc.tii.ae"
        ;; Who remembers all the commands :)
        which-key-idle-delay 0.5
@@ -185,16 +185,16 @@
 (dirvish-side-follow-mode t)
 
 ;; Use a custom dictionary
-(setq! ispell-dictionary (if IS-MAC "en_GB" "en_US"))
+(setopt ispell-dictionary (if IS-MAC "en_GB" "en_US"))
 
 ;; NixOS doesn't have /usr/share/dict/words, disable word-list completion in text-mode
 ;; (aspell handles spell-checking, this only affects M-TAB word completion)
-(setq! text-mode-ispell-word-completion nil)
+(setopt text-mode-ispell-word-completion nil)
 
 (set-language-environment-charset "UTF-8")
 
 ;; Use the Languagetool only in server mode
-(setq! langtool-http-server-host "localhost"
+(setopt langtool-http-server-host "localhost"
        langtool-http-server-port 8081
        langtool-default-language nil)
 
@@ -246,7 +246,7 @@ Intended as a predicate for `confirm-kill-emacs'."
   (or (not (daemonp))
       (yes-or-no-p prompt)))
 
-(setq! confirm-kill-emacs #'my-confirm-kill-daemon)
+(setopt confirm-kill-emacs #'my-confirm-kill-daemon)
 
 ;;;###autoload
 (defun bmg/api-key-from-auth-source (&optional host user)
@@ -368,13 +368,13 @@ and \"apikey\" as USER."
               ("C-TAB" . 'copilot-accept-completion-by-word)
               ("C-<tab>" . 'copilot-accept-completion-by-word))
   :config
-  (setq! copilot-indent-offset-warning-disable t))
+  (setopt copilot-indent-offset-warning-disable t))
 
 ;; Configure gptel with GitHub Copilot as the backend
 ;; Uses existing GitHub Copilot subscription - no separate API key needed
 ;; Authentication handled automatically via GitHub login
 (with-eval-after-load 'gptel
-  (setq! gptel-model 'claude-opus-4.5
+  (setopt gptel-model 'claude-opus-4.5
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 ;;; AI-Powered Knowledge Management Functions
@@ -776,24 +776,24 @@ Opens the custom 'o' agenda command configured in
     (message "Archived %d DONE tasks" count)))
 
 ;; change `org-directory'. It must be set before org loads!
-(setq! org-directory "~/Documents/org/"
+(setopt org-directory "~/Documents/org/"
        org-archive-location (concat org-directory "/archive.org_archive::datetree/")
        org-id-link-to-org-use-id t
        org-ellipsis " ▾ "
-       org-startup-folded t
+       org-startup-folded 'fold
        org-src-fontify-natively t
        org-hide-emphasis-markers t
        org-modern-star 'replace)
 
 
-(setq! org-roam-directory (file-truename (concat org-directory "roam/"))
+(setopt org-roam-directory (file-truename (concat org-directory "roam/"))
        org-roam-extract-new-file-path "${slug}.org"
        org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) org-roam-directory)
        org-noter-notes-search-path org-roam-directory)
 
 ;; Point Doom's org-capture templates to roam inbox for unified capture
-(setq! +org-capture-todo-file org-default-notes-file
-       +org-capture-notes-file org-default-notes-file)
+(setq +org-capture-todo-file org-default-notes-file
+      +org-capture-notes-file org-default-notes-file)
 
 ;; org-protocol for browser integration (Chrome/Firefox capture)
 ;; Requires desktop file handler configured in NixOS/home-manager
@@ -804,7 +804,7 @@ Opens the custom 'o' agenda command configured in
 ;; "W" - Web page capture with immediate finish (quick bookmark)
 (with-eval-after-load 'org
   (require 'org-protocol)
-  (setq! org-protocol-default-template-key "w")
+  (setopt org-protocol-default-template-key "w")
   (add-to-list 'org-capture-templates
                '("w" "Web Capture" entry
                  (file+headline org-default-notes-file "Inbox")
@@ -820,7 +820,7 @@ Opens the custom 'o' agenda command configured in
 ;; Org-roam capture templates
 ;; Uses subdirectories for organization + filetags for filtering
 ;; :mkdir t ensures directories are created on first use (multi-machine support)
-(setq! org-roam-capture-templates
+(setq org-roam-capture-templates
        '(;; Default note - flat in roam directory
          ("d" "default" plain "%?"
           :if-new (file+head "${slug}.org"
@@ -849,11 +849,11 @@ Opens the custom 'o' agenda command configured in
 
 ;; Org-roam dailies configuration
 ;; Ensure daily notes directory exists
-(setq! org-roam-dailies-directory "daily/")
+(setopt org-roam-dailies-directory "daily/")
 (with-eval-after-load 'org-roam-dailies
   (make-directory (expand-file-name org-roam-dailies-directory org-roam-directory) t))
 
-(setq! org-roam-dailies-capture-templates
+(setq org-roam-dailies-capture-templates
        '(("d" "default" entry
           "* %?"
           :target (file+head "%<%Y-%m-%d>.org"
@@ -986,15 +986,16 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 (use-package org-mem
   :after org
   :config
-  (setq! org-mem-watch-dirs (list org-roam-directory)
+  (setopt org-mem-watch-dirs (list org-roam-directory)
          ;;org-mem-do-sync-with-org-id t
          org-roam-db-update-on-save nil
-         org-mem-roamy-do-overwrite-real-db t
-         ;; Reduce GC during org-roam operations
-         org-roam-db-gc-threshold most-positive-fixnum)
+         org-mem-roamy-do-overwrite-real-db t)
+  ;; Reduce GC during org-roam operations
+  ;; Use setq because org-roam-db-gc-threshold has a broken (int) widget type
+  (setq org-roam-db-gc-threshold most-positive-fixnum)
 
   (defun my-set-agenda-files (&rest _)
-    (setq! org-agenda-files
+    (setopt org-agenda-files
            (cl-loop
             for file in (org-mem-all-files)
             unless (string-search "archive" file)
@@ -1014,7 +1015,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   ;; Disable org-roam's autosync since org-mem handles DB updates.
   (org-roam-db-autosync-disable))
 
-(setq! org-log-done 'time
+(setopt org-log-done 'time
        org-log-into-drawer t
        org-log-state-notes-insert-after-drawers nil)
 
@@ -1025,13 +1026,13 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   :after org-roam
   :commands (org-roam-ui-mode org-roam-ui-open)
   :config
-  (setq! org-roam-ui-sync-theme t
+  (setopt org-roam-ui-sync-theme t
          org-roam-ui-follow t
          org-roam-ui-update-on-save t
          org-roam-ui-open-on-start nil))
 
 ;; citations and reference managment
-(setq! citar-bibliography (concat org-directory "emacs_lit.bib")
+(setopt citar-bibliography (concat org-directory "emacs_lit.bib")
        citar-library-paths '("~/Documents/Papers/")
        citar-notes-paths org-roam-directory)
 
@@ -1056,7 +1057,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
-(setq! org-tag-alist '((:startgroup . nil)
+(setopt org-tag-alist '((:startgroup . nil)
                        ("@Project" . ?p)
                        ("@Reading" . ?r)
                        ("@Someday" . ?s)
@@ -1075,7 +1076,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 (use-package org-super-agenda
   :after org-agenda
   :init
-  (setq!
+  (setopt
    ;; more structured view
    org-agenda-prefix-format
    '((agenda . " %i %-20:c %?-12t %12s")
@@ -1085,7 +1086,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
    org-agenda-todo-keyword-format "%-6s"
    org-agenda-tags-column -120)
 
-  (setq! org-agenda-time-grid '((daily today require-timed)
+  (setopt org-agenda-time-grid '((daily today require-timed)
                                 (800 1200 1600 2000)
                                 "......"
                                 "----------------")
@@ -1095,13 +1096,13 @@ Creates a new org-roam node in projects/{project-name}/ directory."
          org-agenda-include-diary nil
          org-agenda-block-separator nil
          org-agenda-compact-blocks t
-         org-agenda-start-with-log-mode t
+         org-agenda-start-with-log-mode 'clockcheck
          org-agenda-span 1
          org-agenda-start-day nil) ;; i.e. today
 
   ;; Custom agenda view aligned with Doom's org-todo-keywords
   ;; GTD workflow: Inbox/REFILE items appear at top for processing
-  (setq! org-agenda-custom-commands
+  (setq org-agenda-custom-commands
          '(("o" "Overview"
             ((agenda "" ((org-agenda-span 'week)
                          (org-agenda-start-on-weekday 0) ;; Sunday

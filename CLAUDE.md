@@ -30,17 +30,17 @@ doom env       # Regenerate environment snapshot
 ## Doom Conventions
 
 Use Doom macros where still applicable:
-- `setq!` not `setq`
 - `map!` not `define-key`
 
-Use standard Emacs for deferred loading (Doom equivalents are deprecated):
+Use standard Emacs equivalents (Doom versions are deprecated):
+- `setopt` for `defcustom` variables (validates types); use `setq` for non-defcustom variables (Doom `+` prefixed vars, `defvar`) and complex template structures that fail `setopt` type validation (e.g., capture templates, agenda commands)
 - `with-eval-after-load` not `after!`
 - `use-package` not `use-package!`
 
 Wrap all package configuration in `with-eval-after-load` blocks:
 ```elisp
 (with-eval-after-load 'org
-  (setq! org-directory "~/Documents/org/"))
+  (setopt org-directory "~/Documents/org/"))
 ```
 
 ## Code Style
