@@ -18,7 +18,7 @@
 ;; Set your own banner to replace the default doom one "convert image.png
 ;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
 ;; e.g. 1080p
-(setopt fancy-splash-image (concat doom-private-dir "banner/trancendent-gnu.png"))
+(setq +dashboard-banner-file (concat doom-private-dir "banner/trancendent-gnu.png"))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -114,32 +114,32 @@
 ;; Blinking cursors are annoying
 (blink-cursor-mode -1)
 
-(setq +doom-dashboard-menu-sections
+(setq +dashboard-menu-sections
        '(("Open org-agenda"
-          :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-calendar" :face '+dashboard-menu-title)
           :action bmg/switch-to-agenda)
          ("Recently opened files"
-          :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-faicon "nf-fa-file_text" :face '+dashboard-menu-title)
           :action recentf-open-files)
          ("Reload last session"
-          :icon (nerd-icons-octicon "nf-oct-history" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-history" :face '+dashboard-menu-title)
           :when (cond ((modulep! :ui workspaces)
                        (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
                       ((require 'desktop nil t)
                        (file-exists-p (desktop-full-file-name))))
           :action doom/quickload-session)
          ("Open project"
-          :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-briefcase" :face '+dashboard-menu-title)
           :action projectile-switch-project)
          ("Open private configuration"
-          :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-tools" :face '+dashboard-menu-title)
           :when (file-directory-p doom-private-dir)
           :action doom/open-private-config)
          ("Open documentation"
-          :icon (nerd-icons-octicon "nf-oct-book" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-book" :face '+dashboard-menu-title)
           :action doom/help)
          ("RSS"
-          :icon (nerd-icons-octicon "nf-oct-rss" :face 'doom-dashboard-menu-title)
+          :icon (nerd-icons-octicon "nf-oct-rss" :face '+dashboard-menu-title)
           :action =rss)
          ))
 ;;;
