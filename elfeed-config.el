@@ -131,12 +131,12 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
         (user-error "Not an arXiv entry (URL: %s)" link))
       (when matched-arxiv-number
         (message "Going to arXiv: %s" matched-arxiv-number)
-        (arxiv-get-pdf-add-bibtex-entry matched-arxiv-number citar-bibliography (nth 0 citar-library-paths))
+        (arxiv-get-pdf-add-bibtex-entry matched-arxiv-number (car citar-bibliography) (nth 0 citar-library-paths))
         ;; Now, we are updating the reading list
         (message "Update reading list")
         (save-window-excursion
           ;; Get the bib file
-          (find-file citar-bibliography)
+          (find-file (car citar-bibliography))
           ;; get to last line
           (goto-char (point-max))
           ;; get to the first line of bibtex
@@ -172,10 +172,10 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
   (map! (:after elfeed
                 (:map elfeed-show-mode-map
                  :desc "Fetch arXiv paper to the local library" "a" #'bmg/elfeed-entry-to-arxiv)))
-  (setq! elfeed-search-print-entry-function #'bmg/my-search-print-fn)
-  (setq! elfeed-show-refresh-function #'bmg/elfeed-show-refresh--better-style)
-  (setq! elfeed-search-date-format '("%y-%m-%d" 10 :center))
-  (setq! elfeed-search-title-max-width 110))
+  (setq elfeed-search-print-entry-function #'bmg/my-search-print-fn)
+  (setq elfeed-show-refresh-function #'bmg/elfeed-show-refresh--better-style)
+  (setq elfeed-search-date-format '("%y-%m-%d" 10 :center))
+  (setq elfeed-search-title-max-width 110))
 
 ;;; END elfeed
 
@@ -195,7 +195,7 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
   (defun bmg/reformat-bib-library (&optional filename)
     "Formats the bibliography using biber & rebiber and updates the PDF -metadata."
     (interactive "P")
-    (or filename (setq filename citar-bibliography))
+    (or filename (setq filename (car citar-bibliography)))
     (let ((cmnd (concat
                  (format "rebiber -i %s &&" filename) ; Get converence versions of arXiv papers
                  ;;(format "biber --tool --output_align --output_indent=2 --output_fieldcase=lower --configfile=~/bib-lib/biber-myconf.conf --output_file=%s %s && " filename filename) ; Properly format the bibliography
@@ -204,6 +204,6 @@ Keep to 3-5 most relevant tags. Always include :paper: tag."
       (async-shell-command cmnd)))
   (defun bmg/reformat-bib-lib-hook ()
     "Reformat the main bib library whenever it is saved.."
-    (when (equal (buffer-file-name) citar-bibliography) (bmg/reformat-bib-library)))
+    (when (equal (buffer-file-name) (car citar-bibliography)) (bmg/reformat-bib-library)))
   (add-hook 'after-save-hook 'bmg/reformat-bib-lib-hook)
   (setq bibtex-dialect 'biblatex))

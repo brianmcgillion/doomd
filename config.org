@@ -1013,7 +1013,21 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   ;; save hook that conflicts with org-mem-roamy-db-mode (both try to
   ;; insert into the same SQLite table, causing UNIQUE constraint errors).
   ;; Disable org-roam's autosync since org-mem handles DB updates.
-  (org-roam-db-autosync-disable))
+  (org-roam-db-autosync-disable)
+
+  ;; Workaround: org-mem's DB insert uses `prin1' which preserves Emacs
+  ;; text properties (e.g. ws-butler-chg) as #(...) syntax.  EmacSQL's
+  ;; `read-from-string' chokes on these, causing "unhandled condition"
+  ;; errors in org-roam-node-list queries.  Strip properties before insert.
+  (define-advice org-mem-roamy--mk-literal-input-quoted-like-emacsql
+      (:filter-args (args) strip-text-properties)
+    (list (mapcar (lambda (row)
+                    (mapcar (lambda (val)
+                              (if (stringp val)
+                                  (substring-no-properties val)
+                                val))
+                            row))
+                  (car args)))))
 
 (setopt org-log-done 'time
        org-log-into-drawer t
@@ -1032,9 +1046,29 @@ Creates a new org-roam node in projects/{project-name}/ directory."
          org-roam-ui-open-on-start nil))
 
 ;; citations and reference managment
-(setopt citar-bibliography (concat org-directory "emacs_lit.bib")
+(setopt citar-bibliography (list (concat org-directory "emacs_lit.bib"))
        citar-library-paths '("~/Documents/Papers/")
-       citar-notes-paths org-roam-directory)
+       citar-notes-paths (list org-roam-directory))
+
+;; Pre-warm the citar bibliography cache after idle so that the first
+;; call to citar-open-notes doesn't block while parsing the bib file.
+;; In daemon mode, defer until after the first client frame connects
+;; so the parsing doesn't block emacsclient from attaching.
+;; (defun bmg/citar-warm-cache ()
+;;   "Pre-warm citar bibliography cache after a short idle delay."
+;;   (run-with-idle-timer 2 nil
+;;     (lambda ()
+;;       (require 'citar)
+;;       (citar-cache--get-bibliographies
+;;        (citar--bibliography-files) 'global))))
+
+;; (if (daemonp)
+;;     (add-hook 'server-after-make-frame-hook
+;;               (defun bmg/citar-warm-cache-once ()
+;;                 (bmg/citar-warm-cache)
+;;                 (remove-hook 'server-after-make-frame-hook
+;;                              #'bmg/citar-warm-cache-once)))
+;;   (bmg/citar-warm-cache))
 
 (with-eval-after-load 'citar
   ;; define the keymap to allow citar to hand over to biblio to do
@@ -1390,7 +1424,7 @@ Presents results in a unified interface."
       (insert (shell-command-to-string
                (format "rg --color=never -i %s %s 2>/dev/null | head -20"
                        (shell-quote-argument query)
-                       (shell-quote-argument (expand-file-name citar-bibliography)))))
+                       (shell-quote-argument (expand-file-name (car citar-bibliography))))))
 
       (org-mode)
       (goto-char (point-min)))
