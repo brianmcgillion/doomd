@@ -182,7 +182,9 @@
 ;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
-(dirvish-side-follow-mode t)
+(with-eval-after-load 'dirvish
+  (dirvish-side-follow-mode t)
+  (setopt dirvish-hide-details '(dirvish dirvish-side)))
 
 ;; Use a custom dictionary
 (setopt ispell-dictionary (if IS-MAC "en_GB" "en_US"))
