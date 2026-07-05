@@ -184,7 +184,17 @@
 
 (with-eval-after-load 'dirvish
   (dirvish-side-follow-mode t)
-  (setopt dirvish-hide-details '(dirvish dirvish-side)))
+  (setopt dirvish-hide-details '(dirvish dirvish-side))
+  ;; The side panel doesn't always reach `dirvish--build-layout', so
+  ;; `dired-hide-details-mode' never gets toggled on. Force it here once
+  ;; the side dired buffer is set up.
+  (add-hook 'dirvish-find-entry-hook
+            (defun bmg/dirvish-side-hide-details (_path find-fn)
+              (when (and (eq find-fn 'dired)
+                         (when-let* ((dv (dirvish-curr)))
+                           (eq (dv-type dv) 'side)))
+                (dired-hide-details-mode 1))
+              nil)))
 
 ;; Use a custom dictionary
 (setopt ispell-dictionary (if IS-MAC "en_GB" "en_US"))
