@@ -300,6 +300,12 @@ and \"apikey\" as USER."
 (add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode)) ;; GitHub Flavored Markdown
 
+;; Live side-by-side markdown preview inside Emacs (eww buffer, no xwidgets needed).
+;; markdown-command defaults to the "markdown" binary which isn't installed; point it
+;; at pandoc (provided system-wide via programs.pandoc.enable in ~/.dotfiles).
+(with-eval-after-load 'markdown-mode
+  (setq markdown-command "pandoc --from=gfm --to=html5 --standalone"))
+
 ;; make a shell script executable automatically on save
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
