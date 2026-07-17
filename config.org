@@ -395,6 +395,20 @@ and \"apikey\" as USER."
   (setopt gptel-model 'claude-opus-4.5
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
+;; Claude Agent via ACP (agent-shell + acp.el, driven by the claude-agent-acp
+;; adapter). The acp/agent-shell packages and the claude-agent-acp binary are
+;; provided by Nix (dotfiles: modules/features/development/emacs.nix and
+;; modules/profiles/client.nix). Uses the Claude subscription — run `claude`
+;; once in a terminal to log in; no API key needed here.
+;; Start with M-x agent-shell-anthropic-start-claude-code.
+(with-eval-after-load 'agent-shell
+  (setq agent-shell-anthropic-authentication
+        (agent-shell-anthropic-make-authentication :login t))
+  ;; Inherit PATH/HOME so the spawned claude-agent-acp process finds `claude`,
+  ;; the adapter binary, and the login credentials.
+  (setq agent-shell-anthropic-claude-environment
+        (agent-shell-make-environment-variables :inherit-env t)))
+
 ;;; AI-Powered Knowledge Management Functions
 
 (defgroup bmg/llm nil
@@ -1337,7 +1351,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
  (;;: org-agenda
   (:leader
         ;;; <leader> n --- notes
-   (:prefix ("n" . "notes")
+   (:prefix "n"
     :desc "Org agenda"  "a" #'bmg/switch-to-agenda))
 
   (:map org-agenda-mode-map
@@ -1347,7 +1361,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
  (;;: open submenu
   (:leader
         ;;; <leader> o --- open
-   (:prefix ("o" . "open")
+   (:prefix "o"
     :desc "Url"  "u" #'browse-url
     :desc "Web"  "w" #'browse-url)))
 
@@ -1367,7 +1381,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
     :desc "Elfeed RSS enter"                       "e" #'=rss))
 
   (:leader
-   (:prefix ("s" . "search")
+   (:prefix "s"
     :desc "Search papers (rga)"                    "P" #'bmg/rga-search
     :desc "Ask knowledge base"                     "Q" #'bmg/ask-knowledge-base
     :desc "Search knowledge base"                  "k" #'bmg/search-knowledge-base)))
