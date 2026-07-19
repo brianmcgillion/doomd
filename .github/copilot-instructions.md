@@ -16,7 +16,7 @@ This is **Brian McGillion's personal Doom Emacs configuration**, serving as the 
 - **Type**: Personal Doom Emacs configuration (LITERATE)
 - **Location**: `~/.config/doom/` (this directory)
 - **Doom Core**: `~/.config/emacs/`
-- **Owner**: Brian McGillion (brian@ssrc.tii.ae)
+- **Owner**: Brian McGillion (brian.mcgillion@tii.ae)
 - **Primary Uses**:
   - Org-mode for personal knowledge management (Zettelkasten via org-roam)
   - Software development IDE (multiple languages with LSP + tree-sitter)
@@ -32,6 +32,7 @@ This is **Brian McGillion's personal Doom Emacs configuration**, serving as the 
 | `init.el` | Doom module selection via `doom!` macro | Only enable/disable modules here |
 | `packages.el` | Package declarations via `package!` | Only declare packages, no configuration |
 | `elfeed-config.el` | RSS feed and elfeed scoring config | Loaded by config.el |
+| `remarkable-config.el` | reMarkable tablet integration | Loaded by config.el (`load!`) |
 | `custom.el` | Emacs Customize settings | Auto-managed, avoid manual edits |
 | `banner/` | Custom splash screen images | PNG images for dashboard |
 
@@ -41,7 +42,7 @@ This is **Brian McGillion's personal Doom Emacs configuration**, serving as the 
 
 ```elisp
 ;; ✅ CORRECT - Use Doom macros where still applicable
-(setq! variable value)           ; NOT setq
+(setopt defcustom-variable value) ; NOT setq (see CLAUDE.md for exceptions)
 (with-eval-after-load 'pkg ...)  ; NOT after! (deprecated)
 (use-package name ...)           ; NOT use-package! (deprecated)
 (map! :leader ...)               ; NOT define-key
@@ -91,8 +92,8 @@ Custom functions use the `bmg/` prefix:
   (interactive)
   (org-agenda nil "o"))
 
-(defun bmg/api-key-from-auth-source (&optional host user)
-  "Lookup api key in the auth source."
+(defun bmg/org-mem-set-agenda-files (&rest _)
+  "Derive `org-agenda-files' from org-mem."
   ...)
 ```
 
@@ -166,8 +167,9 @@ Language-specific servers:
 API keys are stored in `~/.authinfo.gpg` (GPG encrypted):
 
 ```elisp
-;; Use the helper function to retrieve keys
-(bmg/api-key-from-auth-source "api.github.com" "username^service")
+;; Retrieve keys with the built-in auth-source API
+(auth-source-search :host "api.github.com" :user "username^service"
+                    :require '(:secret))
 ```
 
 Format in `.authinfo.gpg`:
@@ -252,7 +254,7 @@ Key modules from `init.el`:
 
 - Directory: `~/Documents/org/roam/`
 - File template: `${slug}.org`
-- Capture templates: "d" (default), "r" (reference)
+- Capture templates: "d" (default), "r" (reference), "m" (meeting); dailies "d"/"t"/"j"; "f" (fleeting) lives in org-capture-templates alongside the "w"/"W" web-protocol templates
 
 ### Org-super-agenda
 

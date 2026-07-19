@@ -26,11 +26,18 @@ doom env       # Regenerate environment snapshot
 | `init.el` | YES | Enable/disable Doom modules via `doom!` macro |
 | `packages.el` | YES | Declare packages via `package!` macro (no config here) |
 | `elfeed-config.el` | YES | Standalone RSS/elfeed scoring config |
+| `remarkable-config.el` | YES | Standalone reMarkable tablet integration (`load!`-ed from config.org) |
 
 ## Doom Conventions
 
 Use Doom macros where still applicable:
-- `map!` not `define-key`
+- `map!` not `define-key` — EXCEPTION: `define-key` is fine (and idiomatic) when
+  building a standalone sparse keymap inside a `defvar` initializer
+  (e.g. `bmg/ai-command-map`, `remarkable-command-map`); `map!` cannot produce
+  a keymap value there. Never re-label an existing Doom `:prefix` with a
+  which-key label — it silently wipes every binding under that prefix (Doom
+  commit 635bc939d); use a bare `:prefix "n"` or
+  `which-key-add-keymap-based-replacements`.
 
 Use standard Emacs equivalents (Doom versions are deprecated):
 - `setopt` for `defcustom` variables (validates types); use `setq` for non-defcustom variables (Doom `+` prefixed vars, `defvar`) and complex template structures that fail `setopt` type validation (e.g., capture templates, agenda commands)
@@ -45,7 +52,9 @@ Wrap all package configuration in `with-eval-after-load` blocks:
 
 ## Code Style
 
-- Custom functions use `bmg/` prefix
+- Custom functions use `bmg/` prefix — EXCEPTION: the reMarkable integration
+  uses a `remarkable-` prefix as an embedded pseudo-package (it has its own
+  `defgroup`); keep that prefix consistent within the section
 - Sections delimited with `;;; BEGIN_SectionName` / `;;; END_SectionName` markers
 - All elisp files need `;;; filename.el -*- lexical-binding: t; -*-` header
 - Config.org uses `#+BEGIN_SRC emacs-lisp` blocks for code

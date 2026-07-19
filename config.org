@@ -1,10 +1,9 @@
-;;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-
 * Interface Tweaks
 :PROPERTIES:
 :ID:       7d3f0a7b-101c-44cd-920c-65a82bc21877
 :END:
 #+BEGIN_SRC emacs-lisp
+;;; config.el -*- lexical-binding: t; -*-
 ;;;
 ;;;
 ;;; BEGIN_Interface_Tweaks
@@ -18,7 +17,7 @@
 ;; Set your own banner to replace the default doom one "convert image.png
 ;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
 ;; e.g. 1080p
-(setq +dashboard-banner-file (concat doom-private-dir "banner/trancendent-gnu.png"))
+(setopt fancy-splash-image (expand-file-name "banner/trancendent-gnu.png" doom-user-dir))
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -58,30 +57,42 @@
     (when available
       (set font-var available))))
 
-;; Apply font fallbacks after frame creation (fonts not available before)
-(add-hook! 'after-init-hook
-  (defun bmg/apply-font-fallbacks ()
-    (bmg/set-font-with-fallback 'doom-font
-                                (font-spec :family "FiraCode Nerd Font Mono" :size 13)
-                                (font-spec :family "Fira Code" :size 13)
-                                (font-spec :family "JetBrains Mono" :size 13)
-                                (font-spec :family "Hack" :size 13)
-                                (font-spec :family "monospace" :size 13))
-    (bmg/set-font-with-fallback 'doom-variable-pitch-font
-                                (font-spec :family "Fira Sans" :size 13)
-                                (font-spec :family "Cantarell" :size 13)
-                                (font-spec :family "DejaVu Sans" :size 13)
-                                (font-spec :family "sans-serif" :size 13))
-    (bmg/set-font-with-fallback 'doom-serif-font
-                                (font-spec :family "Source Serif 4" :size 13)
-                                (font-spec :family "Source Serif Pro" :size 13)
-                                (font-spec :family "DejaVu Serif" :size 13)
-                                (font-spec :family "serif" :size 13))
-    (bmg/set-font-with-fallback 'doom-symbol-font
-                                (font-spec :family "Font Awesome 7 Free" :size 13)
-                                (font-spec :family "Font Awesome 6 Free" :size 13)
-                                (font-spec :family "Symbols Nerd Font" :size 13)
-                                (font-spec :family "Noto Color Emoji" :size 13))))
+;; Apply font fallbacks once a graphical frame exists.  Not
+;; after-init-hook: in daemon sessions that fires before any frame,
+;; where font-family-list returns nil and every probe fails -- the
+;; whole mechanism silently no-oped.  The hook removes itself after
+;; the first graphical run.
+(defun bmg/apply-font-fallbacks-once (&rest _)
+  (when (display-graphic-p)
+    (remove-hook 'server-after-make-frame-hook #'bmg/apply-font-fallbacks-once)
+    (remove-hook 'after-init-hook #'bmg/apply-font-fallbacks-once)
+    (bmg/apply-font-fallbacks)))
+(add-hook 'server-after-make-frame-hook #'bmg/apply-font-fallbacks-once)
+(add-hook 'after-init-hook #'bmg/apply-font-fallbacks-once)
+
+(defun bmg/apply-font-fallbacks ()
+  "Set each doom font variable to its first installed candidate."
+  (bmg/set-font-with-fallback 'doom-font
+                              (font-spec :family "FiraCode Nerd Font Mono" :size 13)
+                              (font-spec :family "Fira Code" :size 13)
+                              (font-spec :family "JetBrains Mono" :size 13)
+                              (font-spec :family "Hack" :size 13)
+                              (font-spec :family "monospace" :size 13))
+  (bmg/set-font-with-fallback 'doom-variable-pitch-font
+                              (font-spec :family "Fira Sans" :size 13)
+                              (font-spec :family "Cantarell" :size 13)
+                              (font-spec :family "DejaVu Sans" :size 13)
+                              (font-spec :family "sans-serif" :size 13))
+  (bmg/set-font-with-fallback 'doom-serif-font
+                              (font-spec :family "Source Serif 4" :size 13)
+                              (font-spec :family "Source Serif Pro" :size 13)
+                              (font-spec :family "DejaVu Serif" :size 13)
+                              (font-spec :family "serif" :size 13))
+  (bmg/set-font-with-fallback 'doom-symbol-font
+                              (font-spec :family "Font Awesome 7 Free" :size 13)
+                              (font-spec :family "Font Awesome 6 Free" :size 13)
+                              (font-spec :family "Symbols Nerd Font" :size 13)
+                              (font-spec :family "Noto Color Emoji" :size 13)))
 
 (with-eval-after-load 'doom-themes
   (setopt doom-themes-enable-bold t
@@ -105,7 +116,7 @@
   (set-face-attribute 'org-modern-block-name nil :height 1.0))
 
 ;; be as colorful as possible.
-(setq treesit-font-lock-level 4)
+(setopt treesit-font-lock-level 4)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -133,7 +144,7 @@
           :action projectile-switch-project)
          ("Open private configuration"
           :icon (nerd-icons-octicon "nf-oct-tools" :face '+dashboard-menu-title)
-          :when (file-directory-p doom-private-dir)
+          :when (file-directory-p doom-user-dir)
           :action doom/open-private-config)
          ("Open documentation"
           :icon (nerd-icons-octicon "nf-oct-book" :face '+dashboard-menu-title)
@@ -197,7 +208,7 @@
               nil)))
 
 ;; Use a custom dictionary
-(setopt ispell-dictionary (if IS-MAC "en_GB" "en_US"))
+(setopt ispell-dictionary (if (featurep :system 'macos) "en_GB" "en_US"))
 
 ;; NixOS doesn't have /usr/share/dict/words, disable word-list completion in text-mode
 ;; (aspell handles spell-checking, this only affects M-TAB word completion)
@@ -225,7 +236,7 @@
 (use-package my-repo-pins
   :commands (my-repo-pins)
   :init
-  (setq my-repo-pins-code-root "~/projects/code"))
+  (setopt my-repo-pins-code-root "~/projects/code"))
 
 (use-package inheritenv
   :config
@@ -260,24 +271,6 @@ Intended as a predicate for `confirm-kill-emacs'."
 
 (setopt confirm-kill-emacs #'my-confirm-kill-daemon)
 
-;;;###autoload
-(defun bmg/api-key-from-auth-source (&optional host user)
-  "Lookup api key in the auth source.
-By default, the LLM host for the active backend is used as HOST,
-and \"apikey\" as USER."
-  (if-let ((secret
-            (plist-get
-             (car (auth-source-search
-                   :host (or host)
-                   :user (or user "apikey")
-                   :require '(:secret)))
-             :secret)))
-      (if (functionp secret)
-          (encode-coding-string (funcall secret) 'utf-8)
-        secret)
-    (user-error "No API key found for host: %s, user: %s. Check your auth-source file."
-                (or host "default") (or user "apikey"))))
-
 ;;;
 ;;;
 ;;; END_General
@@ -304,17 +297,17 @@ and \"apikey\" as USER."
 ;; markdown-command defaults to the "markdown" binary which isn't installed; point it
 ;; at pandoc (provided system-wide via programs.pandoc.enable in ~/.dotfiles).
 (with-eval-after-load 'markdown-mode
-  (setq markdown-command "pandoc --from=gfm --to=html5 --standalone"))
+  (setopt markdown-command "pandoc --from=gfm --to=html5 --standalone"))
 
 ;; make a shell script executable automatically on save
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
-(setq c-default-style "linux") ;; set style to "linux"
+(setopt c-default-style "linux") ;; set style to "linux"
 
 ;;setup clangd lsp
 (with-eval-after-load 'lsp-clangd
-  (setq lsp-clients-clangd-args
+  (setopt lsp-clients-clangd-args
         '("-j=3"
           "--background-index"
           "--clang-tidy"
@@ -324,16 +317,15 @@ and \"apikey\" as USER."
   (set-lsp-priority! 'clangd 2))
 
 ;; use just mode for setting tasks to run at the cmdline
-(use-package justl
-  :config
-  (map! :map justl-mode-map "e" 'justl-exec-recipe))
+;; (justl binds "e" to justl-exec-recipe itself; no extra map! needed)
+(use-package justl)
 
 ;; Use a variable for the dotfiles path to avoid hardcoding
 (defvar bmg/dotfiles-path (expand-file-name "~/.dotfiles")
   "Path to dotfiles repository for Nix flake expressions.")
 
 (with-eval-after-load 'lsp-mode
-  (setq lsp-nix-nixd-server-path "nixd"
+  (setopt lsp-nix-nixd-server-path "nixd"
         lsp-nix-nixd-formatting-command ["nixfmt"]
         lsp-nix-nixd-nixpkgs-expr (format "import (builtins.getFlake \"%s\").inputs.nixpkgs { }" bmg/dotfiles-path)
         lsp-nix-nixd-nixos-options-expr (format "(builtins.getFlake \"%s\").nixosConfigurations.arcadia.options" bmg/dotfiles-path)))
@@ -351,6 +343,8 @@ and \"apikey\" as USER."
 (use-package x86-lookup
   :commands x86-lookup
   :config
+  ;; setq, not setopt: the defcustom type is (file :must-match t) and the
+  ;; SDM PDF is not always on disk, so setopt would warn at every startup.
   (setq x86-lookup-pdf (expand-file-name "~/Documents/Papers/325462-sdm-vol-1-2abcd-3abcd.pdf")))
 
 ;; ensure that worktrees are available in magit with %
@@ -368,7 +362,7 @@ and \"apikey\" as USER."
 #+END_SRC
 
 * LLM/ML
-#+begin_src emacs-lisp
+#+BEGIN_SRC emacs-lisp
 ;;;
 ;;;
 ;;; BEGIN_llm
@@ -402,11 +396,11 @@ and \"apikey\" as USER."
 ;; once in a terminal to log in; no API key needed here.
 ;; Start with M-x agent-shell-anthropic-start-claude-code.
 (with-eval-after-load 'agent-shell
-  (setq agent-shell-anthropic-authentication
+  (setopt agent-shell-anthropic-authentication
         (agent-shell-anthropic-make-authentication :login t))
   ;; Inherit PATH/HOME so the spawned claude-agent-acp process finds `claude`,
   ;; the adapter binary, and the login credentials.
-  (setq agent-shell-anthropic-claude-environment
+  (setopt agent-shell-anthropic-claude-environment
         (agent-shell-make-environment-variables :inherit-env t)))
 
 ;;; AI-Powered Knowledge Management Functions
@@ -431,6 +425,32 @@ and \"apikey\" as USER."
   :type 'integer
   :group 'bmg/llm)
 
+(cl-defun bmg/llm--request (prompt &key system callback (label "LLM request"))
+  "Send PROMPT to the LLM via gptel with uniform error handling.
+SYSTEM is the system prompt.  CALLBACK is called as (response info)
+only for a non-nil, non-empty response; nil/empty responses and
+request errors are all reported as \"LABEL failed: ...\" messages."
+  (condition-case err
+      (gptel-request prompt
+        :system system
+        :callback (lambda (response info)
+                    (cond
+                     ((not response)
+                      (message "%s failed: %s" label (plist-get info :status)))
+                     ((string-empty-p (string-trim response))
+                      (message "%s failed: LLM returned an empty response" label))
+                     (t (funcall callback response info)))))
+    (error (message "%s failed: %s" label (error-message-string err)))))
+
+(defun bmg/llm--display-org-buffer (name &rest content)
+  "Show CONTENT strings in an org-mode buffer called NAME."
+  (with-current-buffer (get-buffer-create name)
+    (erase-buffer)
+    (apply #'insert content)
+    (org-mode)
+    (goto-char (point-min))
+    (pop-to-buffer (current-buffer))))
+
 (defun bmg/suggest-tags-for-buffer ()
   "Use LLM to suggest filetags for current org-roam buffer.
 Copies suggested tags to kill ring for easy insertion.
@@ -438,13 +458,18 @@ Bound to SPC z S."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org buffer"))
-  (let ((content (buffer-substring-no-properties (point-min) (min (point-max) bmg/llm-context-small))))
+  ;; Budget is relative to the accessible region start: in a narrowed
+  ;; buffer, (min (point-max) budget) is an absolute position that can
+  ;; fall before point-min -> args-out-of-range.
+  (let ((content (buffer-substring-no-properties
+                  (point-min)
+                  (min (point-max) (+ (point-min) bmg/llm-context-small)))))
     (when (string-empty-p (string-trim content))
       (user-error "Buffer is empty, nothing to analyze"))
     (message "Requesting tag suggestions...")
-    (condition-case err
-        (gptel-request content
-          :system "Suggest org-mode filetags for this note. Return ONLY a single line in colon-separated format like :paper:security:tpm: with no explanation.
+    (bmg/llm--request content
+      :label "Tag suggestion"
+      :system "Suggest org-mode filetags for this note. Return ONLY a single line in colon-separated format like :paper:security:tpm: with no explanation.
 Focus on these categories:
 - Document types: paper, website, book, meeting, project, reference
 - Security domains: security, tpm, tee, sgx, trustzone, confidential_computing, attestation, secure_boot
@@ -452,29 +477,26 @@ Focus on these categories:
 - Systems: virtualization, containers, android, linux, firmware, hardware
 - Topics: cryptography, ml, networking, performance, architecture
 Keep to 3-6 most relevant tags."
-          :callback (lambda (response info)
-                      (if (not response)
-                          (message "Tag suggestion failed: %s" (plist-get info :status))
-                        (let ((tags (string-trim response)))
-                          (if (string-empty-p tags)
-                              (message "LLM returned empty response")
-                            (kill-new tags)
-                            (message "Suggested tags: %s (copied to kill ring)" tags))))))
-      (error (message "Tag suggestion error: %s" (error-message-string err))))))
+      :callback (lambda (response _info)
+                  (let ((tags (string-trim response)))
+                    (kill-new tags)
+                    (message "Suggested tags: %s (copied to kill ring)" tags))))))
 
 (defun bmg/summarize-paper ()
   "Generate AI summary for current paper note and insert at end of buffer.
-Bound to SPC z s."
+Bound to SPC z a s and C-c A s."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org buffer"))
-  (let ((content (buffer-substring-no-properties (point-min) (min (point-max) bmg/llm-context-medium))))
+  (let ((content (buffer-substring-no-properties
+                  (point-min)
+                  (min (point-max) (+ (point-min) bmg/llm-context-medium)))))
     (when (string-empty-p (string-trim content))
       (user-error "Buffer is empty, nothing to summarize"))
     (message "Generating summary...")
-    (condition-case err
-        (gptel-request content
-          :system "Summarize this academic paper or research note. Provide:
+    (bmg/llm--request content
+      :label "Summarization"
+      :system "Summarize this academic paper or research note. Provide:
 
 1. **One-paragraph summary** - The key contribution and findings
 2. **Key contributions** (3-5 bullet points)
@@ -483,31 +505,38 @@ Bound to SPC z s."
 5. **Potential connections** - Related areas or follow-up questions
 
 Use org-mode formatting with ** for headings."
-          :callback (lambda (response info)
-                      (if (not response)
-                          (message "Summarization failed: %s" (plist-get info :status))
-                        (if (string-empty-p (string-trim response))
-                            (message "LLM returned empty summary")
-                          (save-excursion
-                            (goto-char (point-max))
-                            (insert "\n\n* AI Summary\n:PROPERTIES:\n:GENERATED: "
-                                    (format-time-string "[%Y-%m-%d %a %H:%M]")
-                                    "\n:END:\n\n" response))
-                          (message "Summary inserted at end of buffer")))))
-      (error (message "Summarization error: %s" (error-message-string err))))))
+      :callback (lambda (response info)
+                  ;; Insert into the buffer the request came from,
+                  ;; not whatever is current when the reply arrives.
+                  (let ((buf (plist-get info :buffer)))
+                    (if (not (buffer-live-p buf))
+                        (message "Buffer gone, summary discarded")
+                      (with-current-buffer buf
+                        (save-excursion
+                          (goto-char (point-max))
+                          (insert "\n\n* AI Summary\n:PROPERTIES:\n:GENERATED: "
+                                  (format-time-string "[%Y-%m-%d %a %H:%M]")
+                                  "\n:END:\n\n" response))
+                        (message "Summary inserted at end of %s" (buffer-name)))))))))
 
 (defun bmg/process-inbox-item ()
   "Get AI suggestions for processing current GTD inbox item.
 Run on a heading tagged :REFILE: for processing guidance.
-Bound to localleader P in org-mode."
+Bound to localleader B in org-mode and C-c A p."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an org buffer"))
-  (let ((content (save-excursion
+  (when (org-before-first-heading-p)
+    (user-error "Point must be on an inbox item"))
+  ;; save-restriction, not a manual widen: save-excursion does not save
+  ;; the restriction, so the old code wiped any narrowing the user had.
+  (let ((content (save-restriction
                    (org-narrow-to-subtree)
-                   (prog1 (buffer-substring-no-properties (point-min) (point-max))
-                     (widen)))))
-    (gptel-request content
+                   (buffer-substring-no-properties
+                    (point-min)
+                    (min (point-max) (+ (point-min) bmg/llm-context-medium))))))
+    (bmg/llm--request content
+      :label "Inbox processing"
       :system "You are a GTD (Getting Things Done) assistant. Analyze this inbox item and suggest:
 
 1. **Actionable?** - Is this actionable or reference material?
@@ -523,15 +552,32 @@ Bound to localleader P in org-mode."
 6. **Priority** - Suggested priority (A/B/C)
 
 Be concise and actionable."
-      :callback (lambda (response info)
-                  (if (not response)
-                      (message "Processing failed: %s" (plist-get info :status))
-                    (with-current-buffer (get-buffer-create "*Inbox Processing*")
-                      (erase-buffer)
-                      (insert "* Processing Suggestion\n\n" response)
-                      (org-mode)
-                      (goto-char (point-min))
-                      (pop-to-buffer (current-buffer))))))))
+      :callback (lambda (response _info)
+                  (bmg/llm--display-org-buffer "*Inbox Processing*"
+                                               "* Processing Suggestion\n\n"
+                                               response)))))
+
+(defun bmg/kb--search-files (question)
+  "Return org files under `org-roam-directory' ranked by relevance to QUESTION.
+Extracts keywords (words longer than 3 chars) from QUESTION, greps for
+each with ripgrep, and ranks files by how many distinct keywords hit."
+  (unless (executable-find "rg")
+    (user-error "rg (ripgrep) not found in PATH"))
+  (let ((keywords (seq-filter (lambda (w) (> (length w) 3))
+                              (split-string (downcase question) "[^[:alnum:]]+" t)))
+        (dir (expand-file-name org-roam-directory))
+        (scores (make-hash-table :test #'equal)))
+    (dolist (kw keywords)
+      (dolist (file (split-string
+                     (shell-command-to-string
+                      (format "rg -li --glob '*.org' %s %s"
+                              (shell-quote-argument kw)
+                              (shell-quote-argument dir)))
+                     "\n" t))
+        (puthash file (1+ (gethash file scores 0)) scores)))
+    (let (ranked)
+      (maphash (lambda (f n) (push (cons f n) ranked)) scores)
+      (mapcar #'car (seq-sort-by #'cdr #'> ranked)))))
 
 (defun bmg/ask-knowledge-base (question)
   "Ask a question answered from your org-roam notes (RAG).
@@ -540,48 +586,41 @@ Bound to SPC s Q."
   (interactive "sQuestion: ")
   (when (string-empty-p (string-trim question))
     (user-error "Please provide a question"))
-  (require 'consult-org-roam)
   (message "Searching knowledge base...")
-  (condition-case err
-      (let* ((search-results (consult-org-roam-search--candidates question))
-             (top-files (seq-take (mapcar #'car search-results) 5))
-             (context ""))
-        (if (null top-files)
-            (message "No relevant notes found for: %s" question)
-          ;; Build context from top matching files
-          (dolist (file top-files)
-            (when (and file (file-exists-p file))
-              (condition-case nil
-                  (with-temp-buffer
-                    (insert-file-contents file nil 0 bmg/llm-context-small)
-                    (setq context (concat context
-                                          "\n\n--- " (file-name-nondirectory file) " ---\n"
-                                          (buffer-string))))
-                (error nil))))  ; Skip files that can't be read
-          (if (string-empty-p context)
-              (message "Could not read any matching files for: %s" question)
-            (gptel-request (format "Context from knowledge base:\n%s\n\n---\n\nQuestion: %s" context question)
-              :system "You are a research assistant with access to the user's personal knowledge base.
+  (let* ((top-files (seq-take (bmg/kb--search-files question) 5))
+         (context ""))
+    (if (null top-files)
+        (message "No relevant notes found for: %s" question)
+      ;; Build context from top matching files
+      (dolist (file top-files)
+        (when (and file (file-exists-p file))
+          (condition-case nil
+              (with-temp-buffer
+                (insert-file-contents file nil 0 bmg/llm-context-small)
+                (setq context (concat context
+                                      "\n\n--- " (file-name-nondirectory file) " ---\n"
+                                      (buffer-string))))
+            (file-error nil))))  ; Skip files that can't be read
+      (if (string-empty-p context)
+          (message "Could not read any matching files for: %s" question)
+        (bmg/llm--request
+         (format "Context from knowledge base:\n%s\n\n---\n\nQuestion: %s" context question)
+         :label "Knowledge base query"
+         :system "You are a research assistant with access to the user's personal knowledge base.
 Answer the question based ONLY on the provided context from their notes.
 - Cite which notes/files support your answer
 - Quote relevant passages when helpful
 - If the context doesn't contain relevant information, say so clearly
 - Be concise but thorough
 - Use org-mode formatting"
-              :callback (lambda (response info)
-                          (if (not response)
-                              (message "Query failed: %s" (plist-get info :status))
-                            (with-current-buffer (get-buffer-create "*KB Answer*")
-                              (erase-buffer)
-                              (insert "* Answer to: " question "\n\n" response
-                                      "\n\n* Sources\n")
-                              (dolist (f top-files)
-                                (when f
-                                  (insert (format "- [[file:%s][%s]]\n" f (file-name-nondirectory f)))))
-                              (org-mode)
-                              (goto-char (point-min))
-                              (pop-to-buffer (current-buffer)))))))))
-    (error (message "Knowledge base search error: %s" (error-message-string err)))))
+         :callback (lambda (response _info)
+                     (bmg/llm--display-org-buffer "*KB Answer*"
+                       "* Answer to: " question "\n\n" response "\n\n* Sources\n"
+                       (mapconcat (lambda (f)
+                                    (format "- [[file:%s][%s]]\n"
+                                            f (file-name-nondirectory f)))
+                                  (seq-filter #'identity top-files)
+                                  ""))))))))
 
 (defun bmg/find-related-notes ()
   "Use AI to find semantically related notes to current buffer.
@@ -589,31 +628,50 @@ Analyzes current note and suggests related notes from org-roam.
 Bound to SPC z R."
   (interactive)
   (require 'org-roam)
-  (condition-case err
-      (let* ((node-at-point (org-roam-node-at-point))
-             (current-title (or (and node-at-point (org-roam-node-title node-at-point))
-                                (org-get-title)
-                                (buffer-name)))
-             (current-tags (if node-at-point
-                               (org-roam-node-tags node-at-point)
-                             '()))
-             (current-content (buffer-substring-no-properties
-                               (point-min)
-                               (min (point-max) bmg/llm-context-tiny)))
-             ;; Get sample of nodes from database
-             (all-nodes (org-roam-node-list))
-             (sample-nodes (seq-take all-nodes 100)))
-        (unless all-nodes
-          (user-error "No org-roam nodes found. Is org-roam database initialized?"))
-        (when (string-empty-p (string-trim current-content))
-          (user-error "Buffer is empty, nothing to analyze"))
-        (let ((node-list (mapcar (lambda (n)
-                                   (format "- %s [tags: %s]"
-                                           (org-roam-node-title n)
-                                           (string-join (or (org-roam-node-tags n) '()) ", ")))
-                                 sample-nodes)))
-          (message "Finding related notes among %d nodes..." (length all-nodes))
-          (gptel-request (format "Current note: %s
+  (let* ((node-at-point (org-roam-node-at-point))
+         (current-title (or (and node-at-point (org-roam-node-title node-at-point))
+                            (org-get-title)
+                            (buffer-name)))
+         (current-tags (if node-at-point
+                           (org-roam-node-tags node-at-point)
+                         '()))
+         (current-content (buffer-substring-no-properties
+                           (point-min)
+                           (min (point-max)
+                                (+ (point-min) bmg/llm-context-tiny))))
+         (all-nodes (org-roam-node-list))
+         ;; The whole DB does not fit in the prompt, so send the 100
+         ;; most plausible candidates -- ranked by shared tags and
+         ;; title-word overlap -- instead of whatever arbitrary order
+         ;; the DB returned (which silently biased the old sample).
+         (title-words (seq-filter (lambda (w) (> (length w) 3))
+                                  (split-string (downcase current-title)
+                                                "[^[:alnum:]]+" t)))
+         (sample-nodes
+          (seq-take
+           (seq-sort-by
+            (lambda (n)
+              (+ (* 2 (length (seq-intersection (org-roam-node-tags n)
+                                                current-tags #'equal)))
+                 (length (seq-intersection
+                          (split-string (downcase (org-roam-node-title n))
+                                        "[^[:alnum:]]+" t)
+                          title-words #'equal))))
+            #'> all-nodes)
+           100)))
+    (unless all-nodes
+      (user-error "No org-roam nodes found. Is org-roam database initialized?"))
+    (when (string-empty-p (string-trim current-content))
+      (user-error "Buffer is empty, nothing to analyze"))
+    (let ((node-list (mapcar (lambda (n)
+                               (format "- %s [tags: %s]"
+                                       (org-roam-node-title n)
+                                       (string-join (or (org-roam-node-tags n) '()) ", ")))
+                             sample-nodes)))
+      (message "Finding related notes among %d of %d nodes..."
+               (length sample-nodes) (length all-nodes))
+      (bmg/llm--request
+       (format "Current note: %s
 Tags: %s
 
 Content excerpt:
@@ -621,7 +679,7 @@ Content excerpt:
 
 ---
 
-Notes in knowledge base:
+Candidate notes from the knowledge base (a relevance-ranked sample of %d out of %d):
 %s
 
 ---
@@ -633,25 +691,20 @@ Which 5-10 notes are most likely related to the current note? Consider:
 4. Potential for linking
 
 For each suggested note, briefly explain WHY it might be related."
-                                 current-title
-                                 (string-join current-tags ", ")
-                                 current-content
-                                 (string-join node-list "\n"))
-            :system "You are a knowledge management assistant helping discover connections in a Zettelkasten.
+               current-title
+               (string-join current-tags ", ")
+               current-content
+               (length sample-nodes)
+               (length all-nodes)
+               (string-join node-list "\n"))
+       :label "Related-notes search"
+       :system "You are a knowledge management assistant helping discover connections in a Zettelkasten.
 Identify notes that are semantically or conceptually related, even if they don't share obvious tags.
 Focus on finding non-obvious but meaningful connections."
-            :callback (lambda (response info)
-                        (if (not response)
-                            (message "Search failed: %s" (plist-get info :status))
-                          (if (string-empty-p (string-trim response))
-                              (message "LLM returned empty response")
-                            (with-current-buffer (get-buffer-create "*Related Notes*")
-                              (erase-buffer)
-                              (insert "* Notes Related to: " current-title "\n\n" response)
-                              (org-mode)
-                              (goto-char (point-min))
-                              (pop-to-buffer (current-buffer)))))))))
-    (error (message "Find related notes error: %s" (error-message-string err)))))
+       :callback (lambda (response _info)
+                   (bmg/llm--display-org-buffer "*Related Notes*"
+                                                "* Notes Related to: " current-title
+                                                "\n\n" response))))))
 
 (defun bmg/generate-weekly-review ()
   "Generate AI-powered weekly review of knowledge base activity.
@@ -667,15 +720,19 @@ Summarizes notes modified this week, identifies themes, suggests connections."
         (push file recent-files)))
     (if (null recent-files)
         (message "No notes modified in the past week")
-      ;; Build summary of each file
+      ;; Build summary of each file; one unreadable file (deleted but
+      ;; still indexed) must not abort the whole review
       (dolist (file (seq-take recent-files 15))
-        (with-temp-buffer
-          (insert-file-contents file nil 0 1500)
-          (setq summaries (concat summaries
-                                  "\n\n--- " (file-name-nondirectory file) " ---\n"
-                                  (buffer-string)))))
+        (if (not (file-readable-p file))
+            (message "Skipping unreadable file: %s" file)
+          (with-temp-buffer
+            (insert-file-contents file nil 0 1500)
+            (setq summaries (concat summaries
+                                    "\n\n--- " (file-name-nondirectory file) " ---\n"
+                                    (buffer-string))))))
       (message "Generating weekly review for %d notes..." (length recent-files))
-      (gptel-request summaries
+      (bmg/llm--request summaries
+        :label "Weekly review"
         :system "Generate a weekly review of knowledge base activity. Based on the notes modified this week:
 
 1. **Activity Summary** - What areas received attention this week?
@@ -686,21 +743,18 @@ Summarizes notes modified this week, identifies themes, suggests connections."
 6. **Recommended Focus** - Suggestions for next week's focus
 
 Use org-mode formatting. Be concise but insightful."
-        :callback (lambda (response info)
-                    (if (not response)
-                        (message "Review generation failed: %s" (plist-get info :status))
-                      (with-current-buffer (get-buffer-create "*Weekly Review*")
-                        (erase-buffer)
-                        (insert (format "#+title: Weekly Review %s\n#+filetags: :review:weekly:\n\n"
-                                        (format-time-string "%Y-%m-%d")))
-                        (insert response)
-                        (insert (format "\n\n* Files Modified This Week (%d total)\n"
-                                        (length recent-files)))
-                        (dolist (f (seq-take recent-files 20))
-                          (insert (format "- [[file:%s][%s]]\n" f (file-name-nondirectory f))))
-                        (org-mode)
-                        (goto-char (point-min))
-                        (pop-to-buffer (current-buffer)))))))))
+        :callback (lambda (response _info)
+                    (bmg/llm--display-org-buffer "*Weekly Review*"
+                      (format "#+title: Weekly Review %s\n#+filetags: :review:weekly:\n\n"
+                              (format-time-string "%Y-%m-%d"))
+                      response
+                      (format "\n\n* Files Modified This Week (%d total)\n"
+                              (length recent-files))
+                      (mapconcat (lambda (f)
+                                   (format "- [[file:%s][%s]]\n"
+                                           f (file-name-nondirectory f)))
+                                 (seq-take recent-files 20)
+                                 "")))))))
 
 (defun bmg/check-tag-consistency ()
   "Scan org-roam notes and report on tag usage patterns.
@@ -714,31 +768,29 @@ Shows tag frequency, potential duplicates, and suggestions."
       (dolist (tag (org-roam-node-tags node))
         (puthash tag (1+ (gethash tag tag-counts 0)) tag-counts)))
     ;; Build report
-    (with-current-buffer (get-buffer-create "*Tag Consistency Report*")
-      (erase-buffer)
-      (insert "* Tag Consistency Report\n\n")
-      (insert (format "Total nodes: %d\n" (length nodes)))
-      (insert (format "Unique tags: %d\n\n" (hash-table-count tag-counts)))
-      ;; Sort by frequency
-      (let ((sorted-tags '()))
-        (maphash (lambda (k v) (push (cons k v) sorted-tags)) tag-counts)
-        (setq sorted-tags (sort sorted-tags (lambda (a b) (> (cdr a) (cdr b)))))
-        (insert "** Tag Frequency\n")
-        (dolist (tag-count sorted-tags)
-          (insert (format "| %s | %d |\n" (car tag-count) (cdr tag-count))))
-        ;; Check for potential duplicates (case variations)
-        (insert "\n** Potential Duplicates (case variations)\n")
-        (let ((lower-tags (make-hash-table :test 'equal)))
-          (dolist (tag-count sorted-tags)
-            (let ((lower (downcase (car tag-count))))
-              (push (car tag-count) (gethash lower lower-tags))))
-          (maphash (lambda (k v)
-                     (when (> (length v) 1)
-                       (insert (format "- %s\n" (string-join v ", ")))))
-                   lower-tags)))
-      (org-mode)
-      (goto-char (point-min))
-      (pop-to-buffer (current-buffer)))))
+    (let* ((sorted-tags (let (acc)
+                          (maphash (lambda (k v) (push (cons k v) acc)) tag-counts)
+                          (sort acc (lambda (a b) (> (cdr a) (cdr b))))))
+           ;; Potential duplicates: same tag under different casing
+           (dup-lines (let ((lower-tags (make-hash-table :test 'equal))
+                            (lines ""))
+                        (dolist (tag-count sorted-tags)
+                          (let ((lower (downcase (car tag-count))))
+                            (push (car tag-count) (gethash lower lower-tags))))
+                        (maphash (lambda (_k v)
+                                   (when (> (length v) 1)
+                                     (setq lines (concat lines (format "- %s\n" (string-join v ", "))))))
+                                 lower-tags)
+                        lines)))
+      (bmg/llm--display-org-buffer "*Tag Consistency Report*"
+        "* Tag Consistency Report\n\n"
+        (format "Total nodes: %d\n" (length nodes))
+        (format "Unique tags: %d\n\n" (hash-table-count tag-counts))
+        "** Tag Frequency\n"
+        (mapconcat (lambda (tc) (format "| %s | %d |\n" (car tc) (cdr tc)))
+                   sorted-tags "")
+        "\n** Potential Duplicates (case variations)\n"
+        dup-lines))))
 
 (defun bmg/find-orphan-notes ()
   "Find org-roam notes with no backlinks or forward links.
@@ -748,34 +800,33 @@ These might need attention or could be candidates for archival."
   (let ((orphans '())
         (nodes (org-roam-node-list)))
     (dolist (node nodes)
-      (let* ((id (org-roam-node-id node))
-             (backlinks (org-roam-backlinks-get node))
+      (let* ((backlinks (org-roam-backlinks-get node))
              (file (org-roam-node-file node)))
-        ;; Check for links in the file
-        (with-temp-buffer
-          (insert-file-contents file)
-          (let ((has-links (re-search-forward "\\[\\[id:" nil t)))
-            (when (and (null backlinks) (not has-links))
-              (push node orphans))))))
-    (with-current-buffer (get-buffer-create "*Orphan Notes*")
-      (erase-buffer)
-      (insert "* Orphan Notes (no links in or out)\n\n")
-      (insert (format "Found %d orphan notes out of %d total\n\n" (length orphans) (length nodes)))
-      (dolist (node orphans)
-        (insert (format "- [[file:%s][%s]] [%s]\n"
-                        (org-roam-node-file node)
-                        (org-roam-node-title node)
-                        (string-join (org-roam-node-tags node) ", "))))
-      (org-mode)
-      (goto-char (point-min))
-      (pop-to-buffer (current-buffer)))))
+        ;; Check for links in the file; a stale DB entry pointing at a
+        ;; deleted file must not abort the whole scan
+        (when (file-readable-p file)
+          (with-temp-buffer
+            (insert-file-contents file)
+            (let ((has-links (re-search-forward "\\[\\[id:" nil t)))
+              (when (and (null backlinks) (not has-links))
+                (push node orphans)))))))
+    (bmg/llm--display-org-buffer "*Orphan Notes*"
+      "* Orphan Notes (no links in or out)\n\n"
+      (format "Found %d orphan notes out of %d total\n\n"
+              (length orphans) (length nodes))
+      (mapconcat (lambda (node)
+                   (format "- [[file:%s][%s]] [%s]\n"
+                           (org-roam-node-file node)
+                           (org-roam-node-title node)
+                           (string-join (org-roam-node-tags node) ", ")))
+                 orphans ""))))
 
 ;;;
 ;;;
 ;;; END_llm
 ;;;
 ;;;
-#+end_src
+#+END_SRC
 
 * Org
 :PROPERTIES:
@@ -790,7 +841,7 @@ These might need attention or could be candidates for archival."
 
 (defun bmg/switch-to-agenda ()
   "Switch to org-agenda overview view.
-Opens the custom 'o' agenda command configured in
+Opens the custom `o' agenda command configured in
 `org-agenda-custom-commands'."
   (interactive)
   (org-agenda nil "o"))
@@ -812,16 +863,23 @@ Opens the custom 'o' agenda command configured in
        org-archive-location (concat org-directory "/archive.org_archive::datetree/")
        org-id-link-to-org-use-id t
        org-ellipsis " ▾ "
-       org-startup-folded 'fold
        org-src-fontify-natively t
        org-hide-emphasis-markers t
        org-modern-star 'replace)
+
+;; Set AFTER org loads: Doom's +org-init-appearance-h runs on
+;; org-load-hook and resets org-startup-folded to nil, silently
+;; clobbering a value set at config time.
+(with-eval-after-load 'org
+  (setopt org-startup-folded 'fold))
 
 
 (setopt org-roam-directory (file-truename (concat org-directory "roam/"))
        org-roam-extract-new-file-path "${slug}.org"
        org-default-notes-file (expand-file-name (format "inbox-%s.org" (system-name)) org-roam-directory)
-       org-noter-notes-search-path org-roam-directory)
+       ;; defcustom type is (repeat string) -- a bare string makes
+       ;; org-noter's dolist crash with wrong-type-argument listp
+       org-noter-notes-search-path (list org-roam-directory))
 
 ;; Point Doom's org-capture templates to roam inbox for unified capture
 (setq +org-capture-todo-file org-default-notes-file
@@ -847,37 +905,42 @@ Opens the custom 'o' agenda command configured in
                  (file+headline org-default-notes-file "Inbox")
                  "* [[%:link][%:description]] :REFILE:web:\n:PROPERTIES:\n:CREATED: %U\n:SOURCE: %:link\n:END:\n%i"
                  :prepend t
-                 :immediate-finish t)))
+                 :immediate-finish t))
+  ;; Fleeting/quick note - appends to inbox with REFILE tag for GTD processing.
+  ;; Lives here (not in org-roam-capture-templates) because file+headline is
+  ;; an org-capture target type, which org-roam templates do not accept.
+  (add-to-list 'org-capture-templates
+               '("f" "Fleeting note" entry
+                 (file+headline org-default-notes-file "Inbox")
+                 "* %? :REFILE:\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i"
+                 :prepend t)))
 
 ;; Org-roam capture templates
-;; Uses subdirectories for organization + filetags for filtering
-;; :mkdir t ensures directories are created on first use (multi-machine support)
+;; Uses subdirectories for organization + filetags for filtering.
+;; Subdirectories are pre-created below -- there is no :mkdir template
+;; keyword in org-roam v2 (the old one here was silently ignored).
+(with-eval-after-load 'org-roam
+  (dolist (d '("refs" "meetings" "projects"))
+    (make-directory (expand-file-name d org-roam-directory) t)))
+
 (setq org-roam-capture-templates
        '(;; Default note - flat in roam directory
          ("d" "default" plain "%?"
-          :if-new (file+head "${slug}.org"
+          :target (file+head "${slug}.org"
                    "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n#+filetags:\n\n")
           :unnarrowed t)
 
-         ;; Fleeting/quick note - appends to inbox with REFILE tag for GTD processing
-         ("f" "fleeting" entry
-          (file+headline org-default-notes-file "Inbox")
-          "* %? :REFILE:\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i"
-          :prepend t)
-
          ;; Literature/reference note
          ("r" "reference" plain "%?"
-          :if-new (file+head "refs/${slug}.org"
-                   "#+title: ${title}\n#+created: %u\n#+roam_refs: ${ref}\n#+filetags: :reference:\n\n* Summary\n\n* Notes\n%?")
-          :unnarrowed t
-          :mkdir t)
+          :target (file+head "refs/${slug}.org"
+                   "#+title: ${title}\n#+created: %u\n#+roam_refs: ${ref}\n#+filetags: :reference:\n\n* Summary\n\n* Notes\n")
+          :unnarrowed t)
 
          ;; Meeting note
          ("m" "meeting" plain "%?"
-          :if-new (file+head "meetings/%<%Y%m%d>-${slug}.org"
-                   "#+title: ${title}\n#+date: %<%Y-%m-%d>\n#+created: %u\n#+filetags: :meeting:\n\n* Attendees\n\n* Agenda\n\n* Notes\n%?\n\n* Action Items\n")
-          :unnarrowed t
-          :mkdir t)))
+          :target (file+head "meetings/%<%Y%m%d>-${slug}.org"
+                   "#+title: ${title}\n#+date: %<%Y-%m-%d>\n#+created: %u\n#+filetags: :meeting:\n\n* Attendees\n\n* Agenda\n\n* Notes\n\n* Action Items\n")
+          :unnarrowed t)))
 
 ;; Org-roam dailies configuration
 ;; Ensure daily notes directory exists
@@ -889,20 +952,17 @@ Opens the custom 'o' agenda command configured in
        '(("d" "default" entry
           "* %?"
           :target (file+head "%<%Y-%m-%d>.org"
-                   "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n")
-          :mkdir t)
+                   "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"))
          ("t" "task" entry
           "* TODO %?"
           :target (file+head+olp "%<%Y-%m-%d>.org"
                    "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"
-                   ("Tasks"))
-          :mkdir t)
+                   ("Tasks")))
          ("j" "journal" entry
           "* %<%H:%M> %?"
           :target (file+head+olp "%<%Y-%m-%d>.org"
                    "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"
-                   ("Journal"))
-          :mkdir t)))
+                   ("Journal")))))
 
 ;; Per-project capture system
 ;; Stores project files under roam/projects/{project-name}/ instead of in code repos
@@ -956,8 +1016,11 @@ Adds to Inbox heading with REFILE tag for GTD processing."
     (goto-char (point-min))
     (re-search-forward "^\\* Inbox" nil t)
     (org-end-of-subtree)
+    ;; Land between the two spaces so the typed title keeps a
+    ;; separating space before :REFILE: (8 puts point flush against
+    ;; the tag, and typing there destroys it).
     (insert "\n** TODO  :REFILE:")
-    (backward-char 8)))
+    (backward-char 9)))
 
 (defun bmg/capture-project-note ()
   "Capture a note for the current project.
@@ -978,11 +1041,14 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   (let* ((project (bmg/get-project-name))
          (org-roam-capture-templates
           `(("p" "project note" plain "%?"
-             :if-new (file+head
+             :target (file+head
                       ,(format "projects/%s/${slug}.org" project)
                       ,(format "#+title: ${title}\n#+created: %%u\n#+filetags: :project:%s:\n\n" project))
-             :unnarrowed t
-             :mkdir t))))
+             :unnarrowed t))))
+    ;; Per-project dir cannot be pre-created at load time; do it here.
+    (make-directory (expand-file-name (format "projects/%s" project)
+                                      org-roam-directory)
+                    t)
     (org-roam-capture nil "p")))
 
 (defun bmg/open-project-todo ()
@@ -1026,26 +1092,33 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   ;; Use setq because org-roam-db-gc-threshold has a broken (int) widget type
   (setq org-roam-db-gc-threshold most-positive-fixnum)
 
-  (defun my-set-agenda-files (&rest _)
-    (setopt org-agenda-files
-           (cl-loop
-            for file in (org-mem-all-files)
-            unless (string-search "archive" file)
-            when (seq-find (lambda (entry)
-                             (or (org-mem-entry-active-timestamps entry)
-                                 (org-mem-entry-todo-state entry)
-                                 (org-mem-entry-scheduled entry)
-                                 (org-mem-entry-deadline entry)))
-                           (org-mem-entries-in file))
-            collect file)))
-  (add-hook 'org-mem-post-full-scan-functions #'my-set-agenda-files)
+  (defun bmg/org-mem-set-agenda-files (&rest _)
+    "Derive `org-agenda-files' from org-mem: files with TODOs or dates.
+Runs on every org-mem full scan, so it uses the raw -int accessors
+\(no string formatting/memoization churn) and only sets the
+variable when the list actually changed.  The archive filter only
+looks at the file NAME -- a note like internet-archive.org must
+not be dropped because of its path."
+    (let ((files (cl-loop
+                  for file in (org-mem-all-files)
+                  unless (string-search "archive" (file-name-nondirectory file))
+                  when (seq-find (lambda (entry)
+                                   (or (org-mem-entry-todo-state entry)
+                                       (org-mem-entry-active-timestamps-int entry)
+                                       (org-mem-entry-scheduled-int entry)
+                                       (org-mem-entry-deadline-int entry)))
+                                 (org-mem-entries-in file))
+                  collect file)))
+      (unless (equal files org-agenda-files)
+        (setopt org-agenda-files files))))
+  (add-hook 'org-mem-post-full-scan-functions #'bmg/org-mem-set-agenda-files)
   (org-mem-updater-mode)
   (org-mem-roamy-db-mode)
   ;; Doom's +roam module calls org-roam-db-autosync-enable which adds a
   ;; save hook that conflicts with org-mem-roamy-db-mode (both try to
   ;; insert into the same SQLite table, causing UNIQUE constraint errors).
   ;; Disable org-roam's autosync since org-mem handles DB updates.
-  (org-roam-db-autosync-disable)
+  (org-roam-db-autosync-mode -1)
 
   ;; Workaround: org-mem's DB insert uses `prin1' which preserves Emacs
   ;; text properties (e.g. ws-butler-chg) as #(...) syntax.  EmacSQL's
@@ -1065,9 +1138,6 @@ Creates a new org-roam node in projects/{project-name}/ directory."
        org-log-into-drawer t
        org-log-state-notes-insert-after-drawers nil)
 
-(use-package websocket
-  :after org-roam)
-
 (use-package org-roam-ui
   :after org-roam
   :commands (org-roam-ui-mode org-roam-ui-open)
@@ -1082,39 +1152,23 @@ Creates a new org-roam node in projects/{project-name}/ directory."
        citar-library-paths '("~/Documents/Papers/")
        citar-notes-paths (list org-roam-directory))
 
-;; Pre-warm the citar bibliography cache after idle so that the first
-;; call to citar-open-notes doesn't block while parsing the bib file.
-;; In daemon mode, defer until after the first client frame connects
-;; so the parsing doesn't block emacsclient from attaching.
-;; (defun bmg/citar-warm-cache ()
-;;   "Pre-warm citar bibliography cache after a short idle delay."
-;;   (run-with-idle-timer 2 nil
-;;     (lambda ()
-;;       (require 'citar)
-;;       (citar-cache--get-bibliographies
-;;        (citar--bibliography-files) 'global))))
-
-;; (if (daemonp)
-;;     (add-hook 'server-after-make-frame-hook
-;;               (defun bmg/citar-warm-cache-once ()
-;;                 (bmg/citar-warm-cache)
-;;                 (remove-hook 'server-after-make-frame-hook
-;;                              #'bmg/citar-warm-cache-once)))
-;;   (bmg/citar-warm-cache))
-
 (with-eval-after-load 'citar
   ;; define the keymap to allow citar to hand over to biblio to do
   ;; a reference lookup
   (defvar bmg/my-citar-embark-become-map
     (let ((map (make-sparse-keymap)))
-      (define-key map (kbd "f") 'citar-open-library-files)
+      ;; embark-become only offers this map when the CURRENT minibuffer
+      ;; command is bound in it, so the umbrella citar-open must be here
+      ;; for the citar->biblio hand-over to activate at all.
+      (define-key map (kbd "o") 'citar-open)
+      (define-key map (kbd "f") 'citar-open-files)
       (define-key map (kbd "x") 'biblio-arxiv-lookup)
       (define-key map (kbd "c") 'biblio-crossref-lookup)
       (define-key map (kbd "i") 'biblio-ieee-lookup)
       (define-key map (kbd "h") 'biblio-hal-lookup)
       (define-key map (kbd "s") 'biblio-dissemin-lookup)
       (define-key map (kbd "b") 'biblio-dblp-lookup)
-      (define-key map (kbd "o") 'biblio-doi-insert-bibtex)
+      (define-key map (kbd "d") 'biblio-doi-insert-bibtex)
       map)
     "Citar Embark become keymap for biblio lookup."))
 
@@ -1123,21 +1177,23 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
+;; Only genuinely exclusive @contexts live inside the :startgroup --
+;; tags in a group are mutually exclusive in fast tag selection, so
+;; modifier tags (Important, Emacs, uni, PERSONAL) must stay outside
+;; or adding one silently removes the @context already on the item.
 (setopt org-tag-alist '((:startgroup . nil)
                        ("@Project" . ?p)
                        ("@Reading" . ?r)
                        ("@Someday" . ?s)
                        ("@Training" . ?t)
                        ("@Courses" . ?c)
-                       ("uni" . ?u)
                        ("@Research" . ?R)
-                       ("Emacs" . ?e)
                        ("@Issue" . ?i)
-                       ("Important" . ?I)
                        (:endgroup . nil)
-                       (:startgroup . nil)
-                       ("PERSONAL" . ?P)
-                       (:endgroup . nil)))
+                       ("uni" . ?u)
+                       ("Emacs" . ?e)
+                       ("Important" . ?I)
+                       ("PERSONAL" . ?P)))
 
 (use-package org-super-agenda
   :after org-agenda
@@ -1176,40 +1232,37 @@ Creates a new org-roam node in projects/{project-name}/ directory."
                           '((:name "Today"
                              :time-grid t
                              :date today
-                             :todo "TODAY"
                              :scheduled today
                              :order 1)))))
              (alltodo "" ((org-agenda-overriding-header "")
+                          ;; Groups match in LIST order (:order only affects
+                          ;; display), so selective groups must precede the
+                          ;; broad TODO/STRT catch-alls or they never match.
                           (org-super-agenda-groups
-                           '((:name "📥 Inbox - Process these first"
+                           '(;; Discard first, before any group can claim these.
+                             ;; NB: tag match is case-insensitive, so this also
+                             ;; drops items inheriting a :daily: filetag.
+                             (:discard (:tag ("Chore" "Routine" "Daily")))
+                             (:name "📥 Inbox - Process these first"
                               :tag "REFILE"
                               :order 0)
-                             (:name "Next to do"
-                              :todo "TODO"
-                              :order 3)
-                             (:name "Ongoing"
-                              :todo "STRT"
-                              :order 3)
-                             (:name "Recurring"
-                              :todo "LOOP"
-                              :order 4)
-                             (:name "Personal"
-                              :tag "PERSONAL"
-                              :order 12)
-                             (:name "Important"
-                              :tag "Important"
-                              :priority "A"
-                              :order 6)
                              (:name "Due Today"
                               :deadline today
                               :order 2)
-                             (:name "Due Soon"
-                              :deadline future
-                              :order 8)
                              (:name "Overdue"
                               :deadline past
                               :face error
                               :order 7)
+                             (:name "Due Soon"
+                              :deadline future
+                              :order 8)
+                             (:name "Important"
+                              :tag "Important"
+                              :priority "A"
+                              :order 6)
+                             (:name "Personal"
+                              :tag "PERSONAL"
+                              :order 12)
                              (:name "Issues"
                               :tag "@Issue"
                               :order 12)
@@ -1223,15 +1276,14 @@ Creates a new org-roam node in projects/{project-name}/ directory."
                              (:name "Research"
                               :tag "@Research"
                               :order 15)
-                              (:name "Training/Courses"
+                             (:name "Training/Courses"
                               :tag ("@Training" "@Courses")
                               :order 16)
                              (:name "To read"
                               :tag "@Reading"
                               :order 30)
                              (:name "Waiting"
-                              :todo "HOLD"
-                              :todo "WAIT"
+                              :todo ("HOLD" "WAIT")
                               :order 20)
                              (:name "University"
                               :tag "uni"
@@ -1241,7 +1293,15 @@ Creates a new org-roam node in projects/{project-name}/ directory."
                               :tag "@Someday"
                               :todo "IDEA"
                               :order 90)
-                             (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
+                             (:name "Recurring"
+                              :todo "LOOP"
+                              :order 4)
+                             (:name "Ongoing"
+                              :todo "STRT"
+                              :order 3)
+                             (:name "Next to do"
+                              :todo "TODO"
+                              :order 3)))))))))
   :config
   (org-super-agenda-mode))
 
@@ -1254,7 +1314,12 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   (let ((files '()))
     (dotimes (i 7)
       (let* ((date (time-subtract (current-time) (days-to-time i)))
-             (file (org-roam-dailies--daily-note-path date)))
+             ;; No org-roam-dailies--daily-note-path in org-roam;
+             ;; mirror the dailies template's "%<%Y-%m-%d>.org" target.
+             (file (expand-file-name
+                    (format-time-string "%Y-%m-%d.org" date)
+                    (expand-file-name org-roam-dailies-directory
+                                      org-roam-directory))))
         (when (file-exists-p file)
           (push file files))))
     (if files
@@ -1287,7 +1352,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   :after org-roam
   :config
   (consult-org-roam-mode 1)
-  (setq consult-org-roam-grep-func #'consult-ripgrep))
+  (setopt consult-org-roam-grep-func #'consult-ripgrep))
 
 ;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
 ;; Uses consult-org-roam for enhanced find/search with live preview
@@ -1374,7 +1439,9 @@ Creates a new org-roam node in projects/{project-name}/ directory."
     :desc "crux-delete-file-and-buffer"            "D" #'crux-delete-file-and-buffer
     :desc "crux-kill-other-buffers"                "k" #'crux-kill-other-buffers
     :desc "crux-open-with"                         "o" #'crux-open-with
-    :desc "crux-rename-buffer-and-file"            "r" #'crux-rename-buffer-and-file
+    ;; the canonical autoloaded command; the -buffer-and-file alias is
+    ;; void until crux happens to load
+    :desc "crux-rename-file-and-buffer"            "r" #'crux-rename-file-and-buffer
     :desc "crux-transpose-windows"                 "s" #'crux-transpose-windows
     :desc "crux-view-url"                          "u" #'crux-view-url
     :desc "crux-indent-defun"                      "TAB" #'crux-indent-defun
@@ -1391,11 +1458,15 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 (with-eval-after-load 'org
   (map! :map org-mode-map
         :localleader
-        :desc "Process inbox item" "P" #'bmg/process-inbox-item
+        ;; "B" not "P": localleader P is Doom's org-publish prefix
+        ;; (org-publish-all & friends) and must stay reachable.
+        :desc "Process inbox item" "B" #'bmg/process-inbox-item
         :desc "Summarize paper"    "S" #'bmg/summarize-paper))
 
-;; Standard Emacs C-c prefix keybindings for AI functions
-;; C-c a = AI knowledge management prefix
+;; AI knowledge management prefix on the leader (C-c A / M-SPC A).
+;; NOT a plain (global-set-key (kbd "C-c a") ...): Doom's leader map wins
+;; for C-c sequences and already binds "a" to embark-act, which fully
+;; shadowed the global binding.
 (defvar bmg/ai-command-map
   (let ((map (make-sparse-keymap)))
     ;; Tag and summarization
@@ -1413,15 +1484,19 @@ Creates a new org-roam node in projects/{project-name}/ directory."
     map)
   "Keymap for AI-powered knowledge management commands.")
 
-(global-set-key (kbd "C-c a") bmg/ai-command-map)
+(define-key doom-leader-map (kbd "A") (cons "AI" bmg/ai-command-map))
 
 ;; ripgrep-all for searching PDFs and documents
 (defun bmg/rga-search (query)
   "Search PDFs and documents in Papers directory with ripgrep-all."
   (interactive "sSearch papers: ")
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
   (let ((default-directory "~/Documents/Papers/"))
     (compilation-start
-     (format "rga --color=never --heading --line-number %s"
+     ;; --no-heading --with-filename: grep-mode needs file:line:text
+     ;; on every match line to make RET jump to the hit.
+     (format "rga --color=never --no-heading --with-filename --line-number %s"
              (shell-quote-argument query))
      'grep-mode
      (lambda (_) "*rga-search*"))))
@@ -1430,6 +1505,8 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   "Search across org-roam notes, PDFs, and bibliography.
 Presents results in a unified interface."
   (interactive "sSearch: ")
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
   (let ((results-buffer (get-buffer-create "*Knowledge Base Search*")))
     (with-current-buffer results-buffer
       (erase-buffer)
@@ -1473,7 +1550,6 @@ Presents results in a unified interface."
       "q"   #'dirvish-quit
       "b"   #'dirvish-quick-access
       "f"   #'dirvish-file-info-menu
-      "p"   #'dirvish-yank
       "S"   #'dirvish-quicksort
       "F"   #'dirvish-layout-toggle
       "z"   #'dirvish-history-jump
@@ -1484,10 +1560,13 @@ Presents results in a unified interface."
       "M-m" #'dirvish-mark-menu
       "M-s" #'dirvish-setup-menu
       "M-e" #'dirvish-emerge-menu
+      ;; dirvish-yank lives under the y-prefix; a top-level "p" would
+      ;; shadow dired-previous-line ("P" would shadow dired-do-print).
       (:prefix ("y" . "yank")
                "l"   #'dirvish-copy-file-true-path
                "n"   #'dirvish-copy-file-name
                "p"   #'dirvish-copy-file-path
+               "P"   #'dirvish-yank
                "r"   #'dirvish-copy-remote-path
                "y"   #'dired-do-copy)
       (:prefix ("s" . "symlinks")
@@ -1497,7 +1576,7 @@ Presents results in a unified interface."
 
 ;;;
 ;;;
-;;; END_MAP
+;;; END_Map
 ;;;
 ;;;
 #+END_SRC
@@ -1525,41 +1604,17 @@ Presents results in a unified interface."
       (elfeed-search-update--force)
       (message "Marked %d entries as read" count))))
 
-(defun bmg/elfeed-capture-arxiv ()
-  "Capture current elfeed arxiv entry to org-roam reference note."
-  (interactive)
-  (unless (bound-and-true-p elfeed-show-entry)
-    (user-error "Not in an elfeed entry buffer"))
-  (let* ((entry elfeed-show-entry)
-         (title (elfeed-entry-title entry))
-         (link (elfeed-entry-link entry))
-         (authors (or (elfeed-meta entry :authors) "Unknown"))
-         (authors-str (if (listp authors)
-                          (mapconcat (lambda (a) (or (plist-get a :name) "")) authors ", ")
-                        authors))
-         (abstract (elfeed-deref (elfeed-entry-content entry))))
-    (org-roam-capture-
-     :node (org-roam-node-create :title title)
-     :templates
-     `(("a" "arxiv paper" plain
-        ,(concat "- Source :: " link "\n"
-                 "- Authors :: " authors-str "\n\n"
-                 "* Abstract\n\n"
-                 (or abstract "") "\n\n"
-                 "* Notes\n\n%?")
-        :target (file+head "roam/${slug}.org"
-                           ,(concat ":PROPERTIES:\n"
-                                    ":ID: %(org-id-new)\n"
-                                    ":END:\n"
-                                    "#+title: ${title}\n"
-                                    "#+filetags: :arxiv:paper:\n\n"))
-        :unnarrowed t)))))
-
+;; arXiv capture: `C' and `a' both run bmg/elfeed-arxiv-intake
+;; (defined in elfeed-config.el), which fetches PDF + BibTeX and
+;; creates the roam note in one pass.  The old separate
+;; bmg/elfeed-capture-arxiv spliced feed-controlled text into an
+;; org-capture template, which would execute %(elisp) from a
+;; malicious feed -- do not reintroduce that pattern.
 (with-eval-after-load 'elfeed
   (map! :map elfeed-search-mode-map
         "R" #'bmg/elfeed-mark-all-as-read)
   (map! :map elfeed-show-mode-map
-        "C" #'bmg/elfeed-capture-arxiv))
+        "C" #'bmg/elfeed-arxiv-intake))
 
 ;;;
 ;;;
@@ -1581,520 +1636,14 @@ Setup:
 2. Connect device via USB cable
 3. Test: =C-c r t= (remarkable-test-connection)
 
-** Core Configuration
+The implementation lives in its own file, [[file:remarkable-config.el]], rather
+than inline. It is a self-contained pseudo-package (its own =defgroup= and
+=remarkable-= prefix), and it generates a lot of org text: keeping it in a =.el=
+file removes the tangling hazard where a column-0 =*= inside a template string
+would silently terminate a src block (which previously dropped six functions).
+
 #+BEGIN_SRC emacs-lisp
-;;; reMarkable Integration -*- lexical-binding: t; -*-
-
-;; Declare external variables to avoid byte-compile warnings
-(defvar org-directory)
-(defvar org-roam-directory)
-(defvar citar-library-paths)
-(defvar org-latex-classes)
-(defvar org-latex-default-class)
-
-;; Declare external functions
-(declare-function org-roam-node-at-point "org-roam-node")
-(declare-function org-roam-node-title "org-roam-node")
-(declare-function org-roam-node-slug "org-roam-node")
-(declare-function org-roam-node-read "org-roam-node")
-(declare-function org-roam-node-file "org-roam-node")
-(declare-function org-roam-db-update-file "org-roam-db")
-(declare-function org-roam-dailies-goto-today "org-roam-dailies")
-(declare-function org-latex-export-to-pdf "ox-latex")
-(declare-function org-get-heading "org")
-(declare-function org-narrow-to-subtree "org")
-(declare-function org-noter "org-noter")
-
-(defgroup remarkable nil
-  "reMarkable tablet integration via USB web interface."
-  :group 'tools
-  :prefix "remarkable-")
-
-(defcustom remarkable-url "http://10.11.99.1"
-  "USB web interface URL for reMarkable tablet."
-  :type 'string
-  :group 'remarkable)
-
-(defcustom remarkable-local-dir
-  (expand-file-name "remarkable" org-directory)
-  "Local directory for reMarkable sync."
-  :type 'directory
-  :group 'remarkable)
-
-(defcustom remarkable-papers-dir
-  (car citar-library-paths)
-  "Directory for academic papers."
-  :type 'directory
-  :group 'remarkable)
-
-(defcustom remarkable-epub-dir
-  (expand-file-name "~/Documents/EPUB")
-  "Directory for ebooks."
-  :type 'directory
-  :group 'remarkable)
-
-;; Defer directory creation until first use (avoid startup I/O)
-(defun remarkable--ensure-directories ()
-  "Ensure remarkable directories exist. Called lazily on first use."
-  (dolist (subdir '("downloads" "outbox" "notes"))
-    (make-directory (expand-file-name subdir remarkable-local-dir) t)))
-
-#+END_SRC
-
-** USB Web Interface Functions
-#+BEGIN_SRC emacs-lisp
-(defun remarkable--api-request (endpoint &optional method)
-  "Make HTTP request to reMarkable USB web interface ENDPOINT.
-METHOD defaults to GET."
-  (let ((url (concat remarkable-url endpoint)))
-    (with-temp-buffer
-      (if (zerop (call-process "curl" nil t nil
-                               "--silent" "--connect-timeout" "3"
-                               (or method "--request" "GET")
-                               url))
-          (buffer-string)
-        nil))))
-
-(defun remarkable--device-connected-p ()
-  "Check if reMarkable is connected via USB."
-  (remarkable--api-request "/documents/"))
-
-(defun remarkable--get-documents (&optional parent-id)
-  "Get documents list from reMarkable, optionally from PARENT-ID folder."
-  (let* ((endpoint (if parent-id
-                       (format "/documents/%s" parent-id)
-                     "/documents/"))
-         (response (remarkable--api-request endpoint)))
-    (when response
-      (json-read-from-string response))))
-
-(defun remarkable--download-document (uuid output-file)
-  "Download document UUID as PDF to OUTPUT-FILE."
-  (let ((url (format "%s/download/%s/pdf" remarkable-url uuid)))
-    (zerop (call-process "curl" nil nil nil
-                         "--silent" "--fail"
-                         "-o" output-file
-                         url))))
-
-(defun remarkable--upload-file (file)
-  "Upload FILE to reMarkable via USB web interface."
-  (let* ((filename (file-name-nondirectory file))
-         (content-type (if (string-suffix-p ".epub" filename t)
-                           "application/epub+zip"
-                         "application/pdf")))
-    ;; First list root to set upload destination
-    (remarkable--api-request "/documents/")
-    ;; Upload file
-    (zerop (call-process "curl" nil nil nil
-                         "--silent" "--fail"
-                         "-H" (format "Origin: %s" remarkable-url)
-                         "-H" "Accept: */*"
-                         "-H" (format "Referer: %s/" remarkable-url)
-                         "-F" (format "file=@%s;filename=%s;type=%s"
-                                      file filename content-type)
-                         (concat remarkable-url "/upload")))))
-
-#+END_SRC
-
-** Sync Functions
-#+BEGIN_SRC emacs-lisp
-;;;###autoload
-(defun remarkable-test-connection ()
-  "Test connection to reMarkable USB web interface."
-  (interactive)
-  (if (remarkable--device-connected-p)
-      (message "✓ reMarkable is connected via USB at %s" remarkable-url)
-    (message "✗ Cannot reach reMarkable. Ensure USB is connected and web interface enabled.")))
-
-;;;###autoload
-(defun remarkable-sync-from-device ()
-  "Download all documents from reMarkable (with annotations pre-rendered)."
-  (interactive)
-  (unless (remarkable--device-connected-p)
-    (user-error "reMarkable not connected. Connect via USB and enable web interface"))
-  (remarkable--ensure-directories)
-  (let ((downloads-dir (expand-file-name "downloads" remarkable-local-dir))
-        (documents (remarkable--get-documents))
-        (count 0))
-    (make-directory downloads-dir t)
-    (dolist (doc (append documents nil))
-      (let* ((type (alist-get 'Type doc))
-             (id (alist-get 'ID doc))
-             (name (alist-get 'VissibleName doc)))
-        (cond
-         ;; Document - download it
-         ((string= type "DocumentType")
-          (let ((output-file (expand-file-name (concat name ".pdf") downloads-dir)))
-            (unless (file-exists-p output-file)
-              (message "Downloading: %s..." name)
-              (when (remarkable--download-document id output-file)
-                (setq count (1+ count))))))
-         ;; Folder - recurse into it
-         ((string= type "CollectionType")
-          (let ((folder-dir (expand-file-name name downloads-dir))
-                (folder-docs (remarkable--get-documents id)))
-            (make-directory folder-dir t)
-            (dolist (subdoc (append folder-docs nil))
-              (when (string= (alist-get 'Type subdoc) "DocumentType")
-                (let* ((subid (alist-get 'ID subdoc))
-                       (subname (alist-get 'VissibleName subdoc))
-                       (output-file (expand-file-name (concat subname ".pdf") folder-dir)))
-                  (unless (file-exists-p output-file)
-                    (message "Downloading: %s/%s..." name subname)
-                    (when (remarkable--download-document subid output-file)
-                      (setq count (1+ count))))))))))))
-    (message "Downloaded %d new documents to %s" count downloads-dir)))
-
-;;;###autoload
-(defun remarkable-sync-to-device ()
-  "Upload PDFs/EPUBs from outbox to reMarkable via USB web interface."
-  (interactive)
-  (unless (remarkable--device-connected-p)
-    (user-error "reMarkable not connected. Connect via USB and enable web interface"))
-  (remarkable--ensure-directories)
-  (let* ((outbox (expand-file-name "outbox" remarkable-local-dir))
-         (files (directory-files outbox t "\\.\\(pdf\\|epub\\)$" t))
-         (processed-dir (expand-file-name ".processed" outbox))
-         (count 0))
-    (if (null files)
-        (message "No PDFs or EPUBs in outbox to upload")
-      (make-directory processed-dir t)
-      (dolist (file files)
-        (message "Uploading: %s..." (file-name-nondirectory file))
-        (if (remarkable--upload-file file)
-            (progn
-              (rename-file file (expand-file-name (file-name-nondirectory file) processed-dir) t)
-              (setq count (1+ count))
-              (message "Uploaded: %s" (file-name-nondirectory file)))
-          (message "Failed to upload: %s" (file-name-nondirectory file))))
-      (message "Uploaded %d files to reMarkable" count))))
-
-;;;###autoload
-(defun remarkable-list-documents ()
-  "List documents on reMarkable device."
-  (interactive)
-  (unless (remarkable--device-connected-p)
-    (user-error "reMarkable not connected"))
-  (let ((documents (remarkable--get-documents))
-        (buf (get-buffer-create "*reMarkable Documents*")))
-    (with-current-buffer buf
-      (erase-buffer)
-      (insert "Documents on reMarkable:\n")
-      (insert "========================\n\n")
-      (dolist (doc (append documents nil))
-        (let* ((type (alist-get 'Type doc))
-               (id (alist-get 'ID doc))
-               (name (alist-get 'VissibleName doc)))
-          (if (string= type "CollectionType")
-              (progn
-                (insert (format "📁 %s/\n" name))
-                (let ((folder-docs (remarkable--get-documents id)))
-                  (dolist (subdoc (append folder-docs nil))
-                    (insert (format "   📄 %s  [%s]\n"
-                                    (alist-get 'VissibleName subdoc)
-                                    (alist-get 'ID subdoc))))))
-            (insert (format "📄 %s  [%s]\n" name id))))))
-    (pop-to-buffer buf)
-    (goto-char (point-min))))
-
-#+END_SRC
-
-** Send Papers/EPUBs to reMarkable
-#+BEGIN_SRC emacs-lisp
-;;;###autoload
-(defun remarkable-send-paper ()
-  "Send a paper from Papers directory to reMarkable."
-  (interactive)
-  (remarkable--send-file-to-device remarkable-papers-dir "Paper"))
-
-;;;###autoload
-(defun remarkable-send-epub ()
-  "Send an EPUB/PDF from EPUB directory to reMarkable."
-  (interactive)
-  (remarkable--send-file-to-device remarkable-epub-dir "Book"))
-
-(defun remarkable--send-file-to-device (source-dir type-name)
-  "Send a file from SOURCE-DIR to reMarkable outbox.
-TYPE-NAME is used in prompts (e.g., \"Paper\", \"Book\")."
-  (let* ((file (read-file-name (format "%s to send: " type-name) source-dir nil t nil
-                               (lambda (f)
-                                 (or (string-suffix-p ".pdf" f)
-                                     (string-suffix-p ".epub" f)))))
-         (outbox (expand-file-name "outbox" remarkable-local-dir))
-         (dest (expand-file-name (file-name-nondirectory file) outbox)))
-    (make-directory outbox t)
-    (copy-file file dest t)
-    (message "Copied to outbox: %s" (file-name-nondirectory file))
-    (when (y-or-n-p "Upload to reMarkable now? ")
-      (remarkable-sync-to-device))))
-
-;;;###autoload
-(defun remarkable-send-current-buffer ()
-  "Send current PDF or EPUB buffer to reMarkable."
-  (interactive)
-  (let ((file (buffer-file-name)))
-    (unless file
-      (user-error "Buffer is not visiting a file"))
-    (unless (or (string-suffix-p ".pdf" file)
-                (string-suffix-p ".epub" file))
-      (user-error "Buffer is not a PDF or EPUB file"))
-    (let* ((outbox (expand-file-name "outbox" remarkable-local-dir))
-           (dest (expand-file-name (file-name-nondirectory file) outbox)))
-      (make-directory outbox t)
-      (copy-file file dest t)
-      (message "Copied to outbox: %s" (file-name-nondirectory file))
-      (when (y-or-n-p "Upload to reMarkable now? ")
-        (remarkable-sync-to-device)))))
-
-#+END_SRC
-
-** Export Org-Roam to reMarkable
-#+BEGIN_SRC emacs-lisp
-;;;###autoload
-(defun remarkable-export-roam-node ()
-  "Export current org-roam node to PDF for reMarkable."
-  (interactive)
-  (unless (and (featurep 'org-roam) (org-roam-node-at-point))
-    (user-error "Not in an org-roam node"))
-  (let* ((node (org-roam-node-at-point))
-         (title (org-roam-node-title node))
-         (slug (org-roam-node-slug node))
-         (org-latex-default-class "remarkable")
-         (outbox (expand-file-name "outbox" remarkable-local-dir))
-         (output-name (format "%s.pdf" slug)))
-    (make-directory outbox t)
-    (let ((pdf-file (org-latex-export-to-pdf)))
-      (when pdf-file
-        (rename-file pdf-file (expand-file-name output-name outbox) t)
-        (message "Exported '%s' to outbox" title)
-        (when (y-or-n-p "Upload to reMarkable now? ")
-          (remarkable-sync-to-device))))))
-
-;;;###autoload
-(defun remarkable-export-subtree ()
-  "Export current org subtree to PDF for reMarkable."
-  (interactive)
-  (let* ((title (org-get-heading t t t t))
-         (slug (replace-regexp-in-string "[^a-zA-Z0-9]" "-" (downcase title)))
-         (org-latex-default-class "remarkable")
-         (outbox (expand-file-name "outbox" remarkable-local-dir))
-         (output-name (format "%s.pdf" slug)))
-    (make-directory outbox t)
-    (save-restriction
-      (org-narrow-to-subtree)
-      (let ((pdf-file (org-latex-export-to-pdf)))
-        (widen)
-        (when pdf-file
-          (rename-file pdf-file (expand-file-name output-name outbox) t)
-          (message "Exported subtree '%s' to outbox" title)
-          (when (y-or-n-p "Upload to reMarkable now? ")
-            (remarkable-sync-to-device)))))))
-
-#+END_SRC
-
-** Import Handwritten Notes to Org-Roam
-#+BEGIN_SRC emacs-lisp
-(defun remarkable--safe-filename (name)
-  "Convert NAME to a safe filename."
-  (replace-regexp-in-string "[^a-zA-Z0-9_-]" "_" name))
-
-(defun remarkable--list-downloaded-pdfs ()
-  "List available PDFs from downloads directory."
-  (let ((downloads-dir (expand-file-name "downloads" remarkable-local-dir)))
-    (when (file-directory-p downloads-dir)
-      (directory-files-recursively downloads-dir "\\.pdf$"))))
-
-;;;###autoload
-(defun remarkable-import-handwritten-note ()
-  "Import a downloaded PDF note from reMarkable into org-roam."
-  (interactive)
-  (let* ((pdfs (remarkable--list-downloaded-pdfs)))
-    (unless pdfs
-      (user-error "No PDFs found. Run remarkable-sync-from-device first"))
-    (let* ((choice (completing-read "Select PDF: " pdfs nil t))
-           (title (file-name-base choice))
-           (notes-dir (expand-file-name "notes" remarkable-local-dir))
-           (pdf-dest (expand-file-name (file-name-nondirectory choice) notes-dir))
-           (action (completing-read
-                    "Action: "
-                    '("Create new org-roam node"
-                      "Link to existing node"
-                      "Add to today's daily note")
-                    nil t)))
-      ;; Copy to notes directory
-      (make-directory notes-dir t)
-      (copy-file choice pdf-dest t)
-      ;; Handle based on action
-      (pcase action
-        ("Create new org-roam node"
-         (remarkable--create-roam-node-from-handwritten title pdf-dest))
-        ("Link to existing node"
-         (remarkable--link-to-existing-node title pdf-dest))
-        ("Add to today's daily note"
-         (remarkable--add-to-daily-note title pdf-dest))))))
-
-(defun remarkable--create-roam-node-from-handwritten (title pdf-file)
-  "Create a new org-roam node for handwritten note TITLE linking to PDF-FILE."
-  (let* ((slug (remarkable--safe-filename title))
-         (org-file (expand-file-name (format "%s.org" slug) org-roam-directory)))
-    (find-file org-file)
-    (insert (format "#+title: %s
-#+created: %s
-#+filetags: :remarkable:handwritten:
-
-* Handwritten Notes
-:PROPERTIES:
-:RM_IMPORTED: %s
-:END:
-
-[[file:%s][View handwritten notes (PDF)]]
-
-* Summary / Key Points
-
-" title
-   (format-time-string "[%Y-%m-%d %a]")
-   (format-time-string "[%Y-%m-%d %a %H:%M]")
-   pdf-file))
-    (save-buffer)
-    ;; org-mem-roamy-db-mode handles DB updates; no need for direct call
-    (message "Created org-roam node: %s" title)))
-
-(defun remarkable--link-to-existing-node (title pdf-file)
-  "Link handwritten note PDF-FILE to an existing org-roam node."
-  (let ((node (org-roam-node-read)))
-    (find-file (org-roam-node-file node))
-    (goto-char (point-max))
-    (insert (format "
-* Handwritten Notes: %s :remarkable:
-:PROPERTIES:
-:RM_IMPORTED: %s
-:END:
-
-[[file:%s][View handwritten notes (PDF)]]
-
-" title (format-time-string "[%Y-%m-%d %a %H:%M]") pdf-file))
-    (save-buffer)
-    (message "Linked to: %s" (org-roam-node-title node))))
-
-(defun remarkable--add-to-daily-note (title pdf-file)
-  "Add handwritten note PDF-FILE to today's org-roam daily note."
-  (require 'org-roam-dailies)
-  (org-roam-dailies-goto-today)
-  (goto-char (point-max))
-  (insert (format "
-* %s :remarkable:
-:PROPERTIES:
-:RM_IMPORTED: %s
-:END:
-
-[[file:%s][View handwritten notes]]
-
-" title (format-time-string "[%Y-%m-%d %a %H:%M]") pdf-file))
-  (save-buffer)
-  (message "Added to today's daily note"))
-
-#+END_SRC
-
-** Open Downloaded PDFs
-#+BEGIN_SRC emacs-lisp
-;;;###autoload
-(defun remarkable-open-downloaded ()
-  "Open a downloaded PDF from reMarkable in Emacs."
-  (interactive)
-  (let ((files (remarkable--list-downloaded-pdfs)))
-    (if (null files)
-        (user-error "No downloaded PDFs found.  Run remarkable-sync-from-device first")
-      (let ((file (completing-read "PDF: " files nil t)))
-        (find-file file)))))
-
-;;;###autoload
-(defun remarkable-open-in-noter ()
-  "Open a downloaded PDF from reMarkable in org-noter."
-  (interactive)
-  (remarkable-open-downloaded)
-  (org-noter))
-
-;;;###autoload
-(defun remarkable-browse-downloads ()
-  "Browse downloaded PDFs directory."
-  (interactive)
-  (let ((downloads-dir (expand-file-name "downloads" remarkable-local-dir)))
-    (make-directory downloads-dir t)
-    (dired downloads-dir)))
-
-;;;###autoload
-(defun remarkable-browse-notes ()
-  "Browse notes directory."
-  (interactive)
-  (let ((notes-dir (expand-file-name "notes" remarkable-local-dir)))
-    (make-directory notes-dir t)
-    (dired notes-dir)))
-
-#+END_SRC
-
-** LaTeX Class for reMarkable
-#+BEGIN_SRC emacs-lisp
-;; A5 format optimized for reMarkable's 10.3" screen
-(with-eval-after-load 'ox-latex
-  (add-to-list 'org-latex-classes
-               '("remarkable"
-                 "\\documentclass[11pt,a5paper]{article}
-\\usepackage[margin=1.2cm]{geometry}
-\\usepackage{libertine}
-\\usepackage{inconsolata}
-\\usepackage{parskip}
-\\usepackage[colorlinks=false]{hyperref}
-\\setlength{\\parindent}{0pt}
-\\pagestyle{plain}
-[NO-DEFAULT-PACKAGES]
-[PACKAGES]
-[EXTRA]"
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}"))))
-
-#+END_SRC
-
-** Keybindings
-Bind to =C-c r= prefix for standard Emacs keybindings (no evil).
-#+BEGIN_SRC emacs-lisp
-;; Define remarkable keymap for C-c r prefix
-(defvar remarkable-command-map
-  (let ((map (make-sparse-keymap)))
-    ;; Connection
-    (define-key map (kbd "t") #'remarkable-test-connection)
-    (define-key map (kbd "l") #'remarkable-list-documents)
-    ;; Sync
-    (define-key map (kbd "s") #'remarkable-sync-from-device)
-    (define-key map (kbd "u") #'remarkable-sync-to-device)
-    ;; Send content
-    (define-key map (kbd "p") #'remarkable-send-paper)
-    (define-key map (kbd "b") #'remarkable-send-epub)
-    (define-key map (kbd "c") #'remarkable-send-current-buffer)
-    ;; Export from Emacs
-    (define-key map (kbd "e") #'remarkable-export-roam-node)
-    (define-key map (kbd "E") #'remarkable-export-subtree)
-    ;; Import to Emacs
-    (define-key map (kbd "i") #'remarkable-import-handwritten-note)
-    ;; Open/Browse
-    (define-key map (kbd "o") #'remarkable-open-downloaded)
-    (define-key map (kbd "n") #'remarkable-open-in-noter)
-    (define-key map (kbd "d") #'remarkable-browse-downloads)
-    (define-key map (kbd "N") #'remarkable-browse-notes)
-    map)
-  "Keymap for reMarkable commands.")
-
-;; Bind to C-c r prefix
-(global-set-key (kbd "C-c r") remarkable-command-map)
-
-;; Also add to Doom's leader if available (works with or without evil)
-(when (boundp 'doom-leader-map)
-  (define-key doom-leader-map (kbd "r") (cons "reMarkable" remarkable-command-map)))
-
-;;;
-;;;
-;;; END_REMARKABLE
-;;;
-;;;
+;; Loaded here (end of config) so citar-library-paths and doom-leader-map,
+;; referenced at load time, are already set.
+(load! "remarkable-config.el")
 #+END_SRC

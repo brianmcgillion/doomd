@@ -64,7 +64,7 @@
 
 ;; roam and related packages
 (unpin! org-roam)
-(package! websocket)
+;; (websocket comes in transitively as an org-roam-ui dependency)
 (package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
 
 (package! org-mem)
@@ -85,7 +85,11 @@
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 
-;; Yuck mode is for eww
+;; NOTE: agent-shell + acp.el are provided by Nix, not declared here --
+;; see the "Claude Agent via ACP" note in config.org
+
+;; yuck-mode: syntax for ElKowar's Wacky Widgets config (~/.config/eww/eww.yuck)
+;; -- eww the widget system, not the Emacs browser
 (package! yuck-mode)
 
 ;; just file mode

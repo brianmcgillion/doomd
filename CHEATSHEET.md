@@ -198,18 +198,18 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 
 ## AI-Powered Knowledge Management
 
-### Standard Emacs Bindings (`C-c a`)
+### Standard Emacs Bindings (`C-c A`)
 | Key | Action | Description |
 |-----|--------|-------------|
-| `C-c a t` | Suggest tags | AI suggests filetags for current buffer |
-| `C-c a s` | Summarize paper | Generate AI summary, insert at end |
-| `C-c a p` | Process inbox | GTD processing suggestions for item |
-| `C-c a r` | Find related | AI finds semantically related notes |
-| `C-c a q` | Ask KB | RAG-based Q&A over your notes |
-| `C-c a k` | Search KB | Multi-source search (notes, PDFs, bib) |
-| `C-c a w` | Weekly review | AI-generated weekly summary |
-| `C-c a c` | Check tags | Report tag frequency and duplicates |
-| `C-c a o` | Find orphans | Notes with no links in or out |
+| `C-c A t` | Suggest tags | AI suggests filetags for current buffer |
+| `C-c A s` | Summarize paper | Generate AI summary, insert at end |
+| `C-c A p` | Process inbox | GTD processing suggestions for item |
+| `C-c A r` | Find related | AI finds semantically related notes |
+| `C-c A q` | Ask KB | RAG-based Q&A over your notes |
+| `C-c A k` | Search KB | Multi-source search (notes, PDFs, bib) |
+| `C-c A w` | Weekly review | AI-generated weekly summary |
+| `C-c A c` | Check tags | Report tag frequency and duplicates |
+| `C-c A o` | Find orphans | Notes with no links in or out |
 
 ### Org-Roam AI Bindings (`M-SPC z` or `SPC z`)
 | Key | Action |
@@ -248,7 +248,7 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 **Tag a new paper note:**
 ```
 1. Open paper note
-2. C-c a t (or M-SPC z S)
+2. C-c A t (or M-SPC z S)
 3. Tags copied to kill ring
 4. C-y to yank into #+filetags: line
 ```
@@ -257,7 +257,7 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 ```
 1. In agenda, go to REFILE item
 2. Open the item (RET)
-3. C-c a p (or C-c l P in org buffer)
+3. C-c A p (or C-c l B in org buffer)
 4. Review AI suggestions for:
    - Is it actionable?
    - Suggested project
@@ -267,14 +267,14 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 
 **Ask your knowledge base:**
 ```
-1. C-c a q (or M-SPC s Q)
+1. C-c A q (or M-SPC s Q)
 2. Type question: "What do my notes say about TPM attestation?"
 3. AI searches notes, retrieves context, answers with citations
 ```
 
 **Weekly review:**
 ```
-1. C-c a w (or M-SPC z w)
+1. C-c A w (or M-SPC z w)
 2. AI summarizes notes modified this week
 3. Identifies themes, suggests connections
 ```
@@ -288,22 +288,21 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 - **Backlinks**: `SPC z t` to see what links to current note
 - **Graph view**: `SPC z g` for visual connections
 - **Search all org**: `SPC s o` (org search)
-- **AI tag suggestions**: `C-c a t` for smart tagging
-- **Ask your notes**: `C-c a q` to query your knowledge base
+- **AI tag suggestions**: `C-c A t` for smart tagging
+- **Ask your notes**: `C-c A q` to query your knowledge base
 
 ---
 
 ## Setup Requirements
 
-### AI Features (gptel + Claude)
-Add Anthropic API key to `~/.netrc`:
-```
-machine api.anthropic.com login apikey password sk-ant-xxx
-```
+### AI Features (gptel via GitHub Copilot)
+gptel is backed by GitHub Copilot (`gptel-make-gh-copilot`) — no
+Anthropic API key or `~/.netrc` entry is needed. Authenticate once
+with your GitHub account when prompted (Copilot subscription required).
+Other API keys, if ever needed, belong in `~/.authinfo.gpg`.
 
-Ensure proper permissions:
-```bash
-chmod 600 ~/.netrc
-```
+The `agent-shell` integration authenticates separately via
+`claude` login (packages come from Nix, not packages.el — see the
+"Claude Agent via ACP" note in config.org).
 
 Test with `M-x gptel` after running `doom sync`.
