@@ -390,18 +390,31 @@ Intended as a predicate for `confirm-kill-emacs'."
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 ;; Claude Agent via ACP (agent-shell + acp.el, driven by the claude-agent-acp
-;; adapter). The acp/agent-shell packages and the claude-agent-acp binary are
-;; provided by Nix (dotfiles: modules/features/development/emacs.nix and
+;; adapter). The elisp is declared in packages.el and built by straight; only
+;; the claude-agent-acp/claude binaries come from Nix (dotfiles:
 ;; modules/profiles/client.nix). Uses the Claude subscription — run `claude`
 ;; once in a terminal to log in; no API key needed here.
 ;; Start with M-x agent-shell-anthropic-start-claude-code.
-(with-eval-after-load 'agent-shell
+;;
+;; Upstream's Doom instructions say to `require' acp and agent-shell eagerly.
+;; Don't: that loads ~70 files at every startup for a command used
+;; occasionally. `:commands' gets the same reachability lazily. It is still
+;; needed despite straight generating autoloads, because
+;; agent-shell-anthropic-start-claude-code carries no upstream autoload cookie
+;; (only ~25 generic commands do). agent-shell.el requires
+;; agent-shell-anthropic, so autoloading "agent-shell" defines it anyway.
+(use-package agent-shell
+  :commands (agent-shell
+             agent-shell-new-shell
+             agent-shell-prompt-compose
+             agent-shell-anthropic-start-claude-code)
+  :config
   (setopt agent-shell-anthropic-authentication
-        (agent-shell-anthropic-make-authentication :login t))
+          (agent-shell-anthropic-make-authentication :login t))
   ;; Inherit PATH/HOME so the spawned claude-agent-acp process finds `claude`,
   ;; the adapter binary, and the login credentials.
   (setopt agent-shell-anthropic-claude-environment
-        (agent-shell-make-environment-variables :inherit-env t)))
+          (agent-shell-make-environment-variables :inherit-env t)))
 
 ;;; AI-Powered Knowledge Management Functions
 

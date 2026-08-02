@@ -85,8 +85,15 @@
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 
-;; NOTE: agent-shell + acp.el are provided by Nix, not declared here --
-;; see the "Claude Agent via ACP" note in config.org
+;; Claude Agent via ACP. All three are on MELPA and pure elisp, so straight
+;; builds them and Doom loads their autoloads. Previously supplied by Nix
+;; (dotfiles emacs.nix), where the autoloads were never activated because Doom
+;; sets `package-enable-at-startup' to nil -- the commands simply never existed.
+;; The claude-agent-acp/claude binaries stay in Nix; only the elisp moved here.
+;; agent-shell depends on both, but declare them so `doom sync' pins all three.
+(package! shell-maker)
+(package! acp)
+(package! agent-shell)
 
 ;; yuck-mode: syntax for ElKowar's Wacky Widgets config (~/.config/eww/eww.yuck)
 ;; -- eww the widget system, not the Emacs browser
