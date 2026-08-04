@@ -300,6 +300,10 @@
    consult-source-recent-file consult-source-project-recent-file consult-source-bookmark
    :preview-key (list "C-SPC" :debounce 0.1 'any)))
 
+;; use a persistent directory so a doom sync will not remove the binary from a running daemon
+;; automatically download the latest version do not 'ask
+(setopt ghostel-module-directory (file-name-concat doom-data-dir "ghostel/"))
+(setopt ghostel-module-auto-install 'download)
 
 ;; Try to stop killing emacs with C-x C-c and use C-c q f
 ;; when using the daemon mode.
