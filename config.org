@@ -186,6 +186,46 @@
        projectile-project-search-path '(("~/.dotfiles" . 1)("~/projects" . 6)("~/.config" . 2)("~/Documents/org" . 2))
        projectile-auto-discover nil)
 
+;; Project discovery walks *every* subdirectory until DEPTH runs out, with no
+;; ignore list, and `file-directory-p' follows symlinks -- so
+;; `.direnv/flake-inputs/<hash>-source' drags the scan into /nix/store and it
+;; starts indexing nixpkgs (that is how e.g.
+;; "/nix/store/...-source/ci/github-script/" ends up in the known project list).
+;;
+;; Upstream also only tests for a project at *exactly* DEPTH levels down, never
+;; on the way, so shallow projects under a deep search path are missed. Both are
+;; fixed here: prune the noise directories, and register a directory as soon as
+;; it is itself a project root instead of descending through it.
+(defvar bmg/projectile-discovery-ignored-directories
+  '(".direnv" ".devenv" ".git" ".jj" ".hg" ".svn" ".cache" ".venv"
+    "node_modules" "result")
+  "Directory names `projectile' project discovery must never descend into.")
+
+(defun bmg/projectile-project-root-p (directory)
+  "Return non-nil if DIRECTORY is itself the root of a project."
+  (let ((root (ignore-errors (projectile-project-root directory))))
+    (and root
+         (equal (file-truename (file-name-as-directory directory))
+                (file-truename root)))))
+
+(with-eval-after-load 'projectile
+  ;; Also keep them out of in-project file listings. A leading `*' means
+  ;; "ignore anywhere", not just at the project top level.
+  (dolist (dir '("*.direnv" "*.devenv"))
+    (cl-pushnew dir projectile-globally-ignored-directories :test #'equal))
+
+  (define-advice projectile-discover-projects-in-directory
+      (:around (fn directory &optional depth) bmg/prune-discovery)
+    "Skip noise directories, and stop descending at project roots."
+    (unless (member (file-name-nondirectory (directory-file-name directory))
+                    bmg/projectile-discovery-ignored-directories)
+      (if (and (> (or depth 1) 0)
+               (file-directory-p directory)
+               (bmg/projectile-project-root-p directory))
+          ;; DIRECTORY is a project root: record it, don't walk into it.
+          (funcall fn directory 0)
+        (funcall fn directory depth)))))
+
 ;; Enable word-wrap for text modes (visual-line-mode wraps at window edge)
 ;; Using text-mode-hook covers org-mode, markdown-mode, and other text modes
 (add-hook 'text-mode-hook #'visual-line-mode)
