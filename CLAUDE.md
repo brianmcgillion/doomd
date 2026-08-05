@@ -64,7 +64,12 @@ Wrap all package configuration in `with-eval-after-load` blocks:
 - **No Evil mode** - Uses standard Emacs keybindings
 - **Corfu + Vertico** for completion (not Company/Ivy)
 - **LSP + tree-sitter** for all supported languages
-- **Format on save** enabled via `(format +lsp +onsave)`
+- **Format on save** enabled via `(format +lsp +onsave)`, but **gated** to
+  projects that declare a formatter (`treefmt.nix`, `.clang-format`,
+  `rustfmt.toml`, ...) — see the `FormatOnSave` section in `config.org`.
+  `+lsp` formatting is always whole-buffer, so ungated it rewrites entire
+  files in foreign repos. Override per project with `bmg/format-on-save` in
+  `.dir-locals.el`. Note `.editorconfig` is intentionally not an opt-in marker.
 - **Org-roam** for Zettelkasten at `~/Documents/org/roam/`
 - **GitHub Copilot** for inline completions via `copilot.el`
 - **API keys** stored in `~/.authinfo.gpg`

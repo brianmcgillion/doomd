@@ -405,6 +405,150 @@ Intended as a predicate for `confirm-kill-emacs'."
 ;;;
 #+END_SRC
 
+* Format on Save
+
+The =(format +lsp +onsave)= module reformats the *whole buffer* on every save:
+with =+lsp=, apheleia delegates to =textDocument/formatting=, which has no
+notion of "only the lines I touched". In a project whose style does not match
+the formatter, a one-line edit rewrites the entire file.
+
+So format-on-save is gated: it runs only in projects that have *declared* a
+formatter (=treefmt.nix=, =.clang-format=, =rustfmt.toml=, ...). Everything
+else -- other people's repos, stray clones, scratch files -- is left alone.
+Override per project with =bmg/format-on-save= in =.dir-locals.el=, or format
+by hand with =+format/region-or-buffer=.
+
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_FormatOnSave
+;;;
+;;;
+
+;; Note: .editorconfig is deliberately NOT in this list. It declares
+;; indentation and line endings, not a formatter, and plenty of hand-formatted
+;; projects ship one (e.g. microvm.nix). Treating it as opt-in would reformat
+;; exactly the repos this gate exists to protect.
+(defvar bmg/format-on-save-marker-files
+  '(".clang-format"
+    "treefmt.nix" "treefmt.toml" ".treefmt.toml"
+    ".pre-commit-config.yaml"
+    "rustfmt.toml" ".rustfmt.toml"
+    ".prettierrc" ".prettierrc.json" ".prettierrc.yml" ".prettierrc.yaml"
+    ".prettierrc.js" ".prettierrc.mjs" ".prettierrc.cjs"
+    "prettier.config.js" ".prettierrc.toml"
+    "biome.json" "biome.jsonc"
+    "ruff.toml" ".ruff.toml" ".style.yapf"
+    ".ocamlformat" ".scalafmt.conf" ".swiftformat" ".stylua.toml")
+  "Files whose presence at a project root opts that project into format-on-save.")
+
+(defvar bmg/format-on-save-content-markers
+  '(("flake.nix"      . "^[ \t]*formatter[ \t]*=\\|treefmt")
+    ("pyproject.toml" . "^\\[tool\\.\\(black\\|ruff\\|yapf\\)"))
+  "Alist of (FILENAME . REGEXP) for markers that need a peek inside the file.
+A project opts in when FILENAME exists at its root and REGEXP matches.")
+
+(defvar bmg/format-on-save--cache (make-hash-table :test #'equal)
+  "Memoisation of project root -> whether that project declares a formatter.")
+
+(defun bmg/format-on-save--content-marker-p (root)
+  "Return non-nil if any content marker in ROOT matches its regexp."
+  (cl-some
+   (lambda (marker)
+     (let ((file (expand-file-name (car marker) root)))
+       (and (file-readable-p file)
+            (with-temp-buffer
+              ;; Only the head of the file; these markers always appear early
+              ;; and flake.nix can be large.
+              (insert-file-contents file nil 0 16384)
+              (goto-char (point-min))
+              (re-search-forward (cdr marker) nil t)))))
+   bmg/format-on-save-content-markers))
+
+(defun bmg/format-on-save-project-p (&optional dir)
+  "Return non-nil if the project containing DIR declares a code formatter.
+DIR defaults to `default-directory'.  Returns nil outside a project."
+  (when-let* ((root (doom-project-root (or dir default-directory))))
+    (let ((cached (gethash root bmg/format-on-save--cache 'missing)))
+      (if (not (eq cached 'missing))
+          cached
+        (puthash root
+                 ;; Markers are checked at the project root only.  An upward
+                 ;; walk (`locate-dominating-file') would eventually find a
+                 ;; marker in $HOME and silently enable formatting everywhere.
+                 (and (or (cl-some (lambda (f)
+                                     (file-exists-p (expand-file-name f root)))
+                                   bmg/format-on-save-marker-files)
+                          (bmg/format-on-save--content-marker-p root))
+                      t)
+                 bmg/format-on-save--cache)))))
+
+(defun bmg/format-on-save-reset-cache ()
+  "Forget which projects declare a formatter.
+Call after adding a formatter config to a project already visited this session."
+  (interactive)
+  (clrhash bmg/format-on-save--cache)
+  (message "format-on-save project cache cleared"))
+
+(defvar bmg/format-on-save 'auto
+  "Whether to reformat the buffer on save.
+`auto' formats only in projects that declare a formatter (see
+`bmg/format-on-save-project-p'); t forces formatting on; nil forces it off.
+Set via .dir-locals.el to override for a single project.")
+(put 'bmg/format-on-save 'safe-local-variable
+     (lambda (v) (memq v '(t nil auto))))
+
+(defun bmg/format-on-save-inhibit-h ()
+  "Inhibit format-on-save outside projects that declare a formatter."
+  (pcase bmg/format-on-save
+    ('t nil)
+    ('nil t)
+    (_ (not (bmg/format-on-save-project-p)))))
+
+;; Two hooks are needed, because apheleia's two extension points do different
+;; things and neither alone is sufficient:
+;;
+;;   `apheleia-inhibit-functions' is consulted *once*, by `apheleia-mode-maybe',
+;;   to decide whether to turn `apheleia-mode' on in a new buffer.  It stops the
+;;   mode from ever attaching -- but it has no effect on buffers that are
+;;   already open, so on its own a config reload leaves every existing buffer
+;;   still formatting on save.
+;;
+;;   The advice below covers that gap.  `apheleia-format-after-save' is the
+;;   `after-save-hook' entry point, so gating it is evaluated on *every* save
+;;   and takes effect immediately in already-open buffers.
+;;
+;; Deliberately NOT `apheleia-skip-functions': that is checked inside
+;; `apheleia-format-buffer' via `apheleia--disallowed-p', which is also on the
+;; manual path, so it would break `+format/region-or-buffer' in exactly the
+;; projects where hand-formatting is most wanted.
+;;
+;; `apheleia-inhibit-functions' is autoloaded by apheleia precisely so it can be
+;; mutated before the package loads, so no `with-eval-after-load' is needed --
+;; Doom's own format module adds to it the same way.  The hook is "any function
+;; returning non-nil inhibits", so this composes with Doom's
+;; `+format-maybe-inhibit-h' rather than replacing it.
+(add-hook 'apheleia-inhibit-functions #'bmg/format-on-save-inhibit-h)
+
+(define-advice apheleia-format-after-save
+    (:around (fn &rest args) bmg/gate-to-formatter-projects)
+  "Skip format-on-save outside projects that declare a formatter.
+Only guards the on-save path; explicit `+format/region-or-buffer' still works."
+  (unless (bmg/format-on-save-inhibit-h)
+    (apply fn args)))
+
+;; Deliberate no-format save.  (C-u C-x C-s already does this: the format module
+;; remaps `basic-save-buffer' to `+format/save-buffer', whose prefix arg
+;; suppresses apheleia.)
+(map! "C-x M-s" #'+format/save-buffer-no-reformat)
+
+;;;
+;;;
+;;; END_FormatOnSave
+;;;
+;;;
+#+END_SRC
+
 * LLM/ML
 #+BEGIN_SRC emacs-lisp
 ;;;

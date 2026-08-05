@@ -281,6 +281,69 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 
 ---
 
+## Code Formatting
+
+Format-on-save is **gated**: it runs only in projects that declare a formatter
+(`treefmt.nix`, `.clang-format`, `rustfmt.toml`, `.pre-commit-config.yaml`,
+`.prettierrc*`, a `formatter =` in `flake.nix`, `[tool.ruff]` in
+`pyproject.toml`, ...). Other people's repos are never reformatted on save.
+
+`.editorconfig` deliberately does **not** count — it declares indent width, not
+a formatter, and plenty of hand-formatted projects ship one.
+
+### Keys
+| Key | Action |
+|-----|--------|
+| `C-x C-s` | Save (formats only if the project declares a formatter) |
+| `C-x M-s` | Save **without** formatting, one-off (`+format/save-buffer-no-reformat`) |
+| `C-c c f` | Format region, or whole buffer if no region — always works, even in gated projects |
+
+(This config has **no Evil mode**, so the Doom leader is `C-c`, not `SPC` —
+plain `SPC` self-inserts.)
+
+Note: `C-u C-x C-s` does **not** skip formatting, despite what Doom's format
+module suggests. Its remap targets `basic-save-buffer`, but `C-x C-s` is bound
+to `save-buffer`, so the remap never fires. Use `C-x M-s`.
+
+### Commands
+| Command | Action |
+|---------|--------|
+| `M-x +format/region-or-buffer` | Format on demand, ignores the gate |
+| `M-x bmg/format-on-save-reset-cache` | Re-check projects after adding a formatter config mid-session |
+| `M-x apheleia-goto-error` | Jump to the formatter's error output |
+
+### Per-project override
+
+Put this in a `.dir-locals.el` at the project root:
+
+```elisp
+;; force format-on-save ON in a project with no formatter config
+((nil . ((bmg/format-on-save . t))))
+
+;; force it OFF even though the project declares a formatter
+((nil . ((bmg/format-on-save . nil))))
+```
+
+`bmg/format-on-save` is a safe local variable (`t` / `nil` / `auto`), so
+there's no "unsafe local variable" prompt. Default is `auto`.
+
+### Why a one-line edit used to rewrite whole files
+
+With `(format +lsp +onsave)`, formatting is delegated to the LSP server, and
+`textDocument/formatting` is **always whole-buffer** — there is no "just the
+lines I touched" mode. In a project whose style disagrees with the formatter,
+any save rewrote the entire file. Hence the gate. See the `FormatOnSave`
+section in `config.org`.
+
+### Caveat: Nix
+
+Emacs formats `.nix` via nixd → `nixfmt` only. In `~/.dotfiles` the canonical
+formatter is treefmt (nixfmt + deadnix + statix + nixf-diagnose + shfmt +
+keep-sorted), so a file saved in Emacs can still fail the
+`treefmt --fail-on-change` pre-commit hook. Run `nix fmt` before committing.
+
+---
+
 ## Tips
 
 - **Quick find**: `SPC z f` then type part of title
