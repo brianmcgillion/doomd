@@ -19,84 +19,58 @@
 ;; e.g. 1080p
 (setopt fancy-splash-image (expand-file-name "banner/trancendent-gnu.png" doom-user-dir))
 
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
+;; Doom applies these in `doom-init-fonts-h': on `after-init-hook' normally, or
+;; on `server-after-make-frame-hook' under a daemon, where no frame -- and so no
+;; font -- exists until the first client connects.  Each accepts a font-spec, a
+;; font string ("Input Mono-12"), or an XLFD string.
 ;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
+;; + `doom-font'                 default and fixed-pitch faces
+;; + `doom-variable-pitch-font'  variable-pitch face
+;; + `doom-serif-font'           fixed-pitch-serif face
+;; + `doom-big-font'             `doom-big-font-mode', for presentations
+;; + `doom-symbol-font'          the `symbol' and `mathematical' scripts
+;; + `doom-emoji-font'           the `emoji' script
 ;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string.
+;; The last two fall back to `doom-symbol-fallback-font-families' and
+;; `doom-emoji-fallback-font-families' when left unset.
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setopt doom-theme 'doom-dracula)
 
-;; Font configuration with fallbacks
-;; Primary fonts: FiraCode Nerd Font, Fira Sans, Source Serif 4, Font Awesome
-;; Fallbacks ensure graceful degradation if fonts are missing
 (setopt doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 13)
        doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13)
        doom-big-font (font-spec :family "FiraCode Nerd Font Mono" :size 19)
        doom-serif-font (font-spec :family "Source Serif 4" :size 13)
-       doom-symbol-font (font-spec :family "Font Awesome 7 Free" :size 13))
+       ;; No :size -- colour emoji scale from the default face height.
+       doom-emoji-font (font-spec :family "Noto Color Emoji"))
 
-;; Verify fonts exist and set fallbacks if needed
-(defun bmg/font-available-p (font-family)
-  "Check if FONT-FAMILY is available on the system."
-  (member font-family (font-family-list)))
-
-(defun bmg/set-font-with-fallback (font-var primary &rest fallbacks)
-  "Set FONT-VAR to PRIMARY font, or first available FALLBACK."
-  (let ((available (or (and (bmg/font-available-p (plist-get primary :family)) primary)
-                       (cl-find-if (lambda (f) (bmg/font-available-p (plist-get f :family)))
-                                   fallbacks))))
-    (when available
-      (set font-var available))))
-
-;; Apply font fallbacks once a graphical frame exists.  Not
-;; after-init-hook: in daemon sessions that fires before any frame,
-;; where font-family-list returns nil and every probe fails -- the
-;; whole mechanism silently no-oped.  The hook removes itself after
-;; the first graphical run.
-(defun bmg/apply-font-fallbacks-once (&rest _)
+;; `doom-symbol-font' is deliberately NOT set, and `doom-emoji-font' deliberately
+;; IS.  Both follow from how `doom-init-fonts-h' resolves them.
+;;
+(defun bmg/reload-fonts-once (&rest _)
+  "Re-apply fonts once a graphical frame exists, then stand down."
   (when (display-graphic-p)
-    (remove-hook 'server-after-make-frame-hook #'bmg/apply-font-fallbacks-once)
-    (remove-hook 'after-init-hook #'bmg/apply-font-fallbacks-once)
-    (bmg/apply-font-fallbacks)))
-(add-hook 'server-after-make-frame-hook #'bmg/apply-font-fallbacks-once)
-(add-hook 'after-init-hook #'bmg/apply-font-fallbacks-once)
-
-(defun bmg/apply-font-fallbacks ()
-  "Set each doom font variable to its first installed candidate."
-  (bmg/set-font-with-fallback 'doom-font
-                              (font-spec :family "FiraCode Nerd Font Mono" :size 13)
-                              (font-spec :family "Fira Code" :size 13)
-                              (font-spec :family "JetBrains Mono" :size 13)
-                              (font-spec :family "Hack" :size 13)
-                              (font-spec :family "monospace" :size 13))
-  (bmg/set-font-with-fallback 'doom-variable-pitch-font
-                              (font-spec :family "Fira Sans" :size 13)
-                              (font-spec :family "Cantarell" :size 13)
-                              (font-spec :family "DejaVu Sans" :size 13)
-                              (font-spec :family "sans-serif" :size 13))
-  (bmg/set-font-with-fallback 'doom-serif-font
-                              (font-spec :family "Source Serif 4" :size 13)
-                              (font-spec :family "Source Serif Pro" :size 13)
-                              (font-spec :family "DejaVu Serif" :size 13)
-                              (font-spec :family "serif" :size 13))
-  (bmg/set-font-with-fallback 'doom-symbol-font
-                              (font-spec :family "Font Awesome 7 Free" :size 13)
-                              (font-spec :family "Font Awesome 6 Free" :size 13)
-                              (font-spec :family "Symbols Nerd Font" :size 13)
-                              (font-spec :family "Noto Color Emoji" :size 13)))
+    (remove-hook 'server-after-make-frame-hook #'bmg/reload-fonts-once)
+    (remove-hook 'after-init-hook #'bmg/reload-fonts-once)
+    (doom/reload-font)))
+(add-hook 'server-after-make-frame-hook #'bmg/reload-fonts-once 90)
+(add-hook 'after-init-hook #'bmg/reload-fonts-once 90)
 
 (with-eval-after-load 'doom-themes
   (setopt doom-themes-enable-bold t
          doom-themes-enable-italic t))
+
+;; Comment legibility.
+;;
+;; doom-dracula paints comments in `base5' (#6272a4), which measures 3.03:1 on
+;; the #282a36 background -- below WCAG AA (4.5:1) and only just over the 3:1
+;; large-text floor.  In a config this comment-heavy, that is the first thing to
+;; disappear when the ambient light changes. this increases that.
+(custom-set-faces!
+  '(font-lock-comment-face           :foreground "#a1aac8")    ; 6.17:1 on #282a36
+  '(font-lock-comment-delimiter-face :foreground "#a1aac8"))   ; 6.17:1 on #282a36
 
 ;; Magit diff legibility.
 ;;
@@ -179,10 +153,13 @@
 (with-eval-after-load 'gnus
   (set-face-attribute 'gnus-group-news-low nil
                       :weight 'normal
-                      :foreground "#565761")  ; doom-dracula base5
+                      :foreground "#565761")  ; doom-dracula base4, 1.99:1 on #282a36
   (set-face-attribute 'gnus-group-news-low-empty nil
                       :weight 'normal
-                      :foreground "#3d3f4c")) ; doom-dracula base4
+                      ;; Not a doom-dracula palette colour, and not derivable
+                      ;; from one: it sits between base2 (#373844) and base3
+                      ;; (#44475a), a step dimmer than the non-empty face above.
+                      :foreground "#3d3f4c")) ; 1.37:1 on #282a36
 
 (with-eval-after-load 'org-modern
   (set-face-attribute 'org-modern-symbol nil :family "Font Awesome 7 Free")
