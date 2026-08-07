@@ -356,6 +356,12 @@
    consult-ripgrep consult-git-grep consult-grep
    consult-bookmark consult-recent-file
    consult-source-recent-file consult-source-project-recent-file consult-source-bookmark
+   ;; The consult-org-roam commands need listing in their own right.
+   ;; `consult-org-roam-search' *calls* `consult-ripgrep' as a function, but
+   ;; consult resolves this config against `this-command' -- so the entry above
+   ;; never applies to it and it falls back to `consult-preview-key'
+   consult-org-roam-search consult-org-roam-file-find
+   consult-org-roam-backlinks consult-org-roam-forward-links
    :preview-key (list "C-SPC" :debounce 0.1 'any)))
 
 ;; use a persistent directory so a doom sync will not remove the binary from a running daemon
@@ -998,6 +1004,14 @@ not be dropped because of its path."
   ;; insert into the same SQLite table, causing UNIQUE constraint errors).
   ;; Disable org-roam's autosync since org-mem handles DB updates.
   (org-roam-db-autosync-mode -1)
+
+
+  (with-eval-after-load 'citar-org-roam
+    (define-advice citar-org-roam-setup (:around (fn &rest args) bmg/skip-db-sync)
+      "Skip the full `org-roam-db-sync' citar-org-roam runs on activation.
+org-mem maintains the database; see `org-roam-db-autosync-mode' above."
+      (cl-letf (((symbol-function 'org-roam-db-sync) #'ignore))
+        (apply fn args))))
 
   ;; Workaround: org-mem's DB insert uses `prin1' which preserves Emacs
   ;; text properties (e.g. ws-butler-chg) as #(...) syntax.  EmacSQL's
