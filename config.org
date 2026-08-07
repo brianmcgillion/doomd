@@ -98,6 +98,80 @@
   (setopt doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
+;; Magit diff legibility.
+;;
+;; `diff-refine-added' and `diff-refine-removed' ship with `:inverse-video t',
+;; so their foreground and background swap at render time: doom-dracula defines
+;; refine-added as dark #1E2029 bg with #50fa7b text, but it *paints* as a solid
+;; #50fa7b block with near-black glyphs.  Since `magit-diff-refine-hunk' is t,
+;; word-refinement applies to the hunk at point -- which is why only the hunk
+;; under the cursor turns garish.
+;;
+;; Dracula's removed faces also fail WCAG on their own, before any inversion:
+;;   magit-diff-removed            #cc4444 on #564859 = 1.82:1
+;;   magit-diff-removed-highlight  #ff5555 on #694959 = 2.48:1
+;;   diff-refine-removed (as rendered) #44475a on #ff5555 = 2.91:1
+;; The replacements below are measured; contrast ratios are in the comments.
+;; `custom-set-faces!' re-applies on `doom-load-theme-hook', so these survive a
+;; theme reload -- but they ARE dracula-specific, so revisit them if the theme
+;; changes.
+(custom-set-faces!
+  ;; Word-level refinement gets NO background of its own -- a changed word is
+  ;; just a brighter, bolder version of the line's own colour, so the line reads
+  ;; as one continuous thing instead of a row of boxes.
+  ;;
+  ;; `:inherit nil' is the load-bearing part.  `:background unspecified' alone
+  ;; does NOT mean "no background": it means "not set here", so the attribute
+  ;; falls through to `:inherit', and doom-dracula points these faces at
+  ;; `diff-added'/`diff-removed', whose backgrounds are #1E2029 and #44475a.
+  ;; That inherited grey was the box behind each changed word.  Cutting the
+  ;; inheritance lets the underlying magit line face show through instead.
+  ;;
+  ;; `:inverse-video nil' is required because upstream `diff-refine-changed'
+  ;; sets it, and without the override these faces swap fg/bg at render time
+  ;; (see above).  `:underline nil' is explicit rather than omitted so that
+  ;; re-evaluating this block in a running session clears a previously applied
+  ;; underline.
+  ;;
+  ;; Foregrounds are ~1.12x the luminance of the corresponding line foreground:
+  ;; same hue, just perceptibly lifted.  Bold is doing most of the work here, so
+  ;; the colour step only has to be enough to catch the eye, not to shout.
+  '(diff-refine-added
+    :inherit nil :inverse-video nil :background unspecified
+    :foreground "#96f5ba" :weight bold :underline nil)   ; 1.12x line fg, 10.50:1 on #17331f
+  '(diff-refine-removed
+    :inherit nil :inverse-video nil :background unspecified
+    :foreground "#fab0b0" :weight bold :underline nil)   ; 1.13x line fg, 8.02:1 on #42212b
+  ;; smerge's refine faces inherit the same way and show up in conflict
+  ;; resolution.
+  '(smerge-refined-added
+    :inherit nil :inverse-video nil :background unspecified
+    :foreground "#96f5ba" :weight bold :underline nil)
+  '(smerge-refined-removed
+    :inherit nil :inverse-video nil :background unspecified
+    :foreground "#fab0b0" :weight bold :underline nil)
+  ;; Line-level faces.  With `magit-diff-highlight-hunk-body' nil (below) the
+  ;; "-highlight" variants are no longer used for hunk bodies, but they are kept
+  ;; correct here in case that is ever turned back on.
+  '(magit-diff-added             :background "#17331f" :foreground "#7aeda4")    ; 9.46:1
+  '(magit-diff-added-highlight   :background "#1f5233" :foreground "#93ffb9")    ; 7.46:1
+  '(magit-diff-removed           :background "#42212b" :foreground "#f5a3a3")    ; 7.18:1
+  '(magit-diff-removed-highlight :background "#5c2836" :foreground "#ffbcbc"))   ; 7.27:1
+
+;; Show hunk focus with the hunk *heading* alone, not by repainting the body.
+;;
+;; By default Magit marks the hunk at point by swapping every line in its body
+;; to the brighter "-highlight" faces.  That is a big, distracting change across
+;; 40 lines to convey one bit of information, and it is what made the focused
+;; hunk noticeably harder to read than the surrounding ones.
+;;
+;; `magit-section-paint' clears the highlight flag only after `forward-line', so
+;; the hunk heading is painted separately and keeps
+;; `magit-diff-hunk-heading-highlight' (the purple bar) regardless.  Focus stays
+;; obvious; the body stays as legible as every other hunk.
+(with-eval-after-load 'magit-diff
+  (setopt magit-diff-highlight-hunk-body nil))
+
 ;; Fix gnus face inheritance cycle - must run early before gnus loads
 ;; The cycle is: gnus-group-news-low-empty inherits from gnus-group-news-low
 ;; which inherits from gnus-group-news-low-empty
