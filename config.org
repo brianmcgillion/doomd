@@ -527,11 +527,25 @@ submodules or unrelated repositories."
                                    (file-name-as-directory (car worktree)))))
                      (magit-list-worktrees))))))
 
+;; direnv keys its allow list on the *absolute path* of the .envrc, not its
+;; contents, so a worktree of a repo you already trust arrives unallowed even
+;; though the .envrc is tracked and byte-identical.
+(defun bmg/magit-worktree-allow-direnv (root)
+  "Allow ROOT's .envrc if it has one, so its devshell can load."
+  (when (and (executable-find "direnv")
+             (file-exists-p (expand-file-name ".envrc" root)))
+    (if (zerop (call-process "direnv" nil nil nil "allow" root))
+        (message "direnv allowed: %s" (abbreviate-file-name root))
+      (message "direnv allow failed in %s" (abbreviate-file-name root)))))
+
 (defun bmg/magit-switch-project-to-worktree (worktree)
   "Make WORKTREE the current project, reusing the current Doom workspace."
-  (let ((+workspaces-on-switch-project-behavior nil))
-    (projectile-switch-project-by-name
-     (file-name-as-directory (expand-file-name worktree)))))
+  (let ((root (file-name-as-directory (expand-file-name worktree)))
+        (+workspaces-on-switch-project-behavior nil))
+    ;; Before the switch: envrc evaluates on the first file visited in the new
+    ;; project, which projectile is about to trigger.
+    (bmg/magit-worktree-allow-direnv root)
+    (projectile-switch-project-by-name root)))
 
 (with-eval-after-load 'magit-diff
   (define-advice magit-diff-visit-directory
