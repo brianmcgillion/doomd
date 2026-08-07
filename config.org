@@ -1005,7 +1005,21 @@ not be dropped because of its path."
   ;; Disable org-roam's autosync since org-mem handles DB updates.
   (org-roam-db-autosync-mode -1)
 
+  ;; Doom does not sync org-roam's database at startup; it defers that to the
+  ;; first `org-roam-db-query' of the session via a one-shot :before advice
+  ;; (`+org-roam-try-init-db-a', modules/lang/org/contrib/roam.el:39-45) which
+  ;; prints "Initializing org-roam database..." and runs a full
+  ;; `org-roam-db-sync'.
+  ;;
+  ;; `with-eval-after-load' because Doom installs the advice when org-roam
+  ;; loads; removing it any earlier would be a no-op that Doom then undoes.
+  (with-eval-after-load 'org-roam
+    (advice-remove 'org-roam-db-query #'+org-roam-try-init-db-a))
 
+  ;; A second, independent trigger for the same full sync: `citar-org-roam-setup'
+  ;; opens with an unconditional (org-roam-db-sync) -- citar-org-roam.el:267.
+  ;; It runs when `citar-org-activate' lazily loads citar-org-roam during
+  ;; font-lock of a [cite:...], so it lands inside `redisplay', mid-typing.
   (with-eval-after-load 'citar-org-roam
     (define-advice citar-org-roam-setup (:around (fn &rest args) bmg/skip-db-sync)
       "Skip the full `org-roam-db-sync' citar-org-roam runs on activation.
