@@ -47,8 +47,15 @@
        doom-emoji-font (font-spec :family "Noto Color Emoji"))
 
 ;; `doom-symbol-font' is deliberately NOT set, and `doom-emoji-font' deliberately
-;; IS.  Both follow from how `doom-init-fonts-h' resolves them.
-;;
+;; IS.  Both follow from how `doom-init-fonts-h' resolves them: it applies the
+;; face fonts first and the fontsets afterwards, and a frame resolves glyphs
+;; through the fontset derived when its faces were set.  So on a daemon's first
+;; frame the emoji entry always lands too late, and emoji fall through to
+;; Symbola in monochrome.  Measured on U+1F600: Font Awesome 7 Free when the
+;; symbol font was set, Symbola with it merely removed, Noto Color Emoji only
+;; once the faces are re-applied over the finished fontset.  One re-application
+;; is all it takes; it removes itself afterwards because `set-fontset-font'
+;; should not run per frame (Doom notes superfluous calls can segfault).
 (defun bmg/reload-fonts-once (&rest _)
   "Re-apply fonts once a graphical frame exists, then stand down."
   (when (display-graphic-p)
@@ -356,15 +363,40 @@
 (setopt ghostel-module-directory (file-name-concat doom-data-dir "ghostel/"))
 (setopt ghostel-module-auto-install 'download)
 
-;; Try to stop killing emacs with C-x C-c and use C-c q f
-;; when using the daemon mode.
-(defun my-confirm-kill-daemon (prompt)
-  "Ask whether to kill daemon Emacs with PROMPT.
-Intended as a predicate for `confirm-kill-emacs'."
+;; Don't let a stray keystroke take the daemon down with every client on it.
+;;
+;; `C-x C-c' is NOT the risk it looks like: `save-buffers-kill-terminal' sees a
+;; client frame, hands off to `server-save-buffers-kill-terminal', and with
+;; `server-stop-automatically' nil that takes its `server-delete-client' branch
+;; and never reaches `save-buffers-kill-emacs'.  Only the client frame closes,
+;; and `confirm-kill-emacs' is never consulted on that path at all.
+;;
+;; The two paths that really do end the daemon:
+;;   SPC q K  `save-buffers-kill-emacs' -- honours `confirm-kill-emacs', so the
+;;            predicate below covers it.
+;;   SPC q Q  `kill-emacs' -- a bare (interactive "P") that consults nothing.
+;;            One key from SPC q q, and it takes the daemon with it.
+;; Hence the advice: same predicate, applied where the variable cannot reach.
+(defun bmg/confirm-kill-daemon (&optional prompt)
+  "Ask whether to kill Emacs when running as a daemon.
+Returns non-nil to allow the kill.  Outside a daemon this always allows,
+leaving single-instance Emacs behaving as it does by default.  PROMPT is
+supplied by `confirm-kill-emacs'; the advice path passes none."
   (or (not (daemonp))
-      (yes-or-no-p prompt)))
+      (yes-or-no-p (or prompt "Really kill the Emacs daemon and every client? "))))
 
-(setopt confirm-kill-emacs #'my-confirm-kill-daemon)
+(setopt confirm-kill-emacs #'bmg/confirm-kill-daemon)
+
+(defun bmg/kill-emacs-confirm ()
+  "Kill Emacs, confirming first when running as a daemon.
+Doom binds SPC q Q straight to `kill-emacs'.  Deliberately a command
+rather than advice on `kill-emacs' itself: `save-buffers-kill-emacs'
+calls `kill-emacs' after already prompting (which would ask twice), and
+scripts drive `emacsclient -e \\='(kill-emacs)\\=' expecting no prompt at
+all.  Guarding the keybinding leaves both alone."
+  (interactive)
+  (when (bmg/confirm-kill-daemon)
+    (kill-emacs)))
 
 ;;;
 ;;;
@@ -413,7 +445,10 @@ Intended as a predicate for `confirm-kill-emacs'."
 
 ;; use just mode for setting tasks to run at the cmdline
 ;; (justl binds "e" to justl-exec-recipe itself; no extra map! needed)
-(use-package justl)
+;; `:commands' matters here: Doom leaves `use-package-always-defer' nil, so a
+;; bare (use-package justl) loads the package at every startup.
+(use-package justl
+  :commands (justl justl-exec-recipe-in-dir))
 
 ;; Use a variable for the dotfiles path to avoid hardcoding
 (defvar bmg/dotfiles-path (expand-file-name "~/.dotfiles")
@@ -658,483 +693,18 @@ Only guards the on-save path; explicit `+format/region-or-buffer' still works."
 #+END_SRC
 
 * LLM/ML
+
+Everything that talks to an LLM lives in [[file:llm-config.el]]: copilot for
+inline completion, gptel over the GitHub Copilot backend, agent-shell for Claude
+via ACP, and the knowledge-management commands built on top of them.
+
+It is a self-contained unit with its own =defgroup= and =defcustom=s, so it gets
+its own file for the same reason =elfeed-config.el= and =remarkable-config.el=
+do, rather than adding ~470 lines here. Keybindings for its commands stay in the
+Map section below.
+
 #+BEGIN_SRC emacs-lisp
-;;;
-;;;
-;;; BEGIN_llm
-;;;
-;;;
-
-;; Inline code completions via GitHub Copilot
-;; Primary LLM interaction is via GitHub Copilot CLI (external)
-;; Doom's :tools llm module provides gptel-magit for commit messages
-(use-package copilot
-  :hook (prog-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("<tab>" . 'copilot-accept-completion)
-              ("TAB" . 'copilot-accept-completion)
-              ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("C-<tab>" . 'copilot-accept-completion-by-word))
-  :config
-  (setopt copilot-indent-offset-warning-disable t))
-
-;; Configure gptel with GitHub Copilot as the backend
-;; Uses existing GitHub Copilot subscription - no separate API key needed
-;; Authentication handled automatically via GitHub login
-(with-eval-after-load 'gptel
-  (setopt gptel-model 'claude-opus-4.5
-         gptel-backend (gptel-make-gh-copilot "Copilot")))
-
-;; Claude Agent via ACP (agent-shell + acp.el, driven by the claude-agent-acp
-;; adapter). The elisp is declared in packages.el and built by straight; only
-;; the claude-agent-acp/claude binaries come from Nix (dotfiles:
-;; modules/profiles/client.nix). Uses the Claude subscription — run `claude`
-;; once in a terminal to log in; no API key needed here.
-;; Start with M-x agent-shell-anthropic-start-claude-code.
-;;
-;; Upstream's Doom instructions say to `require' acp and agent-shell eagerly.
-;; Don't: that loads ~70 files at every startup for a command used
-;; occasionally. `:commands' gets the same reachability lazily. It is still
-;; needed despite straight generating autoloads, because
-;; agent-shell-anthropic-start-claude-code carries no upstream autoload cookie
-;; (only ~25 generic commands do). agent-shell.el requires
-;; agent-shell-anthropic, so autoloading "agent-shell" defines it anyway.
-(use-package agent-shell
-  :commands (agent-shell
-             agent-shell-new-shell
-             agent-shell-prompt-compose
-             agent-shell-anthropic-start-claude-code)
-  :config
-  (setopt agent-shell-anthropic-authentication
-          (agent-shell-anthropic-make-authentication :login t))
-  ;; Inherit PATH/HOME so the spawned claude-agent-acp process finds `claude`,
-  ;; the adapter binary, and the login credentials.
-  (setopt agent-shell-anthropic-claude-environment
-          (agent-shell-make-environment-variables :inherit-env t)))
-
-;;; AI-Powered Knowledge Management Functions
-
-(defgroup bmg/llm nil
-  "Configuration for LLM-powered knowledge management."
-  :group 'tools
-  :prefix "bmg/llm-")
-
-(defcustom bmg/llm-context-small 4000
-  "Small context window size for quick LLM operations (e.g., tag suggestions)."
-  :type 'integer
-  :group 'bmg/llm)
-
-(defcustom bmg/llm-context-medium 8000
-  "Medium context window size for detailed LLM operations (e.g., summaries)."
-  :type 'integer
-  :group 'bmg/llm)
-
-(defcustom bmg/llm-context-tiny 2000
-  "Tiny context window size for minimal LLM operations."
-  :type 'integer
-  :group 'bmg/llm)
-
-(cl-defun bmg/llm--request (prompt &key system callback (label "LLM request"))
-  "Send PROMPT to the LLM via gptel with uniform error handling.
-SYSTEM is the system prompt.  CALLBACK is called as (response info)
-only for a non-nil, non-empty response; nil/empty responses and
-request errors are all reported as \"LABEL failed: ...\" messages."
-  (condition-case err
-      (gptel-request prompt
-        :system system
-        :callback (lambda (response info)
-                    (cond
-                     ((not response)
-                      (message "%s failed: %s" label (plist-get info :status)))
-                     ((string-empty-p (string-trim response))
-                      (message "%s failed: LLM returned an empty response" label))
-                     (t (funcall callback response info)))))
-    (error (message "%s failed: %s" label (error-message-string err)))))
-
-(defun bmg/llm--display-org-buffer (name &rest content)
-  "Show CONTENT strings in an org-mode buffer called NAME."
-  (with-current-buffer (get-buffer-create name)
-    (erase-buffer)
-    (apply #'insert content)
-    (org-mode)
-    (goto-char (point-min))
-    (pop-to-buffer (current-buffer))))
-
-(defun bmg/suggest-tags-for-buffer ()
-  "Use LLM to suggest filetags for current org-roam buffer.
-Copies suggested tags to kill ring for easy insertion.
-Bound to SPC z S."
-  (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org buffer"))
-  ;; Budget is relative to the accessible region start: in a narrowed
-  ;; buffer, (min (point-max) budget) is an absolute position that can
-  ;; fall before point-min -> args-out-of-range.
-  (let ((content (buffer-substring-no-properties
-                  (point-min)
-                  (min (point-max) (+ (point-min) bmg/llm-context-small)))))
-    (when (string-empty-p (string-trim content))
-      (user-error "Buffer is empty, nothing to analyze"))
-    (message "Requesting tag suggestions...")
-    (bmg/llm--request content
-      :label "Tag suggestion"
-      :system "Suggest org-mode filetags for this note. Return ONLY a single line in colon-separated format like :paper:security:tpm: with no explanation.
-Focus on these categories:
-- Document types: paper, website, book, meeting, project, reference
-- Security domains: security, tpm, tee, sgx, trustzone, confidential_computing, attestation, secure_boot
-- Attack types: exploit, side_channel, vulnerability, fuzzing
-- Systems: virtualization, containers, android, linux, firmware, hardware
-- Topics: cryptography, ml, networking, performance, architecture
-Keep to 3-6 most relevant tags."
-      :callback (lambda (response _info)
-                  (let ((tags (string-trim response)))
-                    (kill-new tags)
-                    (message "Suggested tags: %s (copied to kill ring)" tags))))))
-
-(defun bmg/summarize-paper ()
-  "Generate AI summary for current paper note and insert at end of buffer.
-Bound to SPC z a s and C-c A s."
-  (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org buffer"))
-  (let ((content (buffer-substring-no-properties
-                  (point-min)
-                  (min (point-max) (+ (point-min) bmg/llm-context-medium)))))
-    (when (string-empty-p (string-trim content))
-      (user-error "Buffer is empty, nothing to summarize"))
-    (message "Generating summary...")
-    (bmg/llm--request content
-      :label "Summarization"
-      :system "Summarize this academic paper or research note. Provide:
-
-1. **One-paragraph summary** - The key contribution and findings
-2. **Key contributions** (3-5 bullet points)
-3. **Methodology** - How they achieved their results
-4. **Relevance** - How this connects to security/systems research
-5. **Potential connections** - Related areas or follow-up questions
-
-Use org-mode formatting with ** for headings."
-      :callback (lambda (response info)
-                  ;; Insert into the buffer the request came from,
-                  ;; not whatever is current when the reply arrives.
-                  (let ((buf (plist-get info :buffer)))
-                    (if (not (buffer-live-p buf))
-                        (message "Buffer gone, summary discarded")
-                      (with-current-buffer buf
-                        (save-excursion
-                          (goto-char (point-max))
-                          (insert "\n\n* AI Summary\n:PROPERTIES:\n:GENERATED: "
-                                  (format-time-string "[%Y-%m-%d %a %H:%M]")
-                                  "\n:END:\n\n" response))
-                        (message "Summary inserted at end of %s" (buffer-name)))))))))
-
-(defun bmg/process-inbox-item ()
-  "Get AI suggestions for processing current GTD inbox item.
-Run on a heading tagged :REFILE: for processing guidance.
-Bound to localleader B in org-mode and C-c A p."
-  (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org buffer"))
-  (when (org-before-first-heading-p)
-    (user-error "Point must be on an inbox item"))
-  ;; save-restriction, not a manual widen: save-excursion does not save
-  ;; the restriction, so the old code wiped any narrowing the user had.
-  (let ((content (save-restriction
-                   (org-narrow-to-subtree)
-                   (buffer-substring-no-properties
-                    (point-min)
-                    (min (point-max) (+ (point-min) bmg/llm-context-medium))))))
-    (bmg/llm--request content
-      :label "Inbox processing"
-      :system "You are a GTD (Getting Things Done) assistant. Analyze this inbox item and suggest:
-
-1. **Actionable?** - Is this actionable or reference material?
-2. **Next action** - If actionable, what's the specific next physical action?
-3. **Project** - Suggested project category:
-   - @Project (code/engineering work)
-   - @Research (academic/investigation)
-   - @Reading (papers, books, articles)
-   - @Training (learning, courses)
-   - @Someday (future/maybe items)
-4. **Tags** - 2-3 relevant org-mode tags in :tag1:tag2: format
-5. **Org-roam?** - Should this become a permanent note in the knowledge base?
-6. **Priority** - Suggested priority (A/B/C)
-
-Be concise and actionable."
-      :callback (lambda (response _info)
-                  (bmg/llm--display-org-buffer "*Inbox Processing*"
-                                               "* Processing Suggestion\n\n"
-                                               response)))))
-
-(defun bmg/kb--search-files (question)
-  "Return org files under `org-roam-directory' ranked by relevance to QUESTION.
-Extracts keywords (words longer than 3 chars) from QUESTION, greps for
-each with ripgrep, and ranks files by how many distinct keywords hit."
-  (unless (executable-find "rg")
-    (user-error "rg (ripgrep) not found in PATH"))
-  (let ((keywords (seq-filter (lambda (w) (> (length w) 3))
-                              (split-string (downcase question) "[^[:alnum:]]+" t)))
-        (dir (expand-file-name org-roam-directory))
-        (scores (make-hash-table :test #'equal)))
-    (dolist (kw keywords)
-      (dolist (file (split-string
-                     (shell-command-to-string
-                      (format "rg -li --glob '*.org' %s %s"
-                              (shell-quote-argument kw)
-                              (shell-quote-argument dir)))
-                     "\n" t))
-        (puthash file (1+ (gethash file scores 0)) scores)))
-    (let (ranked)
-      (maphash (lambda (f n) (push (cons f n) ranked)) scores)
-      (mapcar #'car (seq-sort-by #'cdr #'> ranked)))))
-
-(defun bmg/ask-knowledge-base (question)
-  "Ask a question answered from your org-roam notes (RAG).
-Searches notes, retrieves relevant content, and uses LLM to answer.
-Bound to SPC s Q."
-  (interactive "sQuestion: ")
-  (when (string-empty-p (string-trim question))
-    (user-error "Please provide a question"))
-  (message "Searching knowledge base...")
-  (let* ((top-files (seq-take (bmg/kb--search-files question) 5))
-         (context ""))
-    (if (null top-files)
-        (message "No relevant notes found for: %s" question)
-      ;; Build context from top matching files
-      (dolist (file top-files)
-        (when (and file (file-exists-p file))
-          (condition-case nil
-              (with-temp-buffer
-                (insert-file-contents file nil 0 bmg/llm-context-small)
-                (setq context (concat context
-                                      "\n\n--- " (file-name-nondirectory file) " ---\n"
-                                      (buffer-string))))
-            (file-error nil))))  ; Skip files that can't be read
-      (if (string-empty-p context)
-          (message "Could not read any matching files for: %s" question)
-        (bmg/llm--request
-         (format "Context from knowledge base:\n%s\n\n---\n\nQuestion: %s" context question)
-         :label "Knowledge base query"
-         :system "You are a research assistant with access to the user's personal knowledge base.
-Answer the question based ONLY on the provided context from their notes.
-- Cite which notes/files support your answer
-- Quote relevant passages when helpful
-- If the context doesn't contain relevant information, say so clearly
-- Be concise but thorough
-- Use org-mode formatting"
-         :callback (lambda (response _info)
-                     (bmg/llm--display-org-buffer "*KB Answer*"
-                       "* Answer to: " question "\n\n" response "\n\n* Sources\n"
-                       (mapconcat (lambda (f)
-                                    (format "- [[file:%s][%s]]\n"
-                                            f (file-name-nondirectory f)))
-                                  (seq-filter #'identity top-files)
-                                  ""))))))))
-
-(defun bmg/find-related-notes ()
-  "Use AI to find semantically related notes to current buffer.
-Analyzes current note and suggests related notes from org-roam.
-Bound to SPC z R."
-  (interactive)
-  (require 'org-roam)
-  (let* ((node-at-point (org-roam-node-at-point))
-         (current-title (or (and node-at-point (org-roam-node-title node-at-point))
-                            (org-get-title)
-                            (buffer-name)))
-         (current-tags (if node-at-point
-                           (org-roam-node-tags node-at-point)
-                         '()))
-         (current-content (buffer-substring-no-properties
-                           (point-min)
-                           (min (point-max)
-                                (+ (point-min) bmg/llm-context-tiny))))
-         (all-nodes (org-roam-node-list))
-         ;; The whole DB does not fit in the prompt, so send the 100
-         ;; most plausible candidates -- ranked by shared tags and
-         ;; title-word overlap -- instead of whatever arbitrary order
-         ;; the DB returned (which silently biased the old sample).
-         (title-words (seq-filter (lambda (w) (> (length w) 3))
-                                  (split-string (downcase current-title)
-                                                "[^[:alnum:]]+" t)))
-         (sample-nodes
-          (seq-take
-           (seq-sort-by
-            (lambda (n)
-              (+ (* 2 (length (seq-intersection (org-roam-node-tags n)
-                                                current-tags #'equal)))
-                 (length (seq-intersection
-                          (split-string (downcase (org-roam-node-title n))
-                                        "[^[:alnum:]]+" t)
-                          title-words #'equal))))
-            #'> all-nodes)
-           100)))
-    (unless all-nodes
-      (user-error "No org-roam nodes found. Is org-roam database initialized?"))
-    (when (string-empty-p (string-trim current-content))
-      (user-error "Buffer is empty, nothing to analyze"))
-    (let ((node-list (mapcar (lambda (n)
-                               (format "- %s [tags: %s]"
-                                       (org-roam-node-title n)
-                                       (string-join (or (org-roam-node-tags n) '()) ", ")))
-                             sample-nodes)))
-      (message "Finding related notes among %d of %d nodes..."
-               (length sample-nodes) (length all-nodes))
-      (bmg/llm--request
-       (format "Current note: %s
-Tags: %s
-
-Content excerpt:
-%s
-
----
-
-Candidate notes from the knowledge base (a relevance-ranked sample of %d out of %d):
-%s
-
----
-
-Which 5-10 notes are most likely related to the current note? Consider:
-1. Topic similarity
-2. Shared concepts or terminology
-3. Research connections (same authors, citations, domains)
-4. Potential for linking
-
-For each suggested note, briefly explain WHY it might be related."
-               current-title
-               (string-join current-tags ", ")
-               current-content
-               (length sample-nodes)
-               (length all-nodes)
-               (string-join node-list "\n"))
-       :label "Related-notes search"
-       :system "You are a knowledge management assistant helping discover connections in a Zettelkasten.
-Identify notes that are semantically or conceptually related, even if they don't share obvious tags.
-Focus on finding non-obvious but meaningful connections."
-       :callback (lambda (response _info)
-                   (bmg/llm--display-org-buffer "*Related Notes*"
-                                                "* Notes Related to: " current-title
-                                                "\n\n" response))))))
-
-(defun bmg/generate-weekly-review ()
-  "Generate AI-powered weekly review of knowledge base activity.
-Summarizes notes modified this week, identifies themes, suggests connections."
-  (interactive)
-  (require 'org-roam)
-  (let* ((week-ago (time-subtract (current-time) (days-to-time 7)))
-         (recent-files '())
-         (summaries ""))
-    ;; Find recently modified org-roam files
-    (dolist (file (org-roam-list-files))
-      (when (time-less-p week-ago (file-attribute-modification-time (file-attributes file)))
-        (push file recent-files)))
-    (if (null recent-files)
-        (message "No notes modified in the past week")
-      ;; Build summary of each file; one unreadable file (deleted but
-      ;; still indexed) must not abort the whole review
-      (dolist (file (seq-take recent-files 15))
-        (if (not (file-readable-p file))
-            (message "Skipping unreadable file: %s" file)
-          (with-temp-buffer
-            (insert-file-contents file nil 0 1500)
-            (setq summaries (concat summaries
-                                    "\n\n--- " (file-name-nondirectory file) " ---\n"
-                                    (buffer-string))))))
-      (message "Generating weekly review for %d notes..." (length recent-files))
-      (bmg/llm--request summaries
-        :label "Weekly review"
-        :system "Generate a weekly review of knowledge base activity. Based on the notes modified this week:
-
-1. **Activity Summary** - What areas received attention this week?
-2. **Key Themes** - What patterns or topics emerge across the notes?
-3. **Notable Insights** - Any interesting ideas or connections worth highlighting?
-4. **Suggested Connections** - Notes that might benefit from being linked together
-5. **Gaps Identified** - Areas that might need more exploration
-6. **Recommended Focus** - Suggestions for next week's focus
-
-Use org-mode formatting. Be concise but insightful."
-        :callback (lambda (response _info)
-                    (bmg/llm--display-org-buffer "*Weekly Review*"
-                      (format "#+title: Weekly Review %s\n#+filetags: :review:weekly:\n\n"
-                              (format-time-string "%Y-%m-%d"))
-                      response
-                      (format "\n\n* Files Modified This Week (%d total)\n"
-                              (length recent-files))
-                      (mapconcat (lambda (f)
-                                   (format "- [[file:%s][%s]]\n"
-                                           f (file-name-nondirectory f)))
-                                 (seq-take recent-files 20)
-                                 "")))))))
-
-(defun bmg/check-tag-consistency ()
-  "Scan org-roam notes and report on tag usage patterns.
-Shows tag frequency, potential duplicates, and suggestions."
-  (interactive)
-  (require 'org-roam)
-  (let ((tag-counts (make-hash-table :test 'equal))
-        (nodes (org-roam-node-list)))
-    ;; Count all tags
-    (dolist (node nodes)
-      (dolist (tag (org-roam-node-tags node))
-        (puthash tag (1+ (gethash tag tag-counts 0)) tag-counts)))
-    ;; Build report
-    (let* ((sorted-tags (let (acc)
-                          (maphash (lambda (k v) (push (cons k v) acc)) tag-counts)
-                          (sort acc (lambda (a b) (> (cdr a) (cdr b))))))
-           ;; Potential duplicates: same tag under different casing
-           (dup-lines (let ((lower-tags (make-hash-table :test 'equal))
-                            (lines ""))
-                        (dolist (tag-count sorted-tags)
-                          (let ((lower (downcase (car tag-count))))
-                            (push (car tag-count) (gethash lower lower-tags))))
-                        (maphash (lambda (_k v)
-                                   (when (> (length v) 1)
-                                     (setq lines (concat lines (format "- %s\n" (string-join v ", "))))))
-                                 lower-tags)
-                        lines)))
-      (bmg/llm--display-org-buffer "*Tag Consistency Report*"
-        "* Tag Consistency Report\n\n"
-        (format "Total nodes: %d\n" (length nodes))
-        (format "Unique tags: %d\n\n" (hash-table-count tag-counts))
-        "** Tag Frequency\n"
-        (mapconcat (lambda (tc) (format "| %s | %d |\n" (car tc) (cdr tc)))
-                   sorted-tags "")
-        "\n** Potential Duplicates (case variations)\n"
-        dup-lines))))
-
-(defun bmg/find-orphan-notes ()
-  "Find org-roam notes with no backlinks or forward links.
-These might need attention or could be candidates for archival."
-  (interactive)
-  (require 'org-roam)
-  (let ((orphans '())
-        (nodes (org-roam-node-list)))
-    (dolist (node nodes)
-      (let* ((backlinks (org-roam-backlinks-get node))
-             (file (org-roam-node-file node)))
-        ;; Check for links in the file; a stale DB entry pointing at a
-        ;; deleted file must not abort the whole scan
-        (when (file-readable-p file)
-          (with-temp-buffer
-            (insert-file-contents file)
-            (let ((has-links (re-search-forward "\\[\\[id:" nil t)))
-              (when (and (null backlinks) (not has-links))
-                (push node orphans)))))))
-    (bmg/llm--display-org-buffer "*Orphan Notes*"
-      "* Orphan Notes (no links in or out)\n\n"
-      (format "Found %d orphan notes out of %d total\n\n"
-              (length orphans) (length nodes))
-      (mapconcat (lambda (node)
-                   (format "- [[file:%s][%s]] [%s]\n"
-                           (org-roam-node-file node)
-                           (org-roam-node-title node)
-                           (string-join (org-roam-node-tags node) ", ")))
-                 orphans ""))))
-
-;;;
-;;;
-;;; END_llm
-;;;
-;;;
+(load! "llm-config.el")
 #+END_SRC
 
 * Org
@@ -1372,19 +942,19 @@ Creates a new org-roam node in projects/{project-name}/ directory."
 
 ;; Override Doom's project capture functions to use roam/projects/ instead of project-root
 ;; This makes C-c n n → p → t/n/c use our roam directory
-(defadvice! bmg/org-capture-project-todo-file-a ()
-  "Override to use roam/projects/{project}/todo.org instead of project-root."
-  :override #'+org-capture-project-todo-file
+(define-advice +org-capture-project-todo-file
+    (:override () bmg/use-roam-projects)
+  "Use roam/projects/{project}/todo.org instead of project-root."
   (bmg/project-org-file "todo.org"))
 
-(defadvice! bmg/org-capture-project-notes-file-a ()
-  "Override to use roam/projects/{project}/notes.org instead of project-root."
-  :override #'+org-capture-project-notes-file
+(define-advice +org-capture-project-notes-file
+    (:override () bmg/use-roam-projects)
+  "Use roam/projects/{project}/notes.org instead of project-root."
   (bmg/project-org-file "notes.org"))
 
-(defadvice! bmg/org-capture-project-changelog-file-a ()
-  "Override to use roam/projects/{project}/changelog.org instead of project-root."
-  :override #'+org-capture-project-changelog-file
+(define-advice +org-capture-project-changelog-file
+    (:override () bmg/use-roam-projects)
+  "Use roam/projects/{project}/changelog.org instead of project-root."
   (bmg/project-org-file "changelog.org"))
 
 ;; org-mem https://github.com/meedstrom/org-mem is a complimentary package to org roam
@@ -1614,6 +1184,54 @@ not be dropped because of its path."
   :config
   (org-super-agenda-mode))
 
+;; consult-org-roam for enhanced search with live preview
+(use-package consult-org-roam
+  :after org-roam
+  :config
+  (consult-org-roam-mode 1)
+  (setopt consult-org-roam-grep-func #'consult-ripgrep))
+
+;; Corpus search. Both use `grep-mode' so RET jumps to the hit -- these live
+;; here rather than in the Map section, which holds bindings only.
+
+;; ripgrep-all for searching PDFs and documents
+(defun bmg/rga-search (query)
+  "Search PDFs and documents in Papers directory with ripgrep-all."
+  (interactive "sSearch papers: ")
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
+  (let ((default-directory "~/Documents/Papers/"))
+    (compilation-start
+     ;; --no-heading --with-filename: grep-mode needs file:line:text
+     ;; on every match line to make RET jump to the hit.
+     (format "rga --color=never --no-heading --with-filename --line-number %s"
+             (shell-quote-argument query))
+     'grep-mode
+     (lambda (_) "*rga-search*"))))
+
+(defun bmg/search-knowledge-base (query)
+  "Search org-roam notes, papers and the bibliography in one pass.
+Results are a `grep-mode' buffer, so RET jumps to the match.
+
+One `rga' invocation over all three roots, rather than three
+`shell-command-to-string' calls pasted into an org buffer: rga reads PDFs as
+well as text, and the old version produced output nothing could navigate."
+  (interactive "sSearch: ")
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
+  (let ((roots (delq nil
+                     (list (expand-file-name org-roam-directory)
+                           (expand-file-name "~/Documents/Papers/")
+                           ;; citar-bibliography can legitimately be empty.
+                           (when-let* ((bib (car citar-bibliography)))
+                             (expand-file-name bib))))))
+    (compilation-start
+     (format "rga --color=never --no-heading --with-filename --line-number -i %s %s"
+             (shell-quote-argument query)
+             (mapconcat #'shell-quote-argument roots " "))
+     'grep-mode
+     (lambda (_) "*Knowledge Base Search*"))))
+
 ;; Helper functions for org workflow
 
 (defun bmg/org-roam-review-week ()
@@ -1655,13 +1273,6 @@ not be dropped because of its path."
 ;;; BEGIN_Map
 ;;;
 ;;;
-
-;; consult-org-roam for enhanced search with live preview
-(use-package consult-org-roam
-  :after org-roam
-  :config
-  (consult-org-roam-mode 1)
-  (setopt consult-org-roam-grep-func #'consult-ripgrep))
 
 ;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
 ;; Uses consult-org-roam for enhanced find/search with live preview
@@ -1736,8 +1347,12 @@ not be dropped because of its path."
   (:leader
         ;;; <leader> o --- open
    (:prefix "o"
-    :desc "Url"  "u" #'browse-url
-    :desc "Web"  "w" #'browse-url)))
+    :desc "Url"  "u" #'browse-url)))
+
+ (;;: quit -- bare :prefix, never a re-labelled one (that wipes the map)
+  (:leader
+   (:prefix "q"
+    :desc "Kill Emacs (confirm)" "Q" #'bmg/kill-emacs-confirm)))
 
  (;;: crux and stuff
   (:leader
@@ -1795,58 +1410,6 @@ not be dropped because of its path."
 
 (define-key doom-leader-map (kbd "A") (cons "AI" bmg/ai-command-map))
 
-;; ripgrep-all for searching PDFs and documents
-(defun bmg/rga-search (query)
-  "Search PDFs and documents in Papers directory with ripgrep-all."
-  (interactive "sSearch papers: ")
-  (unless (executable-find "rga")
-    (user-error "rga (ripgrep-all) not found in PATH"))
-  (let ((default-directory "~/Documents/Papers/"))
-    (compilation-start
-     ;; --no-heading --with-filename: grep-mode needs file:line:text
-     ;; on every match line to make RET jump to the hit.
-     (format "rga --color=never --no-heading --with-filename --line-number %s"
-             (shell-quote-argument query))
-     'grep-mode
-     (lambda (_) "*rga-search*"))))
-
-(defun bmg/search-knowledge-base (query)
-  "Search across org-roam notes, PDFs, and bibliography.
-Presents results in a unified interface."
-  (interactive "sSearch: ")
-  (unless (executable-find "rga")
-    (user-error "rga (ripgrep-all) not found in PATH"))
-  (let ((results-buffer (get-buffer-create "*Knowledge Base Search*")))
-    (with-current-buffer results-buffer
-      (erase-buffer)
-      (insert (format "* Knowledge Base Search: %s\n\n" query))
-
-      ;; 1. Org-roam notes search
-      (insert "** Org-roam Notes\n")
-      (let ((default-directory org-roam-directory))
-        (insert (shell-command-to-string
-                 (format "rg --color=never -l -i %s --type org 2>/dev/null | head -20"
-                         (shell-quote-argument query)))))
-      (insert "\n")
-
-      ;; 2. PDF content search
-      (insert "** Papers (PDF content)\n")
-      (let ((default-directory "~/Documents/Papers/"))
-        (insert (shell-command-to-string
-                 (format "rga --color=never --files-with-matches %s 2>/dev/null | head -15"
-                         (shell-quote-argument query)))))
-      (insert "\n")
-
-      ;; 3. Bibliography search
-      (insert "** Bibliography\n")
-      (insert (shell-command-to-string
-               (format "rg --color=never -i %s %s 2>/dev/null | head -20"
-                       (shell-quote-argument query)
-                       (shell-quote-argument (expand-file-name (car citar-bibliography))))))
-
-      (org-mode)
-      (goto-char (point-min)))
-    (pop-to-buffer results-buffer)))
 
 (map! :map dirvish-mode-map
       ;; left click for expand/collapse dir or open file
@@ -1906,7 +1469,7 @@ Presents results in a unified interface."
       (save-excursion
         (goto-char (point-min))
         (while (not (eobp))
-          (when-let ((entry (elfeed-search-selected :ignore-region)))
+          (when-let* ((entry (elfeed-search-selected :ignore-region)))
             (elfeed-untag entry 'unread)
             (setq count (1+ count)))
           (forward-line)))
