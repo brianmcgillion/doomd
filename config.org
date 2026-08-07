@@ -472,6 +472,63 @@ Intended as a predicate for `confirm-kill-emacs'."
                           'magit-insert-stashes
                           'append))
 
+;; Selecting a worktree in Magit only opened a status buffer for it: the Doom
+;; workspace, its buffer list and the modeline all stayed on the mainline
+;; checkout, so project commands run from anywhere else still searched mainline.
+;;
+;; `magit-diff-visit-directory' is the single funnel every worktree entry point
+;; goes through -- `magit-worktree-status' (RET, % g), `magit-worktree-checkout'
+;; (% b), `magit-worktree-branch' (% c), `magit-worktree-move' (% m) and the
+;; return to the primary worktree after % k -- so gate one advice there rather
+;; than repeating it four times. The gate keeps submodules and ordinary
+;; directory visits from diffs on Magit's original code path.
+;;
+;; Consequences of delegating this completely, all accepted deliberately:
+;;
+;; - RET on a worktree now opens the project file picker, not that worktree's
+;;   Magit status. That is a change from stock Magit, traded for holding no
+;;   landing logic of our own.
+;; - The workspace's `+workspace-project' parameter is left unset, matching what
+;;   Doom itself does whenever it takes this reuse branch.
+;; - With a prefix argument live the workspace is repointed but no file picker
+;;   opens, again inherited from Doom.
+;; - Buffers already visiting mainline files keep reporting the mainline
+;;   project, because `projectile-project-root' derives from each buffer's
+;;   `default-directory'. Only a separate workspace could isolate those.
+
+(defun bmg/magit-linked-worktree-p (directory)
+  "Return non-nil if DIRECTORY is a worktree of this repository.
+The worktree currently being displayed does not count, and neither do
+submodules or unrelated repositories."
+  (ignore-errors
+    (let ((dir (file-truename (file-name-as-directory (expand-file-name directory))))
+          (here (file-truename (file-name-as-directory (magit-toplevel)))))
+      (and (not (equal dir here))
+           (seq-some (lambda (worktree)
+                       (equal dir (file-truename
+                                   (file-name-as-directory (car worktree)))))
+                     (magit-list-worktrees))))))
+
+(defun bmg/magit-switch-project-to-worktree (worktree)
+  "Make WORKTREE the current project, reusing the current Doom workspace."
+  (let ((+workspaces-on-switch-project-behavior nil))
+    (projectile-switch-project-by-name
+     (file-name-as-directory (expand-file-name worktree)))))
+
+(with-eval-after-load 'magit-diff
+  (define-advice magit-diff-visit-directory
+      (:around (fn directory &optional other-window) bmg/switch-project-to-worktree)
+    "Switch project when DIRECTORY is another worktree of this repository."
+    (if (bmg/magit-linked-worktree-p directory)
+        (bmg/magit-switch-project-to-worktree directory)
+      (funcall fn directory other-window))))
+
+;; No projectile cache invalidation here on purpose: Doom's :tools magit module
+;; already runs `+magit-invalidate-projectile-cache-h' from
+;; `magit-refresh-buffer-hook', keyed on the status buffer's hash, so it covers
+;; every working-tree change (rebase, pull, reset, external edits) rather than a
+;; hand-picked list of commands -- and it does so far more cheaply.
+
 ;;;
 ;;;
 ;;; END_code
