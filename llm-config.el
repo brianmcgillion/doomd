@@ -86,6 +86,34 @@
   :type 'integer
   :group 'bmg/llm)
 
+;; Retrieval budgets are deliberately separate from the buffer-head sizes above.
+;; Those bound "how much of this one file do I send"; these bound an assembled
+;; set of matching passages, which is far denser per character.
+(defcustom bmg/llm-context-rag 12000
+  "Character budget for the context assembled by `bmg/ask-knowledge-base'."
+  :type 'integer
+  :group 'bmg/llm)
+
+(defcustom bmg/llm-rag-context-lines 3
+  "Lines of surrounding context to keep around each retrieved match."
+  :type 'integer
+  :group 'bmg/llm)
+
+(defcustom bmg/llm-rag-max-per-file 3
+  "Maximum matches to take from any one file.
+Passed to rga as `--max-count'.  This is the difference between a few
+thousand candidate lines and tens of thousands."
+  :type 'integer
+  :group 'bmg/llm)
+
+(defcustom bmg/llm-rag-max-files 12
+  "How many files may contribute passages to one answer.
+A broad question matches hundreds of files; spreading the budget across
+all of them yields one line each, which is worse than several lines from
+the dozen most relevant."
+  :type 'integer
+  :group 'bmg/llm)
+
 (cl-defun bmg/llm--request (prompt &key system callback (label "LLM request"))
   "Send PROMPT to the LLM via gptel with uniform error handling.
 SYSTEM is the system prompt.  CALLBACK is called as (response info)
@@ -218,87 +246,147 @@ Be concise and actionable."
                                                "* Processing Suggestion\n\n"
                                                response)))))
 
-(defun bmg/kb--search-files (question)
-  "Return org files under `org-roam-directory' ranked by relevance to QUESTION.
-Extracts keywords (words longer than 3 chars) from QUESTION and ranks files
-by how many *distinct* keywords they contain.
+;; `bmg/kb--search-files' lived here: it ranked whole org files by distinct
+;; keyword hits, and the caller then read the first 4000 bytes of each.  Ranking
+;; the right files then sending the wrong part of them is why the command
+;; appeared to work while answering from front matter.  `bmg/kb--passages'
+;; below replaces both halves; the keyword extraction survives as
+;; `bmg/kb--keywords'.
 
-One ripgrep invocation, not one per keyword: with a 1700-file vault the old
-per-keyword loop blocked Emacs for a shell round-trip per word.  Passing each
-keyword as its own -e pattern and printing matches with -o lets the distinct
-count be recovered here instead."
-  (unless (executable-find "rg")
-    (user-error "rg (ripgrep) not found in PATH"))
-  (let ((keywords (seq-uniq
-                   (seq-filter (lambda (w) (> (length w) 3))
-                               (split-string (downcase question) "[^[:alnum:]]+" t))))
-        (hits (make-hash-table :test #'equal)))
+(defun bmg/kb--keywords (question)
+  "Return the distinct search keywords in QUESTION.
+Words of three characters or fewer are dropped as too common to rank on."
+  (seq-uniq (seq-filter (lambda (w) (> (length w) 3))
+                        (split-string (downcase question) "[^[:alnum:]]+" t))))
+
+(defun bmg/kb--passages (question)
+  "Return an alist of (FILE . PASSAGE-LINES) matching QUESTION.
+Searches notes *and* the document roots, so papers and books are eligible
+-- previously this was org-only, and never consulted a single PDF.
+
+Passages come from rga itself rather than being reconstructed here: `-C'
+gives the surrounding lines, and for PDFs each line keeps its `Page N:'
+prefix, so answers can cite a page.  `--max-count' is the load-bearing
+bound; on a three-keyword query across all roots the unbounded output is
+~46,000 lines against ~4,500 with it."
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
+  (let ((keywords (bmg/kb--keywords question))
+        (groups nil))
     (when keywords
       (with-temp-buffer
-        ;; -o prints each match on its own line so a file that matches two
-        ;; different keywords is distinguishable from one that matches the
-        ;; same keyword twice.  Exit status 1 just means "no matches".
-        (apply #'call-process "rg" nil t nil
-               "--no-heading" "--with-filename" "--no-line-number"
-               "-o" "-i" "--glob" "*.org"
-               (append (mapcan (lambda (kw) (list "-e" kw)) keywords)
-                       (list (expand-file-name org-roam-directory))))
+        ;; Exit status 1 just means "no matches"; anything else is still
+        ;; readable from whatever landed in the buffer.
+        (apply #'call-process "rga" nil t nil
+               (append (split-string-and-unquote bmg/rga-common-args)
+                       (list "-i"
+                             (format "-C%d" bmg/llm-rag-context-lines)
+                             (format "--max-count=%d" bmg/llm-rag-max-per-file))
+                       (mapcan (lambda (kw) (list "-e" kw)) keywords)
+                       (list (expand-file-name org-roam-directory))
+                       (mapcar #'expand-file-name bmg/document-search-roots)))
         (goto-char (point-min))
         (while (not (eobp))
           (let ((line (buffer-substring-no-properties
                        (line-beginning-position) (line-end-position))))
-            ;; rg output is FILE:MATCH; split on the last colon-free prefix.
-            (when (string-match "\\`\\(.*?\\):\\(.*\\)\\'" line)
+            ;; rga emits FILE:LINE:TEXT for matches and FILE-LINE-TEXT for
+            ;; context lines; both start with the path.
+            (when (string-match "\\`\\(/[^:]*?\\)[-:]\\([0-9]+\\)[-:]\\(.*\\)\\'" line)
               (let ((file (match-string 1 line))
-                    (match (downcase (match-string 2 line))))
-                (cl-pushnew match (gethash file hits) :test #'equal))))
+                    (text (match-string 3 line)))
+                (unless (string-empty-p (string-trim text))
+                  (push text (alist-get file groups nil nil #'equal))))))
           (forward-line)))
-      (let (ranked)
-        (maphash (lambda (f ms) (push (cons f (length ms)) ranked)) hits)
-        (mapcar #'car (seq-sort-by #'cdr #'> ranked))))))
+      (mapcar (lambda (cell) (cons (car cell) (nreverse (cdr cell)))) groups))))
+
+(defun bmg/kb--build-context (groups)
+  "Assemble a bounded context string from GROUPS, an alist of (FILE . LINES).
+Returns (FILES . CONTEXT).
+
+Selects at most `bmg/llm-rag-max-files', ranked by how many passages each
+contributed, weighted two-to-one toward notes so the distilled material
+leads and papers corroborate it.  Only then fills `bmg/llm-context-rag'
+characters round-robin, so no single verbose source eats the budget.
+
+Capping the file count first is what makes this useful: a broad question
+matches hundreds of files, and spreading the budget over all of them
+returns a single line from each."
+  (let* ((notes-dir (expand-file-name org-roam-directory))
+         (notep (lambda (g) (string-prefix-p notes-dir (car g))))
+         (rank (lambda (gs) (seq-sort-by (lambda (g) (length (cdr g))) #'> gs)))
+         (notes (funcall rank (seq-filter notep groups)))
+         (docs (funcall rank (seq-remove notep groups)))
+         (want-notes (max 1 (/ (* 2 bmg/llm-rag-max-files) 3)))
+         (chosen (append
+                  (seq-take notes want-notes)
+                  ;; Any note slots left unfilled fall through to documents.
+                  (seq-take docs (- bmg/llm-rag-max-files
+                                    (min want-notes (length notes))))))
+         (budget bmg/llm-context-rag)
+         (taken (make-hash-table :test #'equal))
+         (used nil))
+    (catch 'full
+      (while (seq-some (lambda (g) (< (gethash (car g) taken 0) (length (cdr g)))) chosen)
+        (dolist (g chosen)
+          (let* ((file (car g))
+                 (i (gethash file taken 0)))
+            (when (< i (length (cdr g)))
+              (let ((line (nth i (cdr g))))
+                (setq budget (- budget (length line) 1))
+                (when (< budget 0) (throw 'full nil))
+                (puthash file (1+ i) taken)
+                (cl-pushnew file used :test #'equal)))))))
+    ;; nreverse is destructive: reverse once, then reuse.
+    (setq used (nreverse used))
+    (cons used
+          (mapconcat
+           (lambda (file)
+             (format "\n\n--- %s ---\n%s"
+                     (file-name-nondirectory file)
+                     (string-join (seq-take (alist-get file groups nil nil #'equal)
+                                            (gethash file taken 0))
+                                  "\n")))
+           used ""))))
 
 (defun bmg/ask-knowledge-base (question)
-  "Ask a question answered from your org-roam notes (RAG).
-Searches notes, retrieves relevant content, and uses LLM to answer.
-Bound to SPC s Q."
+  "Ask a question answered from your notes, papers and books (RAG).
+Retrieves the passages that actually match, not the head of each file,
+and answers from those.  Bound to SPC s Q."
   (interactive "sQuestion: ")
   (when (string-empty-p (string-trim question))
     (user-error "Please provide a question"))
   (message "Searching knowledge base...")
-  (let* ((top-files (seq-take (bmg/kb--search-files question) 5))
-         (context ""))
-    (if (null top-files)
-        (message "No relevant notes found for: %s" question)
-      ;; Build context from top matching files
-      (dolist (file top-files)
-        (when (and file (file-exists-p file))
-          (condition-case nil
-              (with-temp-buffer
-                (insert-file-contents file nil 0 bmg/llm-context-small)
-                (setq context (concat context
-                                      "\n\n--- " (file-name-nondirectory file) " ---\n"
-                                      (buffer-string))))
-            (file-error nil))))  ; Skip files that can't be read
-      (if (string-empty-p context)
-          (message "Could not read any matching files for: %s" question)
-        (bmg/llm--request
-         (format "Context from knowledge base:\n%s\n\n---\n\nQuestion: %s" context question)
-         :label "Knowledge base query"
-         :system "You are a research assistant with access to the user's personal knowledge base.
-Answer the question based ONLY on the provided context from their notes.
+  (let ((groups (bmg/kb--passages question)))
+    (if (null groups)
+        (message "No relevant material found for: %s" question)
+      (pcase-let ((`(,files . ,context) (bmg/kb--build-context groups)))
+        (if (string-empty-p (string-trim context))
+            (message "Matches found but no readable passages for: %s" question)
+          (message "Answering from %d passages across %d files..."
+                   (apply #'+ (mapcar (lambda (f)
+                                        (length (alist-get f groups nil nil #'equal)))
+                                      files))
+                   (length files))
+          (bmg/llm--request
+           (format "Context from knowledge base:\n%s\n\n---\n\nQuestion: %s"
+                   context question)
+           :label "Knowledge base query"
+           :system "You are a research assistant with access to the user's personal knowledge base.
+The context is a set of matching passages, not whole documents, so it may start
+mid-argument. Answer the question based ONLY on the provided context.
 - Cite which notes/files support your answer
+- Where a passage carries a `Page N:' marker, cite the page
 - Quote relevant passages when helpful
 - If the context doesn't contain relevant information, say so clearly
 - Be concise but thorough
 - Use org-mode formatting"
-         :callback (lambda (response _info)
-                     (bmg/llm--display-org-buffer "*KB Answer*"
-                       "* Answer to: " question "\n\n" response "\n\n* Sources\n"
-                       (mapconcat (lambda (f)
-                                    (format "- [[file:%s][%s]]\n"
-                                            f (file-name-nondirectory f)))
-                                  (seq-filter #'identity top-files)
-                                  ""))))))))
+           :callback (lambda (response _info)
+                       (bmg/llm--display-org-buffer "*KB Answer*"
+                         "* Answer to: " question "\n\n" response "\n\n* Sources\n"
+                         (mapconcat (lambda (f)
+                                      (format "- [[file:%s][%s]]\n"
+                                              f (file-name-nondirectory f)))
+                                    files "")))))))))
 
 (defun bmg/find-related-notes ()
   "Use AI to find semantically related notes to current buffer.

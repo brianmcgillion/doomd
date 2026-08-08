@@ -404,6 +404,41 @@ all.  Guarding the keybinding leaves both alone."
   (when (bmg/confirm-kill-daemon)
     (kill-emacs)))
 
+;; Document search, shared by the rga commands in the Org section and by the
+;; retrieval in llm-config.el.  Defined here because that file is `load!'-ed
+;; from the LLM section, which comes first.
+;;
+;; rga caches extracted document text in ~/.cache/ripgrep-all, but only for
+;; blobs under `--rga-cache-max-blob-len', which defaults to 2MB *after zstd
+;; compression*.  Enough of the papers are text-dense to exceed that, and rga is
+;; explicit that longer outputs "will not be cached and recomputed every time"
+;; -- so every search re-extracted them: measured 4.76s per query over Papers,
+;; cold or warm, against 0.85s once they cache.  EPUBs were always under the
+;; limit, which is why only the PDFs were slow.
+;;
+;; The ceiling governs cache *writes* only, so a generous value simply stops
+;; anything being excluded, and costs nothing: the whole 4.7G corpus occupies
+;; 91MB of cache.  Terminal rga wants the same value in
+;; ~/.config/ripgrep-all/config.jsonc as {"cache_max_blob_len": 536870912}.
+(defconst bmg/rga-common-args
+  "--color=never --no-heading --with-filename --line-number --rga-cache-max-blob-len=512M"
+  "Flags shared by every `rga' invocation.
+`--no-heading --with-filename --line-number' give `grep-mode' the
+file:line:text shape it needs for RET to jump to a hit.")
+
+(defvar bmg/document-search-roots
+  (list "~/Documents/Papers/" "~/Documents/EPUB/")
+  "Source-document directories searched by the `rga' commands.
+EPUB went missing for a long time, quietly excluding 121 books and 124
+PDFs -- rga reads .epub natively, so this was only ever a path gap.")
+
+(defun bmg/rga--roots (&rest extra)
+  "Return shell-quoted search roots: EXTRA plus `bmg/document-search-roots'.
+Nil entries in EXTRA are dropped, so an unset bibliography is harmless."
+  (mapconcat (lambda (d) (shell-quote-argument (expand-file-name d)))
+             (delq nil (append extra bmg/document-search-roots))
+             " "))
+
 ;;;
 ;;;
 ;;; END_General
@@ -1236,20 +1271,19 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
 ;; Corpus search. Both use `grep-mode' so RET jumps to the hit -- these live
 ;; here rather than in the Map section, which holds bindings only.
 
-;; ripgrep-all for searching PDFs and documents
+;; ripgrep-all for searching PDFs, EPUBs and documents
 (defun bmg/rga-search (query)
-  "Search PDFs and documents in Papers directory with ripgrep-all."
-  (interactive "sSearch papers: ")
+  "Search PDFs, EPUBs and other documents with ripgrep-all."
+  (interactive "sSearch documents: ")
   (unless (executable-find "rga")
     (user-error "rga (ripgrep-all) not found in PATH"))
-  (let ((default-directory "~/Documents/Papers/"))
-    (compilation-start
-     ;; --no-heading --with-filename: grep-mode needs file:line:text
-     ;; on every match line to make RET jump to the hit.
-     (format "rga --color=never --no-heading --with-filename --line-number %s"
-             (shell-quote-argument query))
-     'grep-mode
-     (lambda (_) "*rga-search*"))))
+  (compilation-start
+   (format "rga %s -i %s %s"
+           bmg/rga-common-args
+           (shell-quote-argument query)
+           (bmg/rga--roots))
+   'grep-mode
+   (lambda (_) "*rga-search*")))
 
 (defun bmg/search-knowledge-base (query)
   "Search org-roam notes, papers and the bibliography in one pass.
@@ -1261,18 +1295,15 @@ well as text, and the old version produced output nothing could navigate."
   (interactive "sSearch: ")
   (unless (executable-find "rga")
     (user-error "rga (ripgrep-all) not found in PATH"))
-  (let ((roots (delq nil
-                     (list (expand-file-name org-roam-directory)
-                           (expand-file-name "~/Documents/Papers/")
-                           ;; citar-bibliography can legitimately be empty.
-                           (when-let* ((bib (car citar-bibliography)))
-                             (expand-file-name bib))))))
-    (compilation-start
-     (format "rga --color=never --no-heading --with-filename --line-number -i %s %s"
-             (shell-quote-argument query)
-             (mapconcat #'shell-quote-argument roots " "))
-     'grep-mode
-     (lambda (_) "*Knowledge Base Search*"))))
+  (compilation-start
+   (format "rga %s -i %s %s"
+           bmg/rga-common-args
+           (shell-quote-argument query)
+           ;; Notes and the bibliography, then the document roots.
+           ;; citar-bibliography can legitimately be empty.
+           (bmg/rga--roots org-roam-directory (car citar-bibliography)))
+   'grep-mode
+   (lambda (_) "*Knowledge Base Search*")))
 
 ;; Helper functions for org workflow
 
