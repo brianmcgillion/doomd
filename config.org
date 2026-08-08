@@ -404,6 +404,21 @@ all.  Guarding the keybinding leaves both alone."
   (when (bmg/confirm-kill-daemon)
     (kill-emacs)))
 
+;; Doom truncates compilation buffers from `compilation-filter-hook' via
+;; `doom-comint-truncate-buffer-h', governed by `comint-buffer-maximum-size',
+;; which it sets to 2048 globally so a chatty process cannot grind the GC.
+;; Correct for a long-running shell, wrong for grep
+;;
+;; Buffer-local, so shells keep Doom's cap.  Deliberately not unlimited: the
+;; hook only fires above (* 80 comint-buffer-maximum-size) bytes, so 100000
+;; leaves ~8MB of headroom -- far beyond a full-corpus grep (453K) while still
+;; bounding a runaway compile.  `grep-mode' derives from `compilation-mode', so
+;; one hook covers both.
+(add-hook 'compilation-mode-hook
+          (defun bmg/compilation-keep-full-output-h ()
+            "Let compilation and grep buffers keep their whole result."
+            (setq-local comint-buffer-maximum-size 100000)))
+
 ;; Document search, shared by the rga commands in the Org section and by the
 ;; retrieval in llm-config.el.  Defined here because that file is `load!'-ed
 ;; from the LLM section, which comes first.
