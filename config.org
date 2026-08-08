@@ -540,6 +540,37 @@ Nil entries in EXTRA are dropped, so an unset bibliography is harmless."
                           'magit-insert-stashes
                           'append))
 
+;; Magit's status buffer does not list branches -- `magit-insert-local-branches'
+;; belongs to `magit-refs-mode' (the `y' buffer) and is absent from magit's own
+;; default `magit-status-sections-hook'.  Add it after Worktrees, since branches
+;; and the worktrees that check them out read well together.
+;;
+(with-eval-after-load 'magit
+  (magit-add-section-hook 'magit-status-sections-hook
+                          'magit-insert-local-branches
+                          'magit-insert-worktrees
+                          'append)
+
+  (add-to-list 'magit-section-initial-visibility-alist '(local . hide))
+
+  (add-hook 'magit-status-mode-hook
+            (defun bmg/magit-status-refs-upstream-h ()
+              "Give `magit-insert-local-branches' the comparison base it expects."
+              (setq-local magit-buffer-refs-upstream "HEAD")))
+
+  (defun bmg/magit-branch-checkout-or-visit ()
+    "Check out the branch at point in a status buffer; visit it elsewhere.
+In `magit-refs-mode' and anywhere else this falls through to
+`magit-visit-ref', preserving stock behaviour in the `y' buffer."
+    (interactive)
+    (if-let* (((derived-mode-p 'magit-status-mode))
+              (branch (magit-section-value-if 'branch)))
+        (magit-branch-checkout branch)
+      (call-interactively #'magit-visit-ref)))
+
+  (map! :map magit-branch-section-map
+        [remap magit-visit-thing] #'bmg/magit-branch-checkout-or-visit))
+
 ;; Selecting a worktree in Magit only opened a status buffer for it: the Doom
 ;; workspace, its buffer list and the modeline all stayed on the mainline
 ;; checkout, so project commands run from anywhere else still searched mainline.
