@@ -362,7 +362,32 @@
    ;; never applies to it and it falls back to `consult-preview-key'
    consult-org-roam-search consult-org-roam-file-find
    consult-org-roam-backlinks consult-org-roam-forward-links
-   :preview-key (list "C-SPC" :debounce 0.1 'any)))
+   :preview-key (list "C-SPC" :debounce 0.1 'any))
+
+  ;; Same live preview as above, except on documents.  rga reports line numbers
+  ;; of the *extracted text*, not positions Emacs can visit, so auto-preview
+  ;; spawns an epdfinfo render to land somewhere meaningless.
+  ;;
+  ;; (:keys ... :predicate ...) is consult's per-candidate form: consult.el:2814
+  ;; registers the keymap, consult.el:1733 calls :predicate per candidate.
+  ;; `consult--prefix-group' is the file name set by `consult--grep-format';
+  ;; defaulting to "" previews unknown candidates, the safe direction.
+  (consult-customize
+   bmg/search-knowledge-base bmg/rga-search
+   :preview-key
+   (list :keys (list "C-SPC" :debounce 0.1 'any)
+         :predicate
+         (lambda (cand)
+           ;; Every format an rga adapter extracts, not just documents --
+           ;; all are binaries Emacs cannot preview by opening at a line.
+           ;; `case-fold-search' bound so `.PDF' matches by design rather
+           ;; than by whatever the calling buffer happened to have.
+           (if (let ((case-fold-search t))
+                 (string-match-p
+                  "\\.\\(pdf\\|epub\\|docx\\|odt\\|fb2\\|ipynb\\|rtf\\|zip\\|tar\\|gz\\|bz2\\|xz\\|zst\\|sqlite3?\\|db\\|mbox\\|mkv\\|mp4\\|avi\\|mov\\|webm\\)\\'"
+                  (or (get-text-property 0 'consult--prefix-group cand) "")))
+               "C-SPC"
+             (list "C-SPC" :debounce 0.1 'any))))))
 
 ;; use a persistent directory so a doom sync will not remove the binary from a running daemon
 ;; automatically download the latest version do not 'ask
@@ -419,9 +444,9 @@ all.  Guarding the keybinding leaves both alone."
             "Let compilation and grep buffers keep their whole result."
             (setq-local comint-buffer-maximum-size 100000)))
 
-;; Document search, shared by the rga commands in the Org section and by the
-;; retrieval in llm-config.el.  Defined here because that file is `load!'-ed
-;; from the LLM section, which comes first.
+;; Document search, shared by `bmg/consult-rga-args' below and by the retrieval
+;; in llm-config.el.  Defined here because that file is `load!'-ed from the LLM
+;; section, which comes first.
 ;;
 ;; rga caches extracted document text in ~/.cache/ripgrep-all, but only for
 ;; blobs under `--rga-cache-max-blob-len', which defaults to 2MB *after zstd
@@ -438,8 +463,9 @@ all.  Guarding the keybinding leaves both alone."
 (defconst bmg/rga-common-args
   "--color=never --no-heading --with-filename --line-number --rga-cache-max-blob-len=512M"
   "Flags shared by every `rga' invocation.
-`--no-heading --with-filename --line-number' give `grep-mode' the
-file:line:text shape it needs for RET to jump to a hit.")
+The file:line:text shape is parsed two ways: `bmg/consult-rga-args' adds
+`--null' for `consult--grep-match-regexp', llm-config.el walks the plain
+colon form with its own regexp.  Neither is a `grep-mode' buffer.")
 
 (defvar bmg/document-search-roots
   (list "~/Documents/Papers/" "~/Documents/EPUB/")
@@ -447,12 +473,77 @@ file:line:text shape it needs for RET to jump to a hit.")
 EPUB went missing for a long time, quietly excluding 121 books and 124
 PDFs -- rga reads .epub natively, so this was only ever a path gap.")
 
-(defun bmg/rga--roots (&rest extra)
-  "Return shell-quoted search roots: EXTRA plus `bmg/document-search-roots'.
-Nil entries in EXTRA are dropped, so an unset bibliography is harmless."
-  (mapconcat (lambda (d) (shell-quote-argument (expand-file-name d)))
-             (delq nil (append extra bmg/document-search-roots))
-             " "))
+(defconst bmg/consult-rga-args
+  (concat "rga --null --line-buffered --max-columns=1000 --max-columns-preview"
+          " --path-separator / --smart-case --max-count=5 "
+          bmg/rga-common-args)
+  "Command line for `rga', in the shape `consult-ripgrep-args' takes.
+Derived from `bmg/rga-common-args' so the flags shared with llm-config.el
+have one home and the consult-only delta stays visible.  rga accepts every
+flag stock `consult-ripgrep-args' passes to rg, `-P' included, so consult
+selects PCRE and joins multi-word input with look-aheads.
+
+The delta:
+- `--null' -- `consult--grep-match-regexp' needs a NUL after the filename;
+  without it every candidate is silently dropped.
+- `--max-columns-preview' -- otherwise rg replaces an over-long line with a
+  placeholder, and PDF paragraphs routinely pass 1000 characters.
+- `--max-count=5' -- `the' over these roots is 1.8M matches uncapped and
+  9,858 capped, and consult holds every one in memory.  Kept out of
+  `bmg/rga-common-args' so llm-config.el keeps its own `--max-count=3'.
+  See `bmg/search-knowledge-base' for how it interacts with the `#' filter.
+- `--smart-case' rather than the old `-i'; narrows acronyms (`LLM' finds
+  2,194 against ~3,541), so append `-i' when that bites.
+- `--search-zip' dropped; rga has its own archive adapters.
+
+Appending a flag to a query overrides any of these: consult puts user
+options after this list and rg takes the last occurrence.")
+
+(defun bmg/rga--common-root (paths)
+  "Return the deepest directory containing every path in PATHS.
+`consult--directory-prompt' resolves a path list against the *calling
+buffer's* `default-directory' (consult.el:867-870), so binding it to this
+keeps result names stable: the knowledge-base roots collapse to
+~/Documents/ and a hit reads `org/roam/Foo.org:34:...'."
+  (let* ((seed (expand-file-name (car paths)))
+         (root (if (file-directory-p seed)
+                   (file-name-as-directory seed)
+                 (file-name-directory seed))))
+    (dolist (p (cdr paths) root)
+      (setq p (file-name-as-directory (expand-file-name p)))
+      (while (not (string-prefix-p root p))
+        (setq root (file-name-directory (directory-file-name root)))))))
+
+(defun bmg/consult--rga-make-builder (paths)
+  "Return consult's ripgrep command builder, driven by `rga', over PATHS.
+`consult--ripgrep-make-builder' reads `consult-ripgrep-args' once, when
+the builder is constructed, so rebinding it around the call is enough."
+  (let ((consult-ripgrep-args bmg/consult-rga-args))
+    (consult--ripgrep-make-builder paths)))
+
+(defun bmg/consult--rga (prompt paths &optional initial)
+  "Run an asynchronous `rga' search over PATHS through consult.
+PROMPT and INITIAL are as for `consult--grep'.  PATHS is a list of root
+strings, or a prefix-argument value, which makes `consult--directory-prompt'
+ask which roots to search.
+
+Only the timing delays are rebound.  Doom's 0.2 and 0.1
+(vertico/config.el:129-132) are tuned for a local `rg'; one rga pass over
+these roots measures 1.39s warm, so every pause in typing would kill and
+restart a second of work.  min-input stays at Doom's 2, matching
+`consult-ripgrep', so two-letter acronyms still search.  `consult--grep'
+builds the pipeline synchronously, so a `let' around it reaches these."
+  (unless (executable-find "rga")
+    (user-error "rga (ripgrep-all) not found in PATH"))
+  (require 'consult)
+  (let* ((roots (and (consp paths) (stringp (car paths)) paths))
+         (default-directory (if roots
+                                (bmg/rga--common-root roots)
+                              default-directory))
+         (consult-async-min-input 2)
+         (consult-async-input-debounce 0.4)
+         (consult-async-input-throttle 0.8))
+    (consult--grep prompt #'bmg/consult--rga-make-builder paths initial)))
 
 ;;;
 ;;;
@@ -1314,42 +1405,54 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
   (consult-org-roam-mode 1)
   (setopt consult-org-roam-grep-func #'consult-ripgrep))
 
-;; Corpus search. Both use `grep-mode' so RET jumps to the hit -- these live
-;; here rather than in the Map section, which holds bindings only.
+;; Corpus search.  One engine, two sets of roots.  Both are consult async
+;; commands: results narrow as you type, text hits preview live, and
+;; `C-c C-;' exports to the `grep-mode' buffer these used to produce outright.
 
-;; ripgrep-all for searching PDFs, EPUBs and documents
-(defun bmg/rga-search (query)
-  "Search PDFs, EPUBs and other documents with ripgrep-all."
-  (interactive "sSearch documents: ")
-  (unless (executable-find "rga")
-    (user-error "rga (ripgrep-all) not found in PATH"))
-  (compilation-start
-   (format "rga %s -i %s %s"
-           bmg/rga-common-args
-           (shell-quote-argument query)
-           (bmg/rga--roots))
-   'grep-mode
-   (lambda (_) "*rga-search*")))
+(defun bmg/kb--search-roots ()
+  "Roots for `bmg/search-knowledge-base': notes, bibliography, documents.
+The trailing nil makes `append' copy its last argument, so `delq' cannot
+splice `bmg/document-search-roots'."
+  (delq nil (append (list (bound-and-true-p org-roam-directory))
+                    (bound-and-true-p citar-bibliography)
+                    bmg/document-search-roots
+                    nil)))
 
-(defun bmg/search-knowledge-base (query)
+(defun bmg/search-knowledge-base (&optional paths initial)
   "Search org-roam notes, papers and the bibliography in one pass.
-Results are a `grep-mode' buffer, so RET jumps to the match.
+An async consult search: results narrow as you type, text hits preview live
+and jump to the exact line.  `C-c C-;' exports to the `grep-mode' buffer
+this command used to produce outright, `C-c C-e' to a wgrep-editable one.
 
-One `rga' invocation over all three roots, rather than three
-`shell-command-to-string' calls pasted into an org buffer: rga reads PDFs as
-well as text, and the old version produced output nothing could navigate."
-  (interactive "sSearch: ")
-  (unless (executable-find "rga")
-    (user-error "rga (ripgrep-all) not found in PATH"))
-  (compilation-start
-   (format "rga %s -i %s %s"
-           bmg/rga-common-args
-           (shell-quote-argument query)
-           ;; Notes and the bibliography, then the document roots.
-           ;; citar-bibliography can legitimately be empty.
-           (bmg/rga--roots org-roam-directory (car citar-bibliography)))
-   'grep-mode
-   (lambda (_) "*Knowledge Base Search*")))
+consult prefills the minibuffer with `#', so `neural#2024' sends only
+`neural' to rga and filters `2024' in Emacs -- free refinement against a
+corpus that takes ~1.4s a pass.  But the filter only sees what rga returned,
+and rga caps at 5 hits per file, so `neural#transformer' can find nothing in
+a paper matching both.  Raise the cap before narrowing when the search must
+be exhaustive.
+
+Bare flags after the query go to rga: `neural --glob *.pdf',
+`neural --max-count=200', `neural -i'.  A literal `--' does the opposite,
+ending the option section and returning the rest to the search string; a
+query needing a dashed word escapes it as `\\-'.
+
+With a prefix argument, choose the roots instead.  PDF and EPUB hits open at
+the top of the document -- rga's line numbers index extracted text, not a
+position Emacs can visit.  PATHS and INITIAL are for programmatic callers."
+  (interactive "P")
+  (bmg/consult--rga "Knowledge base"
+                    (if (or (consp paths) (stringp paths)) paths (bmg/kb--search-roots))
+                    initial))
+
+(defun bmg/rga-search (&optional paths initial)
+  "Search PDFs, EPUBs and other documents with ripgrep-all.
+`bmg/search-knowledge-base' over `bmg/document-search-roots' alone -- same
+engine, narrower roots, so rga touches fewer files.  See that command for
+the input syntax.  PATHS and INITIAL are as there."
+  (interactive "P")
+  (bmg/consult--rga "Documents"
+                    (if (or (consp paths) (stringp paths)) paths bmg/document-search-roots)
+                    initial))
 
 ;; Helper functions for org workflow
 

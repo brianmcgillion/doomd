@@ -230,12 +230,42 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 | `u u` | Open graph in browser |
 | `u m` | Toggle UI mode |
 
-### Search Bindings (`M-SPC s` or `SPC s`)
+### Search Bindings (`C-c s` or `SPC s`)
 | Key | Action |
 |-----|--------|
 | `s Q` | Ask knowledge base (RAG) |
-| `s k` | Search knowledge base |
-| `s P` | Search papers (rga) |
+| `s k` | Search knowledge base (consult async: notes, bib, Papers, EPUB) |
+| `s P` | Search papers (consult async: documents only) |
+
+### Search Syntax (`s k`, `s P`)
+
+Both are consult async searches over `rga` (ripgrep-all) — results narrow as
+you type. Hits in text files (`.org`, `.bib`) preview live and jump to the
+exact line.
+
+| Input | Effect |
+|-------|--------|
+| `neural` | Sent to rga as the search string (one pass over the corpus, ~1.4s) |
+| `neural#2024` | `#` splits it: `neural` goes to rga, `2024` filters the results instantly inside Emacs — no new search. The filter only sees the ≤5 hits per file rga already returned, so a file with more matches than that can lose results silently; prepend `--max-count=200` first when you need completeness |
+| `neural --glob *.pdf` | Bare flags after the query go to rga; scopes to PDFs |
+| `neural --max-count=200` | Raises the default per-file cap of 5 |
+| `neural -i` | Forces case-insensitive (default is `--smart-case`: a capital letter makes it case-sensitive) |
+| `neural -- --glob *.pdf` | `--` does the opposite of adding options: it ends option parsing, so `--glob *.pdf` is pushed back into the literal search string instead of reaching rga as a flag |
+| `C-u s k` | Prompt for which directories/files to search |
+
+**Exporting results** — same as any consult async search:
+
+| Key | Action |
+|-----|--------|
+| `C-c C-;` | `embark-export` — the old-style static `grep-mode` buffer (still capped at 5 hits/file — re-run with `--max-count=200` first for a complete export) |
+| `C-c C-e` | Same, but `wgrep`-editable |
+| `C-c C-l` | `embark-collect` |
+
+**PDF/EPUB caveat:** those hits open at the top of the document, not the
+matching page — rga reports line numbers in the *extracted text*, not a
+position Emacs can visit. For the same reason they don't auto-preview; press
+`C-SPC` to preview one explicitly. Text hits (`.org`, `.bib`) still preview
+automatically.
 
 ### Org-mode Local (`C-c l` in org buffers)
 | Key | Action |
