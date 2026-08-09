@@ -3,23 +3,19 @@
 ;;; Commentary:
 
 ;; Everything that talks to an LLM, split out of config.org where it had grown
-;; to roughly a quarter of the file.  It is a self-contained unit -- its own
-;; `bmg/llm' defgroup, its own defcustoms, and a set of commands that operate on
-;; the org-roam knowledge base -- so it follows the same pattern as
-;; `elfeed-config.el' and `remarkable-config.el' and lives in its own file.
+;; to roughly a quarter of the file.  Self-contained: its own `bmg/llm'
+;; defgroup, defcustoms, and commands operating on the org-roam knowledge base
+;; -- same pattern as `elfeed-config.el' and `remarkable-config.el'.
 ;;
-;; Three layers:
-;;   - Package setup: copilot (inline completion), gptel (via the GitHub Copilot
-;;     backend, no separate API key), agent-shell (Claude via ACP).
-;;   - `bmg/llm--request', a thin wrapper over `gptel-request' giving every
-;;     command the same error handling and empty-response reporting.
-;;   - The commands themselves, bound under SPC z a and SPC A in config.org.
+;; Three layers: package setup (copilot for inline completion, gptel via the
+;; GitHub Copilot backend, agent-shell for Claude via ACP); `bmg/llm--request'
+;; wraps `gptel-request' for uniform error handling; the commands themselves,
+;; bound under SPC z a and SPC A in config.org.
 
 ;;; Code:
 
-;; Inline code completions via GitHub Copilot
-;; Primary LLM interaction is via GitHub Copilot CLI (external)
-;; Doom's :tools llm module provides gptel-magit for commit messages
+;; Primary LLM interaction is via GitHub Copilot CLI (external); Doom's
+;; :tools llm module provides gptel-magit for commit messages.
 (use-package copilot
   :hook (prog-mode . copilot-mode)
   :bind (:map copilot-completion-map
@@ -30,27 +26,26 @@
   :config
   (setopt copilot-indent-offset-warning-disable t))
 
-;; Configure gptel with GitHub Copilot as the backend
-;; Uses existing GitHub Copilot subscription - no separate API key needed
-;; Authentication handled automatically via GitHub login
+;; Uses the existing GitHub Copilot subscription -- no separate API key;
+;; authentication handled automatically via GitHub login.
 (with-eval-after-load 'gptel
   (setopt gptel-model 'claude-opus-4.5
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 ;; Claude Agent via ACP (agent-shell + acp.el, driven by the claude-agent-acp
-;; adapter). The elisp is declared in packages.el and built by straight; only
-;; the claude-agent-acp/claude binaries come from Nix (dotfiles:
-;; modules/profiles/client.nix). Uses the Claude subscription — run `claude`
-;; once in a terminal to log in; no API key needed here.
-;; Start with M-x agent-shell-anthropic-start-claude-code.
+;; adapter). Elisp declared in packages.el, built by straight; only the
+;; claude-agent-acp/claude binaries come from Nix (dotfiles:
+;; modules/profiles/client.nix). Uses the Claude subscription -- run `claude'
+;; once in a terminal to log in, no API key needed. Start with
+;; M-x agent-shell-anthropic-start-claude-code.
 ;;
 ;; Upstream's Doom instructions say to `require' acp and agent-shell eagerly.
-;; Don't: that loads ~70 files at every startup for a command used
-;; occasionally. `:commands' gets the same reachability lazily. It is still
-;; needed despite straight generating autoloads, because
-;; agent-shell-anthropic-start-claude-code carries no upstream autoload cookie
-;; (only ~25 generic commands do). agent-shell.el requires
-;; agent-shell-anthropic, so autoloading "agent-shell" defines it anyway.
+;; Don't: that loads ~70 files at every startup for an occasional command.
+;; `:commands' gets the same reachability lazily, and is still needed despite
+;; straight's autoloads -- agent-shell-anthropic-start-claude-code carries no
+;; upstream autoload cookie (only ~25 generic commands do). agent-shell.el
+;; requires agent-shell-anthropic, so autoloading "agent-shell" defines it
+;; anyway.
 (use-package agent-shell
   :commands (agent-shell
              agent-shell-new-shell
@@ -142,9 +137,8 @@ request errors are all reported as \"LABEL failed: ...\" messages."
 
 (defun bmg/llm--buffer-head (budget)
   "Return at most BUDGET characters from the start of the accessible region.
-BUDGET is counted from `point-min', not from absolute position zero: in a
-narrowed buffer a plain (min (point-max) BUDGET) is an absolute position
-that can fall before `point-min', which signals args-out-of-range."
+BUDGET is counted from `point-min': in a narrowed buffer, (min (point-max)
+BUDGET) can otherwise fall before `point-min' and signal args-out-of-range."
   (buffer-substring-no-properties
    (point-min)
    (min (point-max) (+ (point-min) budget))))
@@ -246,12 +240,11 @@ Be concise and actionable."
                                                "* Processing Suggestion\n\n"
                                                response)))))
 
-;; `bmg/kb--search-files' lived here: it ranked whole org files by distinct
-;; keyword hits, and the caller then read the first 4000 bytes of each.  Ranking
-;; the right files then sending the wrong part of them is why the command
-;; appeared to work while answering from front matter.  `bmg/kb--passages'
-;; below replaces both halves; the keyword extraction survives as
-;; `bmg/kb--keywords'.
+;; `bmg/kb--search-files' lived here: it ranked whole org files by keyword
+;; hits, then the caller read the first 4000 bytes of each -- ranking the
+;; right files but sending the wrong part of them, so it appeared to work
+;; while answering from front matter.  `bmg/kb--passages' below replaces
+;; both halves; keyword extraction survives as `bmg/kb--keywords'.
 
 (defun bmg/kb--keywords (question)
   "Return the distinct search keywords in QUESTION.
@@ -261,8 +254,7 @@ Words of three characters or fewer are dropped as too common to rank on."
 
 (defun bmg/kb--passages (question)
   "Return an alist of (FILE . PASSAGE-LINES) matching QUESTION.
-Searches notes *and* the document roots, so papers and books are eligible
--- previously this was org-only, and never consulted a single PDF.
+Searches notes *and* the document roots, so papers and books are eligible.
 
 Passages come from rga itself rather than being reconstructed here: `-C'
 gives the surrounding lines, and for PDFs each line keeps its `Page N:'
@@ -303,14 +295,12 @@ bound; on a three-keyword query across all roots the unbounded output is
   "Assemble a bounded context string from GROUPS, an alist of (FILE . LINES).
 Returns (FILES . CONTEXT).
 
-Selects at most `bmg/llm-rag-max-files', ranked by how many passages each
-contributed, weighted two-to-one toward notes so the distilled material
-leads and papers corroborate it.  Only then fills `bmg/llm-context-rag'
-characters round-robin, so no single verbose source eats the budget.
-
-Capping the file count first is what makes this useful: a broad question
-matches hundreds of files, and spreading the budget over all of them
-returns a single line from each."
+Selects at most `bmg/llm-rag-max-files' first, ranked by how many passages
+each contributed and weighted two-to-one toward notes so the distilled
+material leads and papers corroborate it, then fills `bmg/llm-context-rag'
+characters round-robin so no single verbose source eats the budget.
+Capping files before filling is load-bearing: a broad question matches
+hundreds, and spreading the budget across all of them returns one line each."
   (let* ((notes-dir (expand-file-name org-roam-directory))
          (notep (lambda (g) (string-prefix-p notes-dir (car g))))
          (rank (lambda (gs) (seq-sort-by (lambda (g) (length (cdr g))) #'> gs)))
@@ -477,7 +467,6 @@ Summarizes notes modified this week, identifies themes, suggests connections."
   (let* ((week-ago (time-subtract (current-time) (days-to-time 7)))
          (recent-files '())
          (summaries ""))
-    ;; Find recently modified org-roam files
     (dolist (file (org-roam-list-files))
       (when (time-less-p week-ago (file-attribute-modification-time (file-attributes file)))
         (push file recent-files)))
@@ -526,15 +515,12 @@ Shows tag frequency, potential duplicates, and suggestions."
   (require 'org-roam)
   (let ((tag-counts (make-hash-table :test 'equal))
         (nodes (org-roam-node-list)))
-    ;; Count all tags
     (dolist (node nodes)
       (dolist (tag (org-roam-node-tags node))
         (puthash tag (1+ (gethash tag tag-counts 0)) tag-counts)))
-    ;; Build report
     (let* ((sorted-tags (let (acc)
                           (maphash (lambda (k v) (push (cons k v) acc)) tag-counts)
                           (sort acc (lambda (a b) (> (cdr a) (cdr b))))))
-           ;; Potential duplicates: same tag under different casing
            (dup-lines (let ((lower-tags (make-hash-table :test 'equal))
                             (lines ""))
                         (dolist (tag-count sorted-tags)
@@ -570,8 +556,7 @@ one whole file per node to grep for \"[[id:\"; measured on this vault that was
         ;; Confined to `org-roam-directory' on purpose.  `org-mem-all-id-nodes'
         ;; spans everything org-mem indexes, which reaches beyond the roam dir
         ;; -- notably archive.org_archive, whose entries are archived by
-        ;; definition and are not orphans wanting attention.  The org-roam node
-        ;; list this replaced was implicitly scoped this way.
+        ;; definition and are not orphans wanting attention.
         (nodes (seq-filter (lambda (entry)
                              (file-in-directory-p (org-mem-entry-file entry)
                                                   org-roam-directory))

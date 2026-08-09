@@ -16,14 +16,12 @@
 
 ;;;; Core Configuration
 
-;; Declare external variables to avoid byte-compile warnings
 (defvar org-directory)
 (defvar org-roam-directory)
 (defvar citar-library-paths)
 (defvar org-latex-classes)
 (defvar org-latex-default-class)
 
-;; Declare external functions
 (declare-function org-roam-node-at-point "org-roam-node")
 (declare-function org-roam-node-title "org-roam-node")
 (declare-function org-roam-node-slug "org-roam-node")
@@ -64,9 +62,8 @@
   :type 'directory
   :group 'remarkable)
 
-;; Defer directory creation until first use (avoid startup I/O)
 (defun remarkable--ensure-directories ()
-  "Ensure remarkable directories exist. Called lazily on first use."
+  "Ensure remarkable directories exist; called lazily to avoid startup I/O."
   (dolist (subdir '("downloads" "outbox" "notes"))
     (make-directory (expand-file-name subdir remarkable-local-dir) t)))
 
@@ -135,7 +132,6 @@ guard would otherwise treat it as done and never retry."
       (user-error "Cannot upload file with a double quote in its name: %s" file))
     ;; First list root to set upload destination
     (remarkable--api-request "/documents/")
-    ;; Upload file
     (remarkable--curl nil "--fail"
                       "-H" (format "Origin: %s" remarkable-url)
                       "-H" "Accept: */*"
@@ -370,10 +366,8 @@ TYPE-NAME is used in prompts (e.g., \"Paper\", \"Book\")."
                       "Link to existing node"
                       "Add to today's daily note")
                     nil t)))
-      ;; Copy to notes directory
       (make-directory notes-dir t)
       (copy-file choice pdf-dest t)
-      ;; Handle based on action
       (pcase action
         ("Create new org-roam node"
          (remarkable--create-roam-node-from-handwritten title pdf-dest))
@@ -492,7 +486,6 @@ and silently dropping it from the tangle."
                  ("\\paragraph{%s}" . "\\paragraph*{%s}"))))
 
 ;;;; Keybindings
-;; Define remarkable keymap for C-c r prefix
 (defvar remarkable-command-map
   (let ((map (make-sparse-keymap)))
     ;; Connection

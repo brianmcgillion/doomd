@@ -10,33 +10,26 @@
 ;;;
 ;;;
 
-;; When starting a new frame make it maximized
 (add-to-list 'initial-frame-alist '(fullscreen . fullboth))
 (push '(fullscreen . fullboth)   default-frame-alist)
 
-;; Set your own banner to replace the default doom one "convert image.png
-;; -resize 600 -quality 75 OUTPUT.png" try resize 400 for smaller resolutions
-;; e.g. 1080p
+;; Banner made with "convert image.png -resize 600 -quality 75 OUTPUT.png"
+;; (-resize 400 for 1080p).
 (setopt fancy-splash-image (expand-file-name "banner/trancendent-gnu.png" doom-user-dir))
 
 ;; Doom applies these in `doom-init-fonts-h': on `after-init-hook' normally, or
 ;; on `server-after-make-frame-hook' under a daemon, where no frame -- and so no
 ;; font -- exists until the first client connects.  Each accepts a font-spec, a
 ;; font string ("Input Mono-12"), or an XLFD string.
-;;
 ;; + `doom-font'                 default and fixed-pitch faces
 ;; + `doom-variable-pitch-font'  variable-pitch face
 ;; + `doom-serif-font'           fixed-pitch-serif face
 ;; + `doom-big-font'             `doom-big-font-mode', for presentations
 ;; + `doom-symbol-font'          the `symbol' and `mathematical' scripts
 ;; + `doom-emoji-font'           the `emoji' script
-;;
 ;; The last two fall back to `doom-symbol-fallback-font-families' and
 ;; `doom-emoji-fallback-font-families' when left unset.
 
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
 (setopt doom-theme 'doom-dracula)
 
 (setopt doom-font (font-spec :family "FiraCode Nerd Font Mono" :size 13)
@@ -46,16 +39,15 @@
        ;; No :size -- colour emoji scale from the default face height.
        doom-emoji-font (font-spec :family "Noto Color Emoji"))
 
-;; `doom-symbol-font' is deliberately NOT set, and `doom-emoji-font' deliberately
-;; IS.  Both follow from how `doom-init-fonts-h' resolves them: it applies the
-;; face fonts first and the fontsets afterwards, and a frame resolves glyphs
-;; through the fontset derived when its faces were set.  So on a daemon's first
-;; frame the emoji entry always lands too late, and emoji fall through to
-;; Symbola in monochrome.  Measured on U+1F600: Font Awesome 7 Free when the
-;; symbol font was set, Symbola with it merely removed, Noto Color Emoji only
-;; once the faces are re-applied over the finished fontset.  One re-application
-;; is all it takes; it removes itself afterwards because `set-fontset-font'
-;; should not run per frame (Doom notes superfluous calls can segfault).
+;; `doom-symbol-font' deliberately NOT set, `doom-emoji-font' deliberately IS.
+;; `doom-init-fonts-h' applies the face fonts first and the fontsets afterwards,
+;; and a frame resolves glyphs through the fontset derived when its faces were
+;; set -- so on a daemon's first frame the emoji entry lands too late and emoji
+;; fall through to Symbola in monochrome.  Measured on U+1F600: Font Awesome 7
+;; Free with the symbol font set, Symbola with it merely removed, Noto Color
+;; Emoji only once the faces are re-applied over the finished fontset.  One
+;; re-application suffices; it removes itself because `set-fontset-font' should
+;; not run per frame (Doom notes superfluous calls can segfault).
 (defun bmg/reload-fonts-once (&rest _)
   "Re-apply fonts once a graphical frame exists, then stand down."
   (when (display-graphic-p)
@@ -69,103 +61,76 @@
   (setopt doom-themes-enable-bold t
          doom-themes-enable-italic t))
 
-;; Comment legibility.
-;;
-;; doom-dracula paints comments in `base5' (#6272a4), which measures 3.03:1 on
-;; the #282a36 background -- below WCAG AA (4.5:1) and only just over the 3:1
-;; large-text floor.  In a config this comment-heavy, that is the first thing to
-;; disappear when the ambient light changes. this increases that.
+;; doom-dracula paints comments in `base5' (#6272a4): 3.03:1 on the #282a36
+;; background, below WCAG AA (4.5:1) and barely over the 3:1 large-text floor.
 (custom-set-faces!
   '(font-lock-comment-face           :foreground "#a1aac8")    ; 6.17:1 on #282a36
   '(font-lock-comment-delimiter-face :foreground "#a1aac8"))   ; 6.17:1 on #282a36
 
-;; Magit diff legibility.
-;;
-;; `diff-refine-added' and `diff-refine-removed' ship with `:inverse-video t',
-;; so their foreground and background swap at render time: doom-dracula defines
-;; refine-added as dark #1E2029 bg with #50fa7b text, but it *paints* as a solid
-;; #50fa7b block with near-black glyphs.  Since `magit-diff-refine-hunk' is t,
-;; word-refinement applies to the hunk at point -- which is why only the hunk
-;; under the cursor turns garish.
+;; Magit diff legibility.  `diff-refine-added' and `diff-refine-removed' ship
+;; with `:inverse-video t', so foreground and background swap at render time:
+;; doom-dracula defines refine-added as dark #1E2029 bg with #50fa7b text, but
+;; it *paints* as a solid #50fa7b block with near-black glyphs.
+;; `magit-diff-refine-hunk' is t, so this hits the hunk at point only.
 ;;
 ;; Dracula's removed faces also fail WCAG on their own, before any inversion:
 ;;   magit-diff-removed            #cc4444 on #564859 = 1.82:1
 ;;   magit-diff-removed-highlight  #ff5555 on #694959 = 2.48:1
 ;;   diff-refine-removed (as rendered) #44475a on #ff5555 = 2.91:1
-;; The replacements below are measured; contrast ratios are in the comments.
 ;; `custom-set-faces!' re-applies on `doom-load-theme-hook', so these survive a
-;; theme reload -- but they ARE dracula-specific, so revisit them if the theme
-;; changes.
+;; theme reload -- but they ARE dracula-specific, so revisit on a theme change.
 (custom-set-faces!
   ;; Word-level refinement gets NO background of its own -- a changed word is
-  ;; just a brighter, bolder version of the line's own colour, so the line reads
-  ;; as one continuous thing instead of a row of boxes.
-  ;;
-  ;; `:inherit nil' is the load-bearing part.  `:background unspecified' alone
-  ;; does NOT mean "no background": it means "not set here", so the attribute
-  ;; falls through to `:inherit', and doom-dracula points these faces at
-  ;; `diff-added'/`diff-removed', whose backgrounds are #1E2029 and #44475a.
-  ;; That inherited grey was the box behind each changed word.  Cutting the
-  ;; inheritance lets the underlying magit line face show through instead.
-  ;;
-  ;; `:inverse-video nil' is required because upstream `diff-refine-changed'
-  ;; sets it, and without the override these faces swap fg/bg at render time
-  ;; (see above).  `:underline nil' is explicit rather than omitted so that
-  ;; re-evaluating this block in a running session clears a previously applied
-  ;; underline.
-  ;;
-  ;; Foregrounds are ~1.12x the luminance of the corresponding line foreground:
-  ;; same hue, just perceptibly lifted.  Bold is doing most of the work here, so
-  ;; the colour step only has to be enough to catch the eye, not to shout.
+  ;; just a brighter, bolder version of the line's own colour.  Bold carries
+  ;; most of the signal, so the ~1.12x luminance step only has to catch the
+  ;; eye, not shout -- keep the hue, lift it slightly.  `:inherit nil'
+  ;; is the load-bearing part: `:background unspecified' alone does NOT mean "no
+  ;; background", it means "not set here", so the attribute falls through to
+  ;; `:inherit', and doom-dracula points these faces at `diff-added'/
+  ;; `diff-removed', whose #1E2029 and #44475a backgrounds were the box behind
+  ;; each changed word.  `:inverse-video nil' overrides upstream
+  ;; `diff-refine-changed', which sets it; `:underline nil' is explicit rather
+  ;; than omitted so that re-evaluating this block in a running session clears a
+  ;; previously applied underline.
   '(diff-refine-added
     :inherit nil :inverse-video nil :background unspecified
     :foreground "#96f5ba" :weight bold :underline nil)   ; 1.12x line fg, 10.50:1 on #17331f
   '(diff-refine-removed
     :inherit nil :inverse-video nil :background unspecified
     :foreground "#fab0b0" :weight bold :underline nil)   ; 1.13x line fg, 8.02:1 on #42212b
-  ;; smerge's refine faces inherit the same way and show up in conflict
-  ;; resolution.
+  ;; smerge's refine faces inherit the same way, in conflict resolution.
   '(smerge-refined-added
     :inherit nil :inverse-video nil :background unspecified
     :foreground "#96f5ba" :weight bold :underline nil)
   '(smerge-refined-removed
     :inherit nil :inverse-video nil :background unspecified
     :foreground "#fab0b0" :weight bold :underline nil)
-  ;; Line-level faces.  With `magit-diff-highlight-hunk-body' nil (below) the
-  ;; "-highlight" variants are no longer used for hunk bodies, but they are kept
-  ;; correct here in case that is ever turned back on.
+  ;; Line-level faces.  `magit-diff-highlight-hunk-body' nil (below) leaves the
+  ;; "-highlight" variants unused, but they stay correct in case it flips back.
   '(magit-diff-added             :background "#17331f" :foreground "#7aeda4")    ; 9.46:1
   '(magit-diff-added-highlight   :background "#1f5233" :foreground "#93ffb9")    ; 7.46:1
   '(magit-diff-removed           :background "#42212b" :foreground "#f5a3a3")    ; 7.18:1
   '(magit-diff-removed-highlight :background "#5c2836" :foreground "#ffbcbc"))   ; 7.27:1
 
-;; Show hunk focus with the hunk *heading* alone, not by repainting the body.
-;;
-;; By default Magit marks the hunk at point by swapping every line in its body
-;; to the brighter "-highlight" faces.  That is a big, distracting change across
-;; 40 lines to convey one bit of information, and it is what made the focused
-;; hunk noticeably harder to read than the surrounding ones.
-;;
-;; `magit-section-paint' clears the highlight flag only after `forward-line', so
-;; the hunk heading is painted separately and keeps
-;; `magit-diff-hunk-heading-highlight' (the purple bar) regardless.  Focus stays
-;; obvious; the body stays as legible as every other hunk.
+;; Show hunk focus with the hunk *heading* alone, not by repainting the body:
+;; by default Magit swaps every line of the hunk at point to the brighter
+;; "-highlight" faces.  `magit-section-paint' clears the highlight flag only
+;; after `forward-line', so the heading is painted separately and keeps
+;; `magit-diff-hunk-heading-highlight' (the purple bar) regardless.
 (with-eval-after-load 'magit-diff
   (setopt magit-diff-highlight-hunk-body nil))
 
-;; Fix gnus face inheritance cycle - must run early before gnus loads
-;; The cycle is: gnus-group-news-low-empty inherits from gnus-group-news-low
-;; which inherits from gnus-group-news-low-empty
-;; Use with-eval-after-load for gnus to set faces only when gnus is actually loaded
+;; Break a gnus face inheritance cycle: gnus-group-news-low-empty inherits from
+;; gnus-group-news-low, which inherits from gnus-group-news-low-empty.
 (with-eval-after-load 'gnus
   (set-face-attribute 'gnus-group-news-low nil
                       :weight 'normal
                       :foreground "#565761")  ; doom-dracula base4, 1.99:1 on #282a36
   (set-face-attribute 'gnus-group-news-low-empty nil
                       :weight 'normal
-                      ;; Not a doom-dracula palette colour, and not derivable
-                      ;; from one: it sits between base2 (#373844) and base3
-                      ;; (#44475a), a step dimmer than the non-empty face above.
+                      ;; Not a doom-dracula palette colour: sits between base2
+                      ;; (#373844) and base3 (#44475a), a step dimmer than the
+                      ;; non-empty face above.
                       :foreground "#3d3f4c")) ; 1.37:1 on #282a36
 
 (with-eval-after-load 'org-modern
@@ -176,8 +141,6 @@
 ;; be as colorful as possible.
 (setopt treesit-font-lock-level 4)
 
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setopt display-line-numbers-type t)
 
 ;; Blinking cursors are annoying
@@ -231,13 +194,10 @@
 ;;;
 ;;;
 
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets.
+;; Used by GPG, email clients, file templates and snippets.
 (setopt user-full-name "Brian McGillion"
        user-mail-address "brian@ssrc.tii.ae"
-       ;; Who remembers all the commands :)
        which-key-idle-delay 0.5
-       ;; Prefer encrypted auth source
        auth-sources '("~/.authinfo.gpg" "~/.netrc")
        ;; M-x projectile-discover-projects-in-directory
        ;; M-x projectile-discover-projects-in-search-path
@@ -247,13 +207,11 @@
 ;; Project discovery walks *every* subdirectory until DEPTH runs out, with no
 ;; ignore list, and `file-directory-p' follows symlinks -- so
 ;; `.direnv/flake-inputs/<hash>-source' drags the scan into /nix/store and it
-;; starts indexing nixpkgs (that is how e.g.
-;; "/nix/store/...-source/ci/github-script/" ends up in the known project list).
-;;
-;; Upstream also only tests for a project at *exactly* DEPTH levels down, never
-;; on the way, so shallow projects under a deep search path are missed. Both are
-;; fixed here: prune the noise directories, and register a directory as soon as
-;; it is itself a project root instead of descending through it.
+;; starts indexing nixpkgs.  Upstream also only tests for a project at *exactly*
+;; DEPTH levels down, never on the way, so shallow projects under a deep search
+;; path are missed.  Both are fixed here: prune the noise directories, and
+;; register a directory as soon as it is itself a project root instead of
+;; descending through it.
 (defvar bmg/projectile-discovery-ignored-directories
   '(".direnv" ".devenv" ".git" ".jj" ".hg" ".svn" ".cache" ".venv"
     "node_modules" "result")
@@ -284,19 +242,15 @@
           (funcall fn directory 0)
         (funcall fn directory depth)))))
 
-;; Enable word-wrap for text modes (visual-line-mode wraps at window edge)
-;; Using text-mode-hook covers org-mode, markdown-mode, and other text modes
 (add-hook 'text-mode-hook #'visual-line-mode)
 
-;; If a file changes on disk update the buffer to match
 (global-auto-revert-mode t)
 
 (with-eval-after-load 'dirvish
   (dirvish-side-follow-mode t)
   (setopt dirvish-hide-details '(dirvish dirvish-side))
   ;; The side panel doesn't always reach `dirvish--build-layout', so
-  ;; `dired-hide-details-mode' never gets toggled on. Force it here once
-  ;; the side dired buffer is set up.
+  ;; `dired-hide-details-mode' never gets toggled on.
   (add-hook 'dirvish-find-entry-hook
             (defun bmg/dirvish-side-hide-details (_path find-fn)
               (when (and (eq find-fn 'dired)
@@ -305,11 +259,10 @@
                 (dired-hide-details-mode 1))
               nil)))
 
-;; Use a custom dictionary
 (setopt ispell-dictionary (if (featurep :system 'macos) "en_GB" "en_US"))
 
-;; NixOS doesn't have /usr/share/dict/words, disable word-list completion in text-mode
-;; (aspell handles spell-checking, this only affects M-TAB word completion)
+;; NixOS has no /usr/share/dict/words.  aspell still spell-checks; this only
+;; affects M-TAB word completion.
 (setopt text-mode-ispell-word-completion nil)
 
 (set-language-environment-charset "UTF-8")
@@ -322,15 +275,14 @@
 (with-eval-after-load 'license-snippets
   (license-snippets-init))
 
-;; load all the elfeed configurations
 (load! "elfeed-config.el")
 
 ;; misc selection of useful functions
 (use-package crux
   :defer t)
 
-;; Clone git repos or jump to the project in the code path
-;; https://github.com/NinjaTrappeur/my-repo-pins
+;; https://github.com/NinjaTrappeur/my-repo-pins -- clone a repo, or jump to it
+;; under `my-repo-pins-code-root'.
 (use-package my-repo-pins
   :commands (my-repo-pins)
   :init
@@ -338,15 +290,14 @@
 
 (use-package inheritenv
   :config
-  ;; ensure that the environment is carried over to the subshell that is called.
-  ;; this was tested against go-mode specifically go-import-add
+  ;; Carry the environment into called subshells; tested against go-mode's
+  ;; go-import-add.
   (inheritenv-add-advice #'process-lines)
   (inheritenv-add-advice #'shell-command-to-string))
 
 (with-eval-after-load 'consult
-  ;; Needed to ensure that preview is working live, without the need to
-  ;; C-SPC everytime you need to see a preview. see vertico/config.el
-  ;; where we are overriding the override :)
+  ;; Live preview without pressing C-SPC every time -- overriding the override
+  ;; in vertico/config.el.
   (consult-customize
    +default/search-project +default/search-other-project
    +default/search-project-for-symbol-at-point
@@ -356,10 +307,9 @@
    consult-ripgrep consult-git-grep consult-grep
    consult-bookmark consult-recent-file
    consult-source-recent-file consult-source-project-recent-file consult-source-bookmark
-   ;; The consult-org-roam commands need listing in their own right.
-   ;; `consult-org-roam-search' *calls* `consult-ripgrep' as a function, but
-   ;; consult resolves this config against `this-command' -- so the entry above
-   ;; never applies to it and it falls back to `consult-preview-key'
+   ;; Listed in their own right: `consult-org-roam-search' *calls*
+   ;; `consult-ripgrep', but consult resolves this against `this-command', so
+   ;; the entry above never applies and it falls back to `consult-preview-key'.
    consult-org-roam-search consult-org-roam-file-find
    consult-org-roam-backlinks consult-org-roam-forward-links
    :preview-key (list "C-SPC" :debounce 0.1 'any))
@@ -389,8 +339,8 @@
                "C-SPC"
              (list "C-SPC" :debounce 0.1 'any))))))
 
-;; use a persistent directory so a doom sync will not remove the binary from a running daemon
-;; automatically download the latest version do not 'ask
+;; Persistent directory, so a doom sync cannot remove the binary from a running
+;; daemon.  'download rather than 'ask: fetch the latest version unprompted.
 (setopt ghostel-module-directory (file-name-concat doom-data-dir "ghostel/"))
 (setopt ghostel-module-auto-install 'download)
 
@@ -399,20 +349,16 @@
 ;; `C-x C-c' is NOT the risk it looks like: `save-buffers-kill-terminal' sees a
 ;; client frame, hands off to `server-save-buffers-kill-terminal', and with
 ;; `server-stop-automatically' nil that takes its `server-delete-client' branch
-;; and never reaches `save-buffers-kill-emacs'.  Only the client frame closes,
-;; and `confirm-kill-emacs' is never consulted on that path at all.
-;;
-;; The two paths that really do end the daemon:
-;;   SPC q K  `save-buffers-kill-emacs' -- honours `confirm-kill-emacs', so the
-;;            predicate below covers it.
-;;   SPC q Q  `kill-emacs' -- a bare (interactive "P") that consults nothing.
-;;            One key from SPC q q, and it takes the daemon with it.
-;; Hence the advice: same predicate, applied where the variable cannot reach.
+;; and never reaches `save-buffers-kill-emacs' -- only the client frame closes,
+;; and `confirm-kill-emacs' is never consulted on that path at all.  The two
+;; paths that really do end the daemon:
+;;   SPC q K  `save-buffers-kill-emacs' -- honours `confirm-kill-emacs'.
+;;   SPC q Q  `kill-emacs' -- a bare (interactive "P") that consults nothing,
+;;            one key from SPC q q.
 (defun bmg/confirm-kill-daemon (&optional prompt)
   "Ask whether to kill Emacs when running as a daemon.
-Returns non-nil to allow the kill.  Outside a daemon this always allows,
-leaving single-instance Emacs behaving as it does by default.  PROMPT is
-supplied by `confirm-kill-emacs'; the advice path passes none."
+Returns non-nil to allow the kill; outside a daemon it always allows.  PROMPT
+is supplied by `confirm-kill-emacs'; `bmg/kill-emacs-confirm' passes none."
   (or (not (daemonp))
       (yes-or-no-p (or prompt "Really kill the Emacs daemon and every client? "))))
 
@@ -430,15 +376,13 @@ all.  Guarding the keybinding leaves both alone."
     (kill-emacs)))
 
 ;; Doom truncates compilation buffers from `compilation-filter-hook' via
-;; `doom-comint-truncate-buffer-h', governed by `comint-buffer-maximum-size',
-;; which it sets to 2048 globally so a chatty process cannot grind the GC.
-;; Correct for a long-running shell, wrong for grep
-;;
-;; Buffer-local, so shells keep Doom's cap.  Deliberately not unlimited: the
-;; hook only fires above (* 80 comint-buffer-maximum-size) bytes, so 100000
-;; leaves ~8MB of headroom -- far beyond a full-corpus grep (453K) while still
-;; bounding a runaway compile.  `grep-mode' derives from `compilation-mode', so
-;; one hook covers both.
+;; `doom-comint-truncate-buffer-h', with `comint-buffer-maximum-size' set to
+;; 2048 globally so a chatty process cannot grind the GC: right for a shell,
+;; wrong for grep.  Buffer-local here, so shells keep Doom's cap.  Deliberately
+;; not unlimited: the hook only fires above (* 80 comint-buffer-maximum-size)
+;; bytes, so 100000 leaves ~8MB of headroom -- far beyond a full-corpus grep
+;; (453K) while still bounding a runaway compile.  `grep-mode' derives from
+;; `compilation-mode', so one hook covers both.
 (add-hook 'compilation-mode-hook
           (defun bmg/compilation-keep-full-output-h ()
             "Let compilation and grep buffers keep their whole result."
@@ -567,19 +511,17 @@ builds the pipeline synchronously, so a `let' around it reaches these."
 (add-to-list 'auto-mode-alist '("\\.te\\'" . m4-mode))
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode)) ;; GitHub Flavored Markdown
 
-;; Live side-by-side markdown preview inside Emacs (eww buffer, no xwidgets needed).
-;; markdown-command defaults to the "markdown" binary which isn't installed; point it
-;; at pandoc (provided system-wide via programs.pandoc.enable in ~/.dotfiles).
+;; Live markdown preview in an eww buffer, no xwidgets.  `markdown-command'
+;; defaults to a "markdown" binary that isn't installed; pandoc comes from
+;; programs.pandoc.enable in ~/.dotfiles.
 (with-eval-after-load 'markdown-mode
   (setopt markdown-command "pandoc --from=gfm --to=html5 --standalone"))
 
-;; make a shell script executable automatically on save
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
 (setopt c-default-style "linux") ;; set style to "linux"
 
-;;setup clangd lsp
 (with-eval-after-load 'lsp-clangd
   (setopt lsp-clients-clangd-args
         '("-j=3"
@@ -590,14 +532,12 @@ builds the pipeline synchronously, so a `let' around it reaches these."
           "--header-insertion-decorators=0"))
   (set-lsp-priority! 'clangd 2))
 
-;; use just mode for setting tasks to run at the cmdline
-;; (justl binds "e" to justl-exec-recipe itself; no extra map! needed)
+;; justl binds "e" to justl-exec-recipe itself; no extra map! needed.
 ;; `:commands' matters here: Doom leaves `use-package-always-defer' nil, so a
 ;; bare (use-package justl) loads the package at every startup.
 (use-package justl
   :commands (justl justl-exec-recipe-in-dir))
 
-;; Use a variable for the dotfiles path to avoid hardcoding
 (defvar bmg/dotfiles-path (expand-file-name "~/.dotfiles")
   "Path to dotfiles repository for Nix flake expressions.")
 
@@ -606,17 +546,16 @@ builds the pipeline synchronously, so a `let' around it reaches these."
         lsp-nix-nixd-formatting-command ["nixfmt"]
         lsp-nix-nixd-nixpkgs-expr (format "import (builtins.getFlake \"%s\").inputs.nixpkgs { }" bmg/dotfiles-path)
         lsp-nix-nixd-nixos-options-expr (format "(builtins.getFlake \"%s\").nixosConfigurations.arcadia.options" bmg/dotfiles-path)))
-;; Note: home-manager options commented out - home-manager appears to be integrated as a NixOS module
-;; If you have standalone home-manager configs, use:
+;; home-manager is integrated as a NixOS module here; a standalone config wants
 ;; lsp-nix-nixd-home-manager-options-expr (format "(builtins.getFlake \"%s\").homeConfigurations.\"user@host\".options" bmg/dotfiles-path)
 
-;; NASM mode for .nasm and .asm files using NASM syntax
+;; NASM syntax, not gas -- .asm is ambiguous and this picks the dialect.
 (use-package nasm-mode
   :mode "\\.\\(nasm\\|asm\\)\\'")
 
-;; x86 instruction documentation lookup
-;; Download the manual from: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
-;; (the "Intel 64 and IA-32 Architectures Software Developer's Manual" combined PDF)
+;; x86 instruction lookup.  Wants the combined "Intel 64 and IA-32 Architectures
+;; Software Developer's Manual" PDF from
+;; https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 (use-package x86-lookup
   :commands x86-lookup
   :config
@@ -631,11 +570,10 @@ builds the pipeline synchronously, so a `let' around it reaches these."
                           'magit-insert-stashes
                           'append))
 
-;; Magit's status buffer does not list branches -- `magit-insert-local-branches'
-;; belongs to `magit-refs-mode' (the `y' buffer) and is absent from magit's own
-;; default `magit-status-sections-hook'.  Add it after Worktrees, since branches
-;; and the worktrees that check them out read well together.
-;;
+;; `magit-insert-local-branches' belongs to `magit-refs-mode' (the `y' buffer)
+;; and is absent from magit's own default `magit-status-sections-hook', so the
+;; status buffer lists no branches.  Added after Worktrees, since branches and
+;; the worktrees that check them out read well together.
 (with-eval-after-load 'magit
   (magit-add-section-hook 'magit-status-sections-hook
                           'magit-insert-local-branches
@@ -669,27 +607,23 @@ In `magit-refs-mode' and anywhere else this falls through to
 ;; `magit-diff-visit-directory' is the single funnel every worktree entry point
 ;; goes through -- `magit-worktree-status' (RET, % g), `magit-worktree-checkout'
 ;; (% b), `magit-worktree-branch' (% c), `magit-worktree-move' (% m) and the
-;; return to the primary worktree after % k -- so gate one advice there rather
-;; than repeating it four times. The gate keeps submodules and ordinary
-;; directory visits from diffs on Magit's original code path.
+;; return to the primary worktree after % k -- so one advice there covers all of
+;; them, and the gate keeps submodules and ordinary directory visits from diffs
+;; on Magit's original code path.
 ;;
-;; Consequences of delegating this completely, all accepted deliberately:
-;;
-;; - RET on a worktree now opens the project file picker, not that worktree's
-;;   Magit status. That is a change from stock Magit, traded for holding no
-;;   landing logic of our own.
-;; - The workspace's `+workspace-project' parameter is left unset, matching what
-;;   Doom itself does whenever it takes this reuse branch.
-;; - With a prefix argument live the workspace is repointed but no file picker
-;;   opens, again inherited from Doom.
-;; - Buffers already visiting mainline files keep reporting the mainline
-;;   project, because `projectile-project-root' derives from each buffer's
-;;   `default-directory'. Only a separate workspace could isolate those.
+;; Accepted consequences: RET on a worktree opens the project file picker, not
+;; that worktree's Magit status -- a deliberate deviation from stock Magit,
+;; traded for holding no landing logic here; `+workspace-project' is left unset, as Doom
+;; does on this reuse branch; with a prefix argument the workspace is repointed
+;; but no file picker opens; and buffers already visiting mainline files keep
+;; reporting the mainline project, because `projectile-project-root' derives
+;; from each buffer's `default-directory' -- only a separate workspace could
+;; isolate those.
 
 (defun bmg/magit-linked-worktree-p (directory)
   "Return non-nil if DIRECTORY is a worktree of this repository.
-The worktree currently being displayed does not count, and neither do
-submodules or unrelated repositories."
+The worktree being displayed, submodules and unrelated repositories do not
+count."
   (ignore-errors
     (let ((dir (file-truename (file-name-as-directory (expand-file-name directory))))
           (here (file-truename (file-name-as-directory (magit-toplevel)))))
@@ -730,8 +664,8 @@ submodules or unrelated repositories."
 ;; No projectile cache invalidation here on purpose: Doom's :tools magit module
 ;; already runs `+magit-invalidate-projectile-cache-h' from
 ;; `magit-refresh-buffer-hook', keyed on the status buffer's hash, so it covers
-;; every working-tree change (rebase, pull, reset, external edits) rather than a
-;; hand-picked list of commands -- and it does so far more cheaply.
+;; every working-tree change -- rebase, pull, reset, external edits -- rather
+;; than a hand-picked list of commands, and does it more cheaply.
 
 ;;;
 ;;;
@@ -760,10 +694,9 @@ by hand with =+format/region-or-buffer=.
 ;;;
 ;;;
 
-;; Note: .editorconfig is deliberately NOT in this list. It declares
-;; indentation and line endings, not a formatter, and plenty of hand-formatted
-;; projects ship one (e.g. microvm.nix). Treating it as opt-in would reformat
-;; exactly the repos this gate exists to protect.
+;; .editorconfig is deliberately NOT in this list: it declares indentation and
+;; line endings, not a formatter, and plenty of hand-formatted projects ship one
+;; (e.g. microvm.nix) -- exactly the repos this gate exists to protect.
 (defvar bmg/format-on-save-marker-files
   '(".clang-format"
     "treefmt.nix" "treefmt.toml" ".treefmt.toml"
@@ -840,18 +773,14 @@ Set via .dir-locals.el to override for a single project.")
     ('nil t)
     (_ (not (bmg/format-on-save-project-p)))))
 
-;; Two hooks are needed, because apheleia's two extension points do different
-;; things and neither alone is sufficient:
-;;
-;;   `apheleia-inhibit-functions' is consulted *once*, by `apheleia-mode-maybe',
-;;   to decide whether to turn `apheleia-mode' on in a new buffer.  It stops the
-;;   mode from ever attaching -- but it has no effect on buffers that are
-;;   already open, so on its own a config reload leaves every existing buffer
-;;   still formatting on save.
-;;
-;;   The advice below covers that gap.  `apheleia-format-after-save' is the
-;;   `after-save-hook' entry point, so gating it is evaluated on *every* save
-;;   and takes effect immediately in already-open buffers.
+;; Two hooks, because apheleia's extension points differ.
+;; `apheleia-inhibit-functions' is consulted *once*, by `apheleia-mode-maybe',
+;; to decide whether `apheleia-mode' attaches to a new buffer; it has no effect
+;; on buffers already open, so alone it leaves every existing buffer still
+;; formatting on save after a config reload.  The advice below covers that gap:
+;; `apheleia-format-after-save' is the `after-save-hook' entry point, so gating
+;; it is evaluated on *every* save and takes effect immediately in already-open
+;; buffers.
 ;;
 ;; Deliberately NOT `apheleia-skip-functions': that is checked inside
 ;; `apheleia-format-buffer' via `apheleia--disallowed-p', which is also on the
@@ -859,10 +788,10 @@ Set via .dir-locals.el to override for a single project.")
 ;; projects where hand-formatting is most wanted.
 ;;
 ;; `apheleia-inhibit-functions' is autoloaded by apheleia precisely so it can be
-;; mutated before the package loads, so no `with-eval-after-load' is needed --
-;; Doom's own format module adds to it the same way.  The hook is "any function
-;; returning non-nil inhibits", so this composes with Doom's
-;; `+format-maybe-inhibit-h' rather than replacing it.
+;; mutated before the package loads -- no `with-eval-after-load' needed, and
+;; Doom's own format module adds to it the same way.  Any function returning
+;; non-nil inhibits, so this composes with Doom's `+format-maybe-inhibit-h'
+;; rather than replacing it.
 (add-hook 'apheleia-inhibit-functions #'bmg/format-on-save-inhibit-h)
 
 (define-advice apheleia-format-after-save
@@ -911,9 +840,7 @@ Map section below.
 ;;;
 
 (defun bmg/switch-to-agenda ()
-  "Switch to org-agenda overview view.
-Opens the custom `o' agenda command configured in
-`org-agenda-custom-commands'."
+  "Switch to the custom `o' overview in `org-agenda-custom-commands'."
   (interactive)
   (org-agenda nil "o"))
 
@@ -929,7 +856,7 @@ Opens the custom `o' agenda command configured in
      "/DONE" 'file)
     (message "Archived %d DONE tasks" count)))
 
-;; change `org-directory'. It must be set before org loads!
+;; `org-directory' must be set before org loads.
 (setopt org-directory "~/Documents/org/"
        org-archive-location (concat org-directory "/archive.org_archive::datetree/")
        org-id-link-to-org-use-id t
@@ -952,17 +879,13 @@ Opens the custom `o' agenda command configured in
        ;; org-noter's dolist crash with wrong-type-argument listp
        org-noter-notes-search-path (list org-roam-directory))
 
-;; Point Doom's org-capture templates to roam inbox for unified capture
 (setq +org-capture-todo-file org-default-notes-file
       +org-capture-notes-file org-default-notes-file)
 
-;; org-protocol for browser integration (Chrome/Firefox capture)
-;; Requires desktop file handler configured in NixOS/home-manager
-;; Deferred to after org loads to improve startup time
-
-;; Add org-protocol capture templates for web capture
-;; "w" - Web page capture (link + optional selection)
-;; "W" - Web page capture with immediate finish (quick bookmark)
+;; org-protocol browser capture (Chrome/Firefox).  Requires the desktop file
+;; handler configured in NixOS/home-manager.  "w" prompts and keeps the page
+;; selection; "W" is the same capture with `:immediate-finish', i.e. a quick
+;; bookmark.
 (with-eval-after-load 'org
   (require 'org-protocol)
   (setopt org-protocol-default-template-key "w")
@@ -977,8 +900,7 @@ Opens the custom `o' agenda command configured in
                  "* [[%:link][%:description]] :REFILE:web:\n:PROPERTIES:\n:CREATED: %U\n:SOURCE: %:link\n:END:\n%i"
                  :prepend t
                  :immediate-finish t))
-  ;; Fleeting/quick note - appends to inbox with REFILE tag for GTD processing.
-  ;; Lives here (not in org-roam-capture-templates) because file+headline is
+  ;; Here rather than in `org-roam-capture-templates' because file+headline is
   ;; an org-capture target type, which org-roam templates do not accept.
   (add-to-list 'org-capture-templates
                '("f" "Fleeting note" entry
@@ -986,14 +908,14 @@ Opens the custom `o' agenda command configured in
                  "* %? :REFILE:\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i"
                  :prepend t)))
 
-;; Org-roam capture templates
-;; Uses subdirectories for organization + filetags for filtering.
-;; Subdirectories are pre-created below -- there is no :mkdir template
-;; keyword in org-roam v2 (the old one here was silently ignored).
+;; Capture subdirectories are pre-created here: org-roam v2 has no :mkdir
+;; template keyword (the old one in these templates was silently ignored).
 (with-eval-after-load 'org-roam
   (dolist (d '("refs" "meetings" "projects"))
     (make-directory (expand-file-name d org-roam-directory) t)))
 
+;; Subdirectories organise, filetags filter -- the two are deliberately
+;; independent, so a note's location never constrains how it is queried.
 (setq org-roam-capture-templates
        '(;; Default note - flat in roam directory
          ("d" "default" plain "%?"
@@ -1013,8 +935,6 @@ Opens the custom `o' agenda command configured in
                    "#+title: ${title}\n#+date: %<%Y-%m-%d>\n#+created: %u\n#+filetags: :meeting:\n\n* Attendees\n\n* Agenda\n\n* Notes\n\n* Action Items\n")
           :unnarrowed t)))
 
-;; Org-roam dailies configuration
-;; Ensure daily notes directory exists
 (setopt org-roam-dailies-directory "daily/")
 (with-eval-after-load 'org-roam-dailies
   (make-directory (expand-file-name org-roam-dailies-directory org-roam-directory) t))
@@ -1035,9 +955,8 @@ Opens the custom `o' agenda command configured in
                    "#+title: %<%Y-%m-%d %A>\n#+created: %u\n#+filetags: :daily:\n\n"
                    ("Journal")))))
 
-;; Per-project capture system
-;; Stores project files under roam/projects/{project-name}/ instead of in code repos
-;; This keeps org files out of shared repositories while maintaining project organization
+;; Per-project capture: files live under roam/projects/{project-name}/ so org
+;; files stay out of shared code repositories.
 
 (defun bmg/get-project-name ()
   "Get current project name or prompt for one.
@@ -1059,7 +978,6 @@ Creates directory and initializes file with proper headers if needed."
          (file (expand-file-name filename dir)))
     (unless (file-directory-p dir)
       (make-directory dir t))
-    ;; Initialize file with proper headers if it doesn't exist
     (unless (file-exists-p file)
       (with-temp-file file
         (pcase filename
@@ -1087,9 +1005,8 @@ Adds to Inbox heading with REFILE tag for GTD processing."
     (goto-char (point-min))
     (re-search-forward "^\\* Inbox" nil t)
     (org-end-of-subtree)
-    ;; Land between the two spaces so the typed title keeps a
-    ;; separating space before :REFILE: (8 puts point flush against
-    ;; the tag, and typing there destroys it).
+    ;; Land between the two spaces so the typed title keeps a space before
+    ;; :REFILE: (8 puts point flush against the tag, and typing destroys it).
     (insert "\n** TODO  :REFILE:")
     (backward-char 9)))
 
@@ -1132,8 +1049,7 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   (interactive)
   (find-file (bmg/project-org-file "notes.org")))
 
-;; Override Doom's project capture functions to use roam/projects/ instead of project-root
-;; This makes C-c n n → p → t/n/c use our roam directory
+;; Redirect Doom's C-c n n → p → t/n/c project capture into roam/projects/.
 (define-advice +org-capture-project-todo-file
     (:override () bmg/use-roam-projects)
   "Use roam/projects/{project}/todo.org instead of project-root."
@@ -1149,9 +1065,9 @@ Creates a new org-roam node in projects/{project-name}/ directory."
   "Use roam/projects/{project}/changelog.org instead of project-root."
   (bmg/project-org-file "changelog.org"))
 
-;; org-mem https://github.com/meedstrom/org-mem is a complimentary package to org roam
-;; can use it ot extract certain properties of the roam db. In addition it also provides fast search functionality,
-;; such as the ability to populate the org aganda file list with only relevant TODO items
+;; org-mem (https://github.com/meedstrom/org-mem) complements org-roam with fast
+;; queries over the roam db -- any property, not just the `org-agenda-files'
+;; derivation below.
 (use-package org-mem
   :after org
   :config
@@ -1159,8 +1075,8 @@ Creates a new org-roam node in projects/{project-name}/ directory."
          ;;org-mem-do-sync-with-org-id t
          org-roam-db-update-on-save nil
          org-mem-roamy-do-overwrite-real-db t)
-  ;; Reduce GC during org-roam operations
-  ;; Use setq because org-roam-db-gc-threshold has a broken (int) widget type
+  ;; Cut GC during org-roam operations.  setq, not setopt: the defcustom's
+  ;; (int) widget type is broken.
   (setq org-roam-db-gc-threshold most-positive-fixnum)
 
   (defun bmg/org-mem-set-agenda-files (&rest _)
@@ -1185,20 +1101,17 @@ not be dropped because of its path."
   (add-hook 'org-mem-post-full-scan-functions #'bmg/org-mem-set-agenda-files)
   (org-mem-updater-mode)
   (org-mem-roamy-db-mode)
-  ;; Doom's +roam module calls org-roam-db-autosync-enable which adds a
-  ;; save hook that conflicts with org-mem-roamy-db-mode (both try to
-  ;; insert into the same SQLite table, causing UNIQUE constraint errors).
-  ;; Disable org-roam's autosync since org-mem handles DB updates.
+  ;; Doom's +roam module calls org-roam-db-autosync-enable, whose save hook
+  ;; conflicts with org-mem-roamy-db-mode: both insert into the same SQLite
+  ;; table, causing UNIQUE constraint errors.
   (org-roam-db-autosync-mode -1)
 
-  ;; Doom does not sync org-roam's database at startup; it defers that to the
-  ;; first `org-roam-db-query' of the session via a one-shot :before advice
-  ;; (`+org-roam-try-init-db-a', modules/lang/org/contrib/roam.el:39-45) which
-  ;; prints "Initializing org-roam database..." and runs a full
-  ;; `org-roam-db-sync'.
-  ;;
-  ;; `with-eval-after-load' because Doom installs the advice when org-roam
-  ;; loads; removing it any earlier would be a no-op that Doom then undoes.
+  ;; Doom defers the org-roam DB sync to the session's first `org-roam-db-query'
+  ;; via a one-shot :before advice (`+org-roam-try-init-db-a',
+  ;; modules/lang/org/contrib/roam.el:39-45) that prints "Initializing org-roam
+  ;; database..." and runs a full `org-roam-db-sync'.  `with-eval-after-load'
+  ;; because Doom installs the advice when org-roam loads; removing it any
+  ;; earlier would be a no-op that Doom then undoes.
   (with-eval-after-load 'org-roam
     (advice-remove 'org-roam-db-query #'+org-roam-try-init-db-a))
 
@@ -1213,10 +1126,9 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
       (cl-letf (((symbol-function 'org-roam-db-sync) #'ignore))
         (apply fn args))))
 
-  ;; Workaround: org-mem's DB insert uses `prin1' which preserves Emacs
-  ;; text properties (e.g. ws-butler-chg) as #(...) syntax.  EmacSQL's
-  ;; `read-from-string' chokes on these, causing "unhandled condition"
-  ;; errors in org-roam-node-list queries.  Strip properties before insert.
+  ;; org-mem's DB insert uses `prin1', which preserves Emacs text properties
+  ;; (e.g. ws-butler-chg) as #(...) syntax.  EmacSQL's `read-from-string' chokes
+  ;; on these, causing "unhandled condition" errors in org-roam-node-list.
   (define-advice org-mem-roamy--mk-literal-input-quoted-like-emacsql
       (:filter-args (args) strip-text-properties)
     (list (mapcar (lambda (row)
@@ -1240,14 +1152,11 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
          org-roam-ui-update-on-save t
          org-roam-ui-open-on-start nil))
 
-;; citations and reference managment
 (setopt citar-bibliography (list (concat org-directory "emacs_lit.bib"))
        citar-library-paths '("~/Documents/Papers/")
        citar-notes-paths (list org-roam-directory))
 
 (with-eval-after-load 'citar
-  ;; define the keymap to allow citar to hand over to biblio to do
-  ;; a reference lookup
   (defvar bmg/my-citar-embark-become-map
     (let ((map (make-sparse-keymap)))
       ;; embark-become only offers this map when the CURRENT minibuffer
@@ -1265,15 +1174,13 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
       map)
     "Citar Embark become keymap for biblio lookup."))
 
-;; tell embark about the citar keymap after embark loads
 (with-eval-after-load 'embark
   (add-to-list 'embark-become-keymaps 'bmg/my-citar-embark-become-map))
 
 
-;; Only genuinely exclusive @contexts live inside the :startgroup --
-;; tags in a group are mutually exclusive in fast tag selection, so
-;; modifier tags (Important, Emacs, uni, PERSONAL) must stay outside
-;; or adding one silently removes the @context already on the item.
+;; Tags in a :startgroup are mutually exclusive in fast tag selection, so only
+;; genuinely exclusive @contexts go inside; modifier tags (Important, Emacs,
+;; uni, PERSONAL) stay outside, or adding one silently removes the @context.
 (setopt org-tag-alist '((:startgroup . nil)
                        ("@Project" . ?p)
                        ("@Reading" . ?r)
@@ -1292,7 +1199,6 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
   :after org-agenda
   :init
   (setopt
-   ;; more structured view
    org-agenda-prefix-format
    '((agenda . " %i %-20:c %?-12t %12s")
      (todo . " %i %-20:c ")
@@ -1315,8 +1221,7 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
          org-agenda-span 1
          org-agenda-start-day nil) ;; i.e. today
 
-  ;; Custom agenda view aligned with Doom's org-todo-keywords
-  ;; GTD workflow: Inbox/REFILE items appear at top for processing
+  ;; GTD view: REFILE inbox first; groups match Doom's org-todo-keywords.
   (setq org-agenda-custom-commands
          '(("o" "Overview"
             ((agenda "" ((org-agenda-span 'week)
@@ -1398,7 +1303,6 @@ org-mem maintains the database; see `org-roam-db-autosync-mode' above."
   :config
   (org-super-agenda-mode))
 
-;; consult-org-roam for enhanced search with live preview
 (use-package consult-org-roam
   :after org-roam
   :config
@@ -1454,8 +1358,6 @@ the input syntax.  PATHS and INITIAL are as there."
                     (if (or (consp paths) (stringp paths)) paths bmg/document-search-roots)
                     initial))
 
-;; Helper functions for org workflow
-
 (defun bmg/org-roam-review-week ()
   "Open all daily notes from the past week for review."
   (interactive)
@@ -1496,8 +1398,7 @@ the input syntax.  PATHS and INITIAL are as there."
 ;;;
 ;;;
 
-;; SPC z for org-roam - shorter than Doom's M-SPC m m / C-c l m
-;; Uses consult-org-roam for enhanced find/search with live preview
+;; SPC z for org-roam -- shorter than Doom's M-SPC m m / C-c l m.
 (with-eval-after-load 'org-roam
   (map! :leader
         (:prefix-map ("z" . "org-roam")
@@ -1609,21 +1510,17 @@ the input syntax.  PATHS and INITIAL are as there."
         :desc "Process inbox item" "B" #'bmg/process-inbox-item
         :desc "Summarize paper"    "S" #'bmg/summarize-paper))
 
-;; AI knowledge management prefix on the leader (C-c A / M-SPC A).
-;; NOT a plain (global-set-key (kbd "C-c a") ...): Doom's leader map wins
-;; for C-c sequences and already binds "a" to embark-act, which fully
-;; shadowed the global binding.
+;; AI prefix on the leader (C-c A / M-SPC A).  NOT (global-set-key (kbd "C-c a")
+;; ...): Doom's leader map wins for C-c sequences and already binds "a" to
+;; embark-act, which fully shadowed the global binding.
 (defvar bmg/ai-command-map
   (let ((map (make-sparse-keymap)))
-    ;; Tag and summarization
     (define-key map (kbd "t") #'bmg/suggest-tags-for-buffer)
     (define-key map (kbd "s") #'bmg/summarize-paper)
     (define-key map (kbd "p") #'bmg/process-inbox-item)
-    ;; Discovery and search
     (define-key map (kbd "r") #'bmg/find-related-notes)
     (define-key map (kbd "q") #'bmg/ask-knowledge-base)
     (define-key map (kbd "k") #'bmg/search-knowledge-base)
-    ;; Review and maintenance
     (define-key map (kbd "w") #'bmg/generate-weekly-review)
     (define-key map (kbd "c") #'bmg/check-tag-consistency)
     (define-key map (kbd "o") #'bmg/find-orphan-notes)
@@ -1634,11 +1531,8 @@ the input syntax.  PATHS and INITIAL are as there."
 
 
 (map! :map dirvish-mode-map
-      ;; left click for expand/collapse dir or open file
       "<mouse-1>" #'dirvish-subtree-toggle-or-open
-      ;; middle click for opening file / entering dir in other window
       "<mouse-2>" #'dired-mouse-find-file-other-window
-      ;; right click for opening file / entering dir
       "<mouse-3>" #'dired-mouse-find-file
       "?"   #'dirvish-dispatch
       "q"   #'dirvish-quit
@@ -1699,10 +1593,9 @@ the input syntax.  PATHS and INITIAL are as there."
       (message "Marked %d entries as read" count))))
 
 ;; arXiv capture: `C' and `a' both run bmg/elfeed-arxiv-intake
-;; (defined in elfeed-config.el), which fetches PDF + BibTeX and
-;; creates the roam note in one pass.  The old separate
-;; bmg/elfeed-capture-arxiv spliced feed-controlled text into an
-;; org-capture template, which would execute %(elisp) from a
+;; (elfeed-config.el), which fetches PDF + BibTeX and creates the roam note in
+;; one pass.  The old separate bmg/elfeed-capture-arxiv spliced feed-controlled
+;; text into an org-capture template, which would execute %(elisp) from a
 ;; malicious feed -- do not reintroduce that pattern.
 (with-eval-after-load 'elfeed
   (map! :map elfeed-search-mode-map

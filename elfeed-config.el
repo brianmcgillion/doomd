@@ -5,11 +5,10 @@
 
 (with-eval-after-load 'elfeed
   ;; Background refresh once a day.  Deliberately NOT on
-  ;; elfeed-search-mode-hook (that fired a full network fetch every
-  ;; time the search buffer was entered) and not at load time (a nil
-  ;; first arg to run-at-time fires immediately).  Manual refresh
-  ;; stays on `r'.  Cancel-before-set keeps re-evals from stacking
-  ;; timers.
+  ;; elfeed-search-mode-hook (fired a full network fetch every time the
+  ;; search buffer was entered) and not at load time (a nil first arg to
+  ;; run-at-time fires immediately).  Manual refresh stays on `r';
+  ;; cancel-before-set keeps re-evals from stacking timers.
   (when (timerp bmg/elfeed-update-timer)
     (cancel-timer bmg/elfeed-update-timer))
   (setq bmg/elfeed-update-timer
@@ -173,7 +172,6 @@ Based on https://gist.github.com/rka97/57779810d3664f41b0ed68a855fcab54"
         (goto-char (point-max))
         (bibtex-beginning-of-entry)
         (setq cite-key (cdr (assoc "=key=" (bibtex-parse-entry)))))
-      ;; Reading list TODO (deduped)
       (let ((papers-file (expand-file-name "papers.org" org-roam-directory)))
         (save-window-excursion
           (find-file papers-file)
@@ -184,9 +182,7 @@ Based on https://gist.github.com/rka97/57779810d3664f41b0ed68a855fcab54"
             (insert (format "\n** TODO Read paper [cite:@%s] %s" cite-key title))
             (save-buffer)
             (message "Added to reading list: %s" title))))
-      ;; Reference note (literal insertion, no template expansion)
       (bmg/elfeed--create-arxiv-note title cite-key link authors abstract)
-      ;; AI-suggested tags, asynchronously
       (when abstract
         (bmg/elfeed-get-ai-tags-for-abstract
          abstract
@@ -205,7 +201,6 @@ Based on https://gist.github.com/rka97/57779810d3664f41b0ed68a855fcab54"
 
 ;;; END elfeed
 
-;; Try to add a weighting to the elfeeds
 (use-package elfeed-score
   :after elfeed
   :config
@@ -237,7 +232,6 @@ prompt for the file."
         ;; Get conference versions of arXiv papers
         (format "rebiber -i %s && " file)
         ;;(format "biber --tool --output_align --output_indent=2 --output_fieldcase=lower --configfile=~/bib-lib/biber-myconf.conf --output_file=%s %s && " file file) ; Properly format the bibliography
-        ;; Some replacements
         (format "sed -i -e 's/arxiv/arXiv/gI' -e 's/journaltitle/journal     /' -e 's/date      /year      /' %s" file)))))
   (defun bmg/reformat-bib-lib-hook ()
     "Reformat the main bib library whenever it is saved.
