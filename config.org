@@ -465,18 +465,34 @@ the builder is constructed, so rebinding it around the call is enough."
   (let ((consult-ripgrep-args bmg/consult-rga-args))
     (consult--ripgrep-make-builder paths)))
 
+(defun bmg/rga--pdf-page (cand)
+  "Return the PDF page number recorded in candidate CAND, or nil.
+rga's poppler adapter prefixes each extracted line with `Page N:'; the line
+number consult parses is an offset into the extracted text, not a position
+Emacs can visit.  Read off the `face' boundaries `consult--grep-format'
+leaves, since a path may contain a colon."
+  (when cand
+    (when-let* ((file-end (next-single-property-change 0 'face cand))
+                ((string-suffix-p ".pdf" (substring-no-properties cand 0 file-end) t))
+                (line-end (next-single-property-change (1+ file-end) 'face cand))
+                (content (substring-no-properties cand (1+ line-end)))
+                ((string-match "\\`Page \\([0-9]+\\):" content)))
+      (string-to-number (match-string 1 content)))))
+
 (defun bmg/consult--rga (prompt paths &optional initial)
   "Run an asynchronous `rga' search over PATHS through consult.
 PROMPT and INITIAL are as for `consult--grep'.  PATHS is a list of root
 strings, or a prefix-argument value, which makes `consult--directory-prompt'
 ask which roots to search.
 
-Only the timing delays are rebound.  Doom's 0.2 and 0.1
-(vertico/config.el:129-132) are tuned for a local `rg'; one rga pass over
-these roots measures 1.39s warm, so every pause in typing would kill and
-restart a second of work.  min-input stays at Doom's 2, matching
-`consult-ripgrep', so two-letter acronyms still search.  `consult--grep'
-builds the pipeline synchronously, so a `let' around it reaches these."
+Timing delays only: Doom's 0.2/0.1 (vertico/config.el:129-132) assume a
+local `rg', but one rga pass here is 1.39s.  min-input stays at Doom's 2,
+matching `consult-ripgrep'.  `consult--grep' builds the pipeline
+synchronously, so a `let' reaches these.
+
+RET on a PDF lands on the matching page: `consult--grep' returns the
+candidate after its `:state' has visited the file.  RET only --
+`embark-consult-goto-grep' still lands on page 1."
   (unless (executable-find "rga")
     (user-error "rga (ripgrep-all) not found in PATH"))
   (require 'consult)
@@ -486,8 +502,13 @@ builds the pipeline synchronously, so a `let' around it reaches these."
                               default-directory))
          (consult-async-min-input 2)
          (consult-async-input-debounce 0.4)
-         (consult-async-input-throttle 0.8))
-    (consult--grep prompt #'bmg/consult--rga-make-builder paths initial)))
+         (consult-async-input-throttle 0.8)
+         (cand (consult--grep prompt #'bmg/consult--rga-make-builder
+                              paths initial)))
+    (when-let* ((page (bmg/rga--pdf-page cand))
+                ((derived-mode-p 'pdf-view-mode)))
+      (pdf-view-goto-page page))
+    cand))
 
 ;;;
 ;;;
@@ -1324,25 +1345,23 @@ splice `bmg/document-search-roots'."
 
 (defun bmg/search-knowledge-base (&optional paths initial)
   "Search org-roam notes, papers and the bibliography in one pass.
-An async consult search: results narrow as you type, text hits preview live
-and jump to the exact line.  `C-c C-;' exports to the `grep-mode' buffer
-this command used to produce outright, `C-c C-e' to a wgrep-editable one.
+Async consult search: text hits preview live and jump to the exact line.
+`C-c C-;' exports to a `grep-mode' buffer, `C-c C-e' a wgrep-editable one.
 
-consult prefills the minibuffer with `#', so `neural#2024' sends only
-`neural' to rga and filters `2024' in Emacs -- free refinement against a
-corpus that takes ~1.4s a pass.  But the filter only sees what rga returned,
-and rga caps at 5 hits per file, so `neural#transformer' can find nothing in
-a paper matching both.  Raise the cap before narrowing when the search must
-be exhaustive.
+The minibuffer is prefilled with `#': `neural#2024' sends `neural' to rga
+and filters `2024' in Emacs.  The filter only sees what rga returned, and
+rga caps at 5 hits per file, so raise the cap before narrowing when a
+search must be exhaustive.
 
-Bare flags after the query go to rga: `neural --glob *.pdf',
-`neural --max-count=200', `neural -i'.  A literal `--' does the opposite,
-ending the option section and returning the rest to the search string; a
-query needing a dashed word escapes it as `\\-'.
+Bare flags after the query go to rga -- `neural --glob *.pdf',
+`neural --max-count=200', `neural -i'.  A literal `--' ends the option
+section instead, returning the rest to the search string; `\\-' escapes a
+single dashed word.  A prefix argument chooses the roots.
 
-With a prefix argument, choose the roots instead.  PDF and EPUB hits open at
-the top of the document -- rga's line numbers index extracted text, not a
-position Emacs can visit.  PATHS and INITIAL are for programmatic callers."
+RET opens a PDF at the matching page; EPUB opens at the top.  Neither
+auto-previews; `C-SPC' does, but only under `consult-preview-partial-size'
+(1MB) -- larger files abort on NUL bytes.  PATHS and INITIAL are as for
+`bmg/consult--rga'."
   (interactive "P")
   (bmg/consult--rga "Knowledge base"
                     (if (or (consp paths) (stringp paths)) paths (bmg/kb--search-roots))
