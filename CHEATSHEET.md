@@ -1,8 +1,12 @@
 # Doom Emacs Org-mode Cheat Sheet
 
+> **Leader is `C-c`.** This config runs **no Evil mode**, so Doom's `SPC` leader
+> never activates — plain `SPC` self-inserts. Everything below uses the real
+> bindings (`doom-leader-alt-key` = `C-c`, `doom-localleader-alt-key` = `C-c l`).
+
 ## Quick Reference
 
-### Global Capture (`C-c n n` or `SPC X`)
+### Global Capture (`C-c n n`)
 | Key | Action | Target |
 |-----|--------|--------|
 | `t` | Personal todo | `roam/inbox-{host}.org` → Inbox |
@@ -12,7 +16,7 @@
 | `p n` | Project note | `roam/projects/{project}/notes.org` → Inbox |
 | `p c` | Project changelog | `roam/projects/{project}/changelog.org` |
 
-### Org-Roam (`SPC z`)
+### Org-Roam (`C-c z`)
 | Key | Action | Description |
 |-----|--------|-------------|
 | `c` | Capture | New roam note (choose template) |
@@ -22,7 +26,7 @@
 | `g` | Graph | Visualize connections |
 | `r` | Refile | Move current node |
 
-### Org-Roam Capture Templates (`SPC z c`)
+### Org-Roam Capture Templates (`C-c z c`)
 | Key | Template | Location |
 |-----|----------|----------|
 | `d` | Default note | `roam/{slug}.org` |
@@ -30,7 +34,7 @@
 | `r` | Reference | `roam/refs/{slug}.org` |
 | `m` | Meeting | `roam/meetings/{date}-{slug}.org` |
 
-### Dailies (`SPC z d`)
+### Dailies (`C-c z d`)
 | Key | Action |
 |-----|--------|
 | `t` | Go to today |
@@ -39,7 +43,7 @@
 | `d` | Go to specific date |
 | `b/f` | Previous/next note |
 
-### Project Notes (`SPC z p`)
+### Project Notes (`C-c z p`)
 | Key | Action | Target |
 |-----|--------|--------|
 | `t` | Project TODO | `projects/{project}/todo.org` → Inbox |
@@ -48,14 +52,22 @@
 | `T` | Open project TODO | Opens `todo.org` directly |
 | `N` | Open project notes | Opens `notes.org` directly |
 
-### Node Properties (`SPC z o`)
+`t` and `n` append a `:REFILE:`-tagged **heading** to one shared file per
+project — no capture buffer, you type straight into the file. `p` runs
+`org-roam-capture` and creates a **new file with an `:ID:`**, i.e. a real
+roam node: linkable with `C-c z i`, findable with `C-c z f`, present in
+backlinks and the graph. The shared files have no ID and are none of those
+things, which is why `T`/`N` exist to open them directly. Both kinds reach
+the agenda, since org-mem indexes files regardless of ID.
+
+### Node Properties (`C-c z o`)
 | Key | Action |
 |-----|--------|
 | `a/A` | Add/remove alias |
 | `t/T` | Add/remove tag |
 | `r/R` | Add/remove ref |
 
-### Agenda (`SPC n a` or `SPC o a`)
+### Agenda (`C-c n a`)
 | Key | Action |
 |-----|--------|
 | `i` | Clock in |
@@ -69,15 +81,15 @@
 ## GTD Workflow
 
 ### 1. Capture (Get it out of your head)
-- **Quick thought**: `SPC X t` (personal todo) or `SPC z c f` (fleeting)
-- **Project task**: `SPC z p t` (while in project directory)
-- **Meeting notes**: `SPC z c m`
-- **Reference**: `SPC z c r`
+- **Quick thought**: `C-c n n t` (personal todo) or `C-c z c f` (fleeting)
+- **Project task**: `C-c z p t` (while in project directory)
+- **Meeting notes**: `C-c z c m`
+- **Reference**: `C-c z c r`
 
 All inbox captures automatically get `:REFILE:` tag.
 
 ### 2. Process (Empty your inboxes)
-- Open agenda: `SPC n a` or `SPC o a`
+- Open agenda: `C-c n a`
 - **"📥 Inbox"** group shows all `:REFILE:` items at the very top
 - For each item, decide:
   - **Do it** (if < 2 min) → complete and remove REFILE tag
@@ -93,18 +105,18 @@ All inbox captures automatically get `:REFILE:` tag.
 - Move from `* Inbox` to `* Active` or other heading in same file
 
 ### 4. Review
-- **Daily**: Check agenda (`SPC n a`)
+- **Daily**: Check agenda (`C-c n a`)
 - **Weekly**: `M-x bmg/org-roam-review-week`
 
 ### Complete Processing Example
 
 ```
-1. CAPTURE: SPC z p t → "Fix login bug"
+1. CAPTURE: C-c z p t → "Fix login bug"
    Creates: projects/my-app/todo.org
    └── * Inbox
        └── ** TODO Fix login bug :REFILE:
 
-2. AGENDA: SPC n a
+2. AGENDA: C-c n a
    Shows: 📥 Inbox - Process these first
           └── TODO Fix login bug  :REFILE:  (my-app/todo.org)
 
@@ -115,7 +127,7 @@ All inbox captures automatically get `:REFILE:` tag.
    - `R` → refile to different file/heading
    
 4. REMOVE TAG: 
-   - Open file: `SPC z p T`
+   - Open file: `C-c z p T`
    - Move item from "* Inbox" to "* Active" with `C-c C-w`
    - Or delete :REFILE: tag manually
 
@@ -130,12 +142,12 @@ All inbox captures automatically get `:REFILE:` tag.
 
 | What you want | How to find it |
 |---------------|----------------|
-| All inbox items | Agenda (`SPC n a`) → "📥 Inbox" section |
-| Project's todos | `SPC z p T` (opens project's todo.org) |
-| Any roam node | `SPC z f` then type title |
-| Project nodes only | `SPC z f` then type `#project` |
+| All inbox items | Agenda (`C-c n a`) → "📥 Inbox" section |
+| Project's todos | `C-c z p T` (opens project's todo.org) |
+| Any roam node | `C-c z f` then type title |
+| Project nodes only | `C-c z f` then type `#project` |
 | Today's tasks | Agenda → "Today" section |
-| Search all org | `SPC s o` |
+| Search all org | `C-c z s` (consult-org-roam-search) |
 
 ---
 
@@ -166,15 +178,22 @@ All inbox captures automatically get `:REFILE:` tag.
 
 ## Filetags for Filtering
 
-In `SPC z f` (org-roam-node-find), type `#tag` to filter:
+In `C-c z f` (`consult-org-roam-file-find`, a wrapper around
+`org-roam-node-find`), type `#tag` to filter:
 
 | Tag | Content |
 |-----|---------|
-| `#project` | All project-related notes |
+| `#project` | Project roam notes (`C-c z p p`) |
 | `#meeting` | Meeting notes |
 | `#daily` | Daily notes |
 | `#reference` | Literature/references |
-| `#todo` | Project todo files |
+
+**Not findable this way:** `projects/{project}/todo.org` and `notes.org` are
+written with `:project:todo:` / `:project:notes:` filetags, but they carry no
+`:ID:`, so org-roam never indexes them as nodes — no tag filter will surface
+them. Open them directly with `C-c z p T` / `C-c z p N`. Of the three project
+capture keys only `C-c z p p` creates a real node; `t` and `n` append a
+`:REFILE:` heading to those shared files instead.
 
 ---
 
@@ -211,49 +230,61 @@ Change state with `t` in agenda or `C-c C-t` in buffer.
 | `C-c A c` | Check tags | Report tag frequency and duplicates |
 | `C-c A o` | Find orphans | Notes with no links in or out |
 
-### Org-Roam AI Bindings (`M-SPC z` or `SPC z`)
+### Org-Roam AI Bindings (`C-c z`)
 | Key | Action |
 |-----|--------|
-| `z S` | Suggest tags for buffer |
-| `z R` | Find related notes |
-| `z w` | Generate weekly review |
-| `z a t` | Suggest tags |
-| `z a s` | Summarize paper |
-| `z a r` | Find related notes |
-| `z a w` | Weekly review |
-| `z a c` | Check tag consistency |
-| `z a o` | Find orphan notes |
+| `S` | Suggest tags for buffer |
+| `R` | Find related notes |
+| `w` | Generate weekly review |
+| `a t` | Suggest tags |
+| `a s` | Summarize paper |
+| `a r` | Find related notes |
+| `a w` | Weekly review |
+| `a c` | Check tag consistency |
+| `a o` | Find orphan notes |
 
-### Org-Roam UI (`M-SPC z u` or `SPC z u`)
+### Org-Roam UI (`C-c z u`)
 | Key | Action |
 |-----|--------|
-| `u u` | Open graph in browser |
-| `u m` | Toggle UI mode |
+| `u` | Open graph in browser |
+| `m` | Toggle UI mode |
 
-### Search Bindings (`C-c s` or `SPC s`)
+### Search Bindings (`C-c s`)
 | Key | Action |
 |-----|--------|
-| `s Q` | Ask knowledge base (RAG) |
-| `s k` | Search knowledge base (consult async: notes, bib, Papers, EPUB) |
-| `s P` | Search papers (consult async: documents only) |
+| `Q` | Ask knowledge base (RAG) |
+| `k` | Search knowledge base (consult async: notes, bib, Papers, EPUB) |
+| `P` | Search papers (consult async: documents only) |
 
-### Search Syntax (`s k`, `s P`)
+### Search Syntax (`C-c s k`, `C-c s P`)
 
 Both are consult async searches over `rga` (ripgrep-all) — results narrow as
 you type. Hits in text files (`.org`, `.bib`) preview live and jump to the
 exact line.
 
+**Flags go straight after the query, with no separator.** Write
+`neural --glob *.pdf` — *not* `neural -- --glob *.pdf`. Nothing goes through a
+shell, so `*.pdf` needs no quoting.
+
 | Input | Effect |
 |-------|--------|
 | `neural` | Sent to rga as the search string (one pass over the corpus, ~1.4s) |
 | `neural#2024` | `#` splits it: `neural` goes to rga, `2024` filters the results instantly inside Emacs — no new search. The filter only sees the ≤5 hits per file rga already returned, so a file with more matches than that can lose results silently; prepend `--max-count=200` first when you need completeness |
-| `neural --glob *.pdf` | Bare flags after the query go to rga; scopes to PDFs |
+| `neural --glob *.pdf` | Scope to PDFs |
+| `neural --glob *.org` | Scope to org files |
 | `neural --max-count=200` | Raises the default per-file cap of 5 |
 | `neural -i` | Forces case-insensitive (default is `--smart-case`: a capital letter makes it case-sensitive) |
-| `neural -- --glob *.pdf` | `--` does the opposite of adding options: it ends option parsing, so `--glob *.pdf` is pushed back into the literal search string instead of reaching rga as a flag |
-| `C-u s k` | Prompt for which directories/files to search |
+| `C-u C-c s k` | Prompt for which directories/files to search |
 
-**Exporting results** — same as any consult async search:
+> ⚠️ **A bare `--` is an escape, not a separator.** It *ends* option parsing and
+> hands everything after it back to the search string. So
+> `neural -- --glob *.pdf` searches for lines containing `neural` **and the
+> literal text** `--glob` **and** `*.pdf` — which matches nothing, silently.
+> Its only real use is searching for text that starts with a dash:
+> `-- --max-count` finds that literal string.
+
+**Exporting results** — these are minibuffer bindings, live only while the
+search is open (`C-;` is `embark-act` globally):
 
 | Key | Action |
 |-----|--------|
@@ -261,24 +292,32 @@ exact line.
 | `C-c C-e` | Same, but `wgrep`-editable |
 | `C-c C-l` | `embark-collect` |
 
-**PDF/EPUB caveat:** those hits open at the top of the document, not the
-matching page — rga reports line numbers in the *extracted text*, not a
-position Emacs can visit. For the same reason they don't auto-preview; press
-`C-SPC` to preview one explicitly. Text hits (`.org`, `.bib`) still preview
-automatically.
+**PDF and EPUB hits**
+
+| | behaviour |
+|---|---|
+| `RET` on a PDF | Opens at the **matching page**, read from rga's `Page N:` marker |
+| `RET` on an EPUB | Opens at the top — pandoc emits no page markers |
+| auto-preview | Off for both. rga's line numbers index extracted text, so previewing would render a page only to land nowhere |
+| `C-SPC` | Previews explicitly — but **only for files under 1MB** (`consult-preview-partial-size`). Above that consult reads a 10KB chunk, hits NUL bytes and silently aborts: ~49% of Papers and ~97% of EPUBs |
+| `embark-consult-goto-grep` | Still lands on page 1 — it takes its own path, not RET's |
+
+Text hits (`.org`, `.bib`) preview automatically and jump to the exact line.
 
 ### Org-mode Local (`C-c l` in org buffers)
 | Key | Action |
 |-----|--------|
-| `P` | Process inbox item |
+| `B` | Process inbox item |
 | `S` | Summarize paper |
+
+`B` and not `P`: `C-c l P` is Doom's org-publish prefix.
 
 ### AI Workflow Examples
 
 **Tag a new paper note:**
 ```
 1. Open paper note
-2. C-c A t (or M-SPC z S)
+2. C-c A t (or C-c z S)
 3. Tags copied to kill ring
 4. C-y to yank into #+filetags: line
 ```
@@ -297,14 +336,14 @@ automatically.
 
 **Ask your knowledge base:**
 ```
-1. C-c A q (or M-SPC s Q)
+1. C-c A q (or C-c s Q)
 2. Type question: "What do my notes say about TPM attestation?"
 3. AI searches notes, retrieves context, answers with citations
 ```
 
 **Weekly review:**
 ```
-1. C-c A w (or M-SPC z w)
+1. C-c A w (or C-c z w)
 2. AI summarizes notes modified this week
 3. Identifies themes, suggests connections
 ```
@@ -327,9 +366,6 @@ a formatter, and plenty of hand-formatted projects ship one.
 | `C-x C-s` | Save (formats only if the project declares a formatter) |
 | `C-x M-s` | Save **without** formatting, one-off (`+format/save-buffer-no-reformat`) |
 | `C-c c f` | Format region, or whole buffer if no region — always works, even in gated projects |
-
-(This config has **no Evil mode**, so the Doom leader is `C-c`, not `SPC` —
-plain `SPC` self-inserts.)
 
 Note: `C-u C-x C-s` does **not** skip formatting, despite what Doom's format
 module suggests. Its remap targets `basic-save-buffer`, but `C-x C-s` is bound
@@ -376,11 +412,11 @@ keep-sorted), so a file saved in Emacs can still fail the
 
 ## Tips
 
-- **Quick find**: `SPC z f` then type part of title
-- **Insert link**: While typing, `SPC z i` to link to another note
-- **Backlinks**: `SPC z t` to see what links to current note
-- **Graph view**: `SPC z g` for visual connections
-- **Search all org**: `SPC s o` (org search)
+- **Quick find**: `C-c z f` then type part of title
+- **Insert link**: While typing, `C-c z i` to link to another note
+- **Backlinks**: `C-c z t` to see what links to current note
+- **Graph view**: `C-c z g` for visual connections
+- **Search all org**: `C-c z s` (consult-org-roam-search)
 - **AI tag suggestions**: `C-c A t` for smart tagging
 - **Ask your notes**: `C-c A q` to query your knowledge base
 
