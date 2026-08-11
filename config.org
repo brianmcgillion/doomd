@@ -259,7 +259,26 @@
                 (dired-hide-details-mode 1))
               nil)))
 
-(setopt ispell-dictionary (if (featurep :system 'macos) "en_GB" "en_US"))
+;; Doom's :checkers spell is disabled in init.el; jinx replaces it.  jinx links
+;; libenchant, which reads the same aspell dictionaries installed from
+;; ~/.dotfiles.  The package comes from emacsWithPackages, so it needs no
+;; `package!' declaration -- it is already on `load-path'.
+(use-package jinx
+  :hook (doom-first-buffer . global-jinx-mode)
+  :config
+  ;; enchant checks both at once: en_GB primary, US spellings accepted.
+  (setopt jinx-languages "en_GB en_US")
+  ;; The default list covers neither nix nor elisp.  t splits camelCase in every
+  ;; mode, which is what lets `callPackage' and `mkDefault' pass.
+  (setopt jinx-camel-modes t)
+  ;; Flake refs (github:owner/repo) sit in strings and commented-out code, which
+  ;; jinx checks as prose.  Skip the whole token.  `jinx--mode-list' appends to
+  ;; the `t' defaults, so jinx's own exclusions still apply.
+  (add-to-list 'jinx-exclude-regexps
+               '(nix-ts-mode "[a-z][a-z0-9+.-]*:[^\"[:space:]]*/[^\"[:space:]]*")))
+
+;; ispell is still reachable via M-x ispell-buffer; M-$ goes to jinx below.
+(setopt ispell-dictionary "en_GB")
 
 ;; NixOS has no /usr/share/dict/words.  aspell still spell-checks; this only
 ;; affects M-TAB word completion.
@@ -271,6 +290,49 @@
 (setopt langtool-http-server-host "localhost"
        langtool-http-server-port 8081
        langtool-default-language nil)
+
+;; harper-ls grammar-checks comment text as you type; LanguageTool stays manual
+;; (C-c g c) for prose.  harper has no parser for elisp, yaml or json -- it
+;; falls back to linting those files as plain English -- so activation is an
+;; explicit whitelist rather than all of prog-mode.
+(defvar bmg/harper-modes
+  '(nix-ts-mode
+    c-mode c-ts-mode c++-mode c++-ts-mode
+    rust-mode rust-ts-mode
+    python-mode python-ts-mode
+    sh-mode bash-ts-mode
+    js-mode js-ts-mode typescript-ts-mode tsx-ts-mode
+    go-mode go-ts-mode
+    toml-ts-mode)
+  "Major modes where harper-ls has a real parser and lints only comments.")
+
+(with-eval-after-load 'lsp-mode
+  ;; jinx owns spelling.  harper's SpellCheck duplicates it on real typos and
+  ;; regresses it otherwise -- no camelCase splitting (`mkDefault' -> "did you
+  ;; mean default?") and a separate dictionary that lacks the project jargon.
+  ;; The rest are prose rules that misfire on code comments: TODO is a code
+  ;; convention not "to-do"; commented-out code trips the capitalisation rules
+  ;; (github:, url =, lsp, cli); SPDX year ranges trip the en-dash rule.
+  (lsp-register-custom-settings
+   '(("harper-ls.linters.SpellCheck" nil t)
+     ("harper-ls.linters.ToDoHyphen" nil t)
+     ("harper-ls.linters.OrthographicConsistency" nil t)
+     ("harper-ls.linters.SentenceCapitalization" nil t)
+     ("harper-ls.linters.NumericRangeEnDash" nil t)))
+
+  ;; :add-on? runs harper-ls beside the primary server (nixd, clangd, ...)
+  ;; instead of competing with it for the buffer.
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("harper-ls" "--stdio"))
+    :activation-fn (lambda (_filename mode) (memq mode bmg/harper-modes))
+    :add-on? t
+    :priority -1
+    :server-id 'harper-ls
+    :initialized-fn (lambda (workspace)
+                      (with-lsp-workspace workspace
+                        (lsp--set-configuration
+                         (lsp-configuration-section "harper-ls")))))))
 
 (with-eval-after-load 'license-snippets
   (license-snippets-init))
@@ -1421,6 +1483,21 @@ the input syntax.  PATHS and INITIAL are as there."
 ;; Doom's C-c s f stays bound; this is an additional key, not a move.
 (map! "C-." #'+lookup/file)
 
+;; Doom installs and configures vundo but binds no key to it.  The two keys
+;; reached for when going a long way back get the tree; C-_ and M-_ stay
+;; linear undo-fu.  These are plain global bindings, which beat Doom's
+;; `[remap undo]' in `undo-fu-mode-map' -- the remap only fires when the key
+;; still resolves to `undo'.
+(map! "C-x u" #'vundo
+      "C-/"   #'vundo)
+
+;; Doom's spell module remapped `ispell-word' to +spell/correct and owned
+;; <leader> t s; both are vacated with the module off, so jinx takes them.
+(map! [remap ispell-word] #'jinx-correct)
+(map! :leader
+      (:prefix "t"
+       :desc "Spell checker" "s" #'jinx-mode))
+
 ;; SPC z for org-roam -- shorter than Doom's M-SPC m m / C-c l m.
 (with-eval-after-load 'org-roam
   (map! :leader
@@ -1522,6 +1599,20 @@ the input syntax.  PATHS and INITIAL are as there."
     :desc "Search papers (rga)"                    "P" #'bmg/rga-search
     :desc "Ask knowledge base"                     "Q" #'bmg/ask-knowledge-base
     :desc "Search knowledge base"                  "k" #'bmg/search-knowledge-base)))
+
+ (;;: grammar -- LanguageTool runs as a server (services.languagetool in
+  ;;: ~/.dotfiles), reached over langtool-http-server-port.  New prefix, so
+  ;;: :prefix-map is safe here.
+  (:leader
+   (:prefix-map ("g" . "grammar")
+    :desc "Check buffer"        "c" #'langtool-check
+    :desc "Clear results"       "d" #'langtool-check-done
+    :desc "Correct buffer"      "f" #'langtool-correct-buffer
+    :desc "Correct at point"    "." #'langtool-correct-at-point
+    :desc "Message at point"    "m" #'langtool-show-message-at-point
+    :desc "Next error"          "n" #'langtool-goto-next-error
+    :desc "Previous error"      "p" #'langtool-goto-previous-error
+    :desc "Toggle writegood"    "w" #'writegood-mode)))
  ) ;; END MAP
 
 ;; Localleader bindings for org-mode AI functions (C-c l in org-mode)

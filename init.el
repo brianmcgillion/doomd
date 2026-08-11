@@ -88,7 +88,7 @@
 
        :checkers
        (syntax +childframe +icons); tasing you for every semicolon you forget
-       (spell +aspell +everywhere) ; tasing you for misspelling mispelling
+       ;;(spell +aspell +everywhere) ; replaced by jinx -- see config.org
        grammar             ; tasing grammar mistake every you make
 
        :tools
