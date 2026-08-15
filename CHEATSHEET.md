@@ -410,6 +410,127 @@ keep-sorted), so a file saved in Emacs can still fail the
 
 ---
 
+## Spelling & Grammar
+
+Three tools, deliberately non-overlapping: **jinx** spell-checks everything as
+you type, **harper-ls** grammar-checks comments in code automatically, and
+**LanguageTool** grammar-checks prose on demand.
+
+Doom's `:checkers spell` is **disabled** in `init.el` — jinx replaces spell-fu
+entirely, so `spell-fu-mode` no longer exists.
+
+### Spelling (jinx)
+| Key | Action |
+|-----|--------|
+| `M-$` | Correct nearest misspelled word — or the whole region, if one is active |
+| `C-u M-$` | Correct every misspelling in the buffer |
+| `C-u C-u M-$` | Correct the word before point |
+| `C-c t s` | Toggle `jinx-mode` in this buffer |
+
+`jinx-languages` is `"en_GB en_US"` — enchant checks both at once, so `colour`
+and `color` both pass. `jinx-camel-modes` is `t`, so camelCase is split before
+checking and `callPackage` reads as `call` + `Package`.
+
+Personal dictionary: `~/.config/enchant/en_GB.dic`, one word per line, editable
+by hand. Saving from the `M-$` menu appends to it. This is **not**
+`ispell-personal-dictionary` — jinx goes through enchant, never ispell.
+
+Flake refs (`github:owner/repo`) are excluded in `nix-ts-mode`, otherwise every
+input name in a `flake.nix` gets flagged.
+
+### Grammar in prose (LanguageTool, `C-c g`)
+| Key | Action |
+|-----|--------|
+| `c` | Check buffer |
+| `d` | Clear results |
+| `f` | Correct buffer interactively |
+| `.` | Correct at point |
+| `m` | Show the full message at point |
+| `n` / `p` | Next / previous error |
+| `w` | Toggle `writegood-mode` |
+
+The server is a **systemd service** (`services.languagetool` in `~/.dotfiles`),
+enabled at boot on `127.0.0.1:8081`. Emacs never spawns it — langtool.el runs in
+HTTP-client mode. It appears as ~97 rows in htop; that is one JVM with 97
+threads, press `H` to hide threads.
+
+### Grammar in code (harper-ls)
+
+Runs automatically as an LSP **add-on** server beside nixd/clangd/etc., in the
+modes listed in `bmg/harper-modes`. No keybindings — diagnostics arrive through
+flycheck like any other LSP warning.
+
+harper has no parser for **elisp, yaml or json**; it falls back to linting those
+files as plain English, which is why activation is an explicit whitelist rather
+than all of `prog-mode`.
+
+Five linters are disabled because they misfire on code comments: `SpellCheck`
+(jinx owns spelling), `ToDoHyphen` (TODO is a code convention, not "to-do"),
+`OrthographicConsistency`, `SentenceCapitalization`, `NumericRangeEnDash`.
+
+harper keeps a separate dictionary at `~/.config/harper-ls/dictionary.txt`.
+
+---
+
+## Undo
+
+| Key | Action |
+|-----|--------|
+| `C-/` or `C-x u` | **vundo** — visual undo tree |
+| `C-_` | Linear undo (`undo-fu-only-undo`) |
+| `M-_` | Linear redo (`undo-fu-only-redo`) |
+| `C-M-_` | Redo everything (`undo-fu-only-redo-all`) |
+| `C-x r u` / `C-x r U` | Save / recover undo session |
+
+`C-/` is one chord instead of two, but **cannot be sent over a TTY** — it is not
+an ASCII character. `C-_` is ASCII 0x1F and works everywhere, which is why it
+keeps the linear undo.
+
+### Inside vundo
+| Key | Action |
+|-----|--------|
+| `f` / `b` | Forward / back along the current branch |
+| `n` / `p` | Move between branches |
+| `a` / `e` | Jump to branch root / end |
+| `l` | Go to the last saved state |
+| `d` | Diff against the marked node |
+| `RET` | Accept the selected state and close |
+| `q` or `C-g` | Cancel — returns to where you started |
+
+The buffer updates live as you move, so `RET` keeps what you are looking at and
+`q` throws it away. vundo renders the **built-in** `buffer-undo-list` and stores
+nothing of its own — unlike undo-tree there is no parallel history file to
+corrupt. Doom's `:emacs (undo)` has no `+tree` flag, so undo-tree is not
+installed at all.
+
+History survives restarts via `undo-fu-session` (zstd-compressed, under
+`.local/cache/undo-fu-session/`).
+
+If `C-x` sequences ever go dead, check for a stuck transient — an open transient
+menu installs `overriding-terminal-local-map`, which sits above every other
+keymap and can bind `C-x` itself. `q` or `C-g` in that frame clears it.
+
+---
+
+## Navigation
+
+| Key | Action |
+|-----|--------|
+| `M-RET` | Follow the LSP document link under point |
+| `C-.` | `+lookup/file` — open the path at point (ffap) |
+| `C-c s f` | Same command, Doom's original binding |
+| `M-.` / `M-,` | Jump to definition / back |
+| `C-M-,` | Forward again |
+
+`M-RET` uses the language server's resolved target, so in nix a `../services`
+import opens the file nixd actually resolves it to. `C-.` is heuristic (ffap) and
+needs no LSP, so it works in comments, strings and log output. Both push the
+xref marker stack, so `M-,` returns from either.
+
+Directories open in Dirvish, since `dirvish-override-dired-mode` is on.
+
+---
+
 ## Tips
 
 - **Quick find**: `C-c z f` then type part of title
