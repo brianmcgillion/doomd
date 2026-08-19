@@ -514,13 +514,76 @@ keymap and can bind `C-x` itself. `q` or `C-g` in that frame clears it.
 
 ## Navigation
 
+### Within the line
+
 | Key | Action |
 |-----|--------|
+| `C-a` / `C-e` | Indentation / last non-comment char — **press twice** for real bol/eol |
+| `M-m` | `back-to-indentation`, without the toggle |
+| `M-f` / `M-b` | Word |
+| `M-a` / `M-e` | Sentence (works in comments and prose) |
+| `M-{` / `M-}` | Paragraph — in code, a blank-line-delimited block |
+
+### Structurally (smartparens)
+
+| Key | Action |
+|-----|--------|
+| `C-M-f` / `C-M-b` | Over a whole sexp — a call, string, list |
+| `C-M-n` / `C-M-p` | Next / previous sexp |
+| `C-M-u` / `C-M-d` | Climb out of / into nesting |
+| `C-M-a` / `C-M-e` | Beginning / end of the current sexp |
+| `C-M-SPC` | Mark the sexp (`C-=` expands the region instead) |
+
+`C-M-u` is the workhorse: "get me out of this bracket level".
+
+These repeat on the bare letter — `C-M-f f f u b` walks three sexps forward,
+out a level, then back one. smartparens ships no repeat map; `bmg/sexp-repeat-map`
+in the Navigation section adds it.
+
+`d` enters, `f`/`b` traverse, `u` leaves — `d` is a one-shot, not a repeat key.
+Repeating it takes the first child every time, so it walks the leftmost spine
+down to a leaf: in nix, five presses gets from an option block to inside the
+`[...]` of a regex in a string literal. smartparens descends into strings, and
+bracket characters inside them still count as brackets. At a leaf it stops
+silently, which reads as "stuck" while the repeat indicator is still showing.
+
+### On screen
+
+| Key | Action |
+|-----|--------|
+| `M-j` | `avy-goto-char-timer` — type 2–3 chars, then the highlight letter |
+| `M-g a` | `avy-goto-line` |
+| `C-l` | Recenter: middle → top → bottom |
+| `M-r` | Move *point* to top/middle/bottom of the window |
+
+`avy-all-windows` is `t`, so candidates include every visible window.
+
+### Across the buffer
+
+| Key | Action |
+|-----|--------|
+| `C-c s b` | `consult-line` — live-filtered jump to any line |
+| `M-s .` | `isearch-forward-symbol-at-point`, then `C-s`/`C-r` to walk hits |
+| `M-s o` | `occur` |
+| `C-'` / `M-g i` | `consult-imenu` |
+| `M-g o` | `consult-outline` |
+| `M-g g` | `consult-goto-line`, with preview |
+
+Isearch shows a match count (`isearch-lazy-count`) and `M-<` / `M->` / `C-v` /
+`M-v` jump between matches from inside the search rather than exiting it
+(`isearch-allow-motion`).
+
+### Across the project
+
+| Key | Action |
+|-----|--------|
+| `C-c c d` / `C-c c D` | Definition / references |
+| `C-c c i` / `C-c c t` | Implementations / type definition |
+| `C-c c j` | Symbol jump — workspace-wide via LSP, else falls back to imenu |
+| `C-c s p` / `C-c s .` | Search project / for the symbol at point |
 | `M-RET` | Follow the LSP document link under point |
 | `C-.` | `+lookup/file` — open the path at point (ffap) |
 | `C-c s f` | Same command, Doom's original binding |
-| `M-.` / `M-,` | Jump to definition / back |
-| `C-M-,` | Forward again |
 
 `M-RET` uses the language server's resolved target, so in nix a `../services`
 import opens the file nixd actually resolves it to. `C-.` is heuristic (ffap) and
@@ -528,6 +591,33 @@ needs no LSP, so it works in comments, strings and log output. Both push the
 xref marker stack, so `M-,` returns from either.
 
 Directories open in Dirvish, since `dirvish-override-dired-mode` is on.
+
+### Getting back
+
+| Key | Action |
+|-----|--------|
+| `M-.` / `M-,` | Jump to definition / back |
+| `C-M-,` | Forward again |
+| `C-x C-SPC` | `pop-global-mark` — the last place you were in another buffer |
+| `C-u C-SPC` | Pop the local mark ring; then bare `C-SPC` keeps walking back |
+| `M-g m` / `M-g M` | `consult-mark` / `consult-global-mark` — the rings, searchable |
+
+`M-,` is better-jumper, not plain xref, so it pops jumps that were never
+definition lookups.
+
+### Jump prefix (`C-c j`)
+
+| Key | Action |
+|-----|--------|
+| `j` `l` `w` `s` | avy: char / line / word / symbol |
+| `L` | Visible link |
+| `o` `i` `I` | Outline heading / symbol in buffer / symbol in project |
+| `m` `M` | Mark ring / global mark ring |
+
+`repeat-mode` is on, so the last key repeats for any command carrying a
+`repeat-map`: `M-g n n n` (next-error), `C-x [ [ [` (pages), `C-x <left> <left>`
+(buffers), `C-x { { {` (window size), plus org and outline heading motion. Note
+`C-x o` is `ace-window`, which has no repeat map.
 
 ---
 

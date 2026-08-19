@@ -1478,6 +1478,120 @@ the input syntax.  PATHS and INITIAL are as there."
 ;;;
 #+END_SRC
 
+* Navigation
+
+Doom ships avy, but binds it only under evil's =gs= prefix, so with =evil=
+disabled there is no on-screen jumping at all. The rest of this section turns on
+motion behaviour Emacs has but leaves off by default: key-repeating for motion
+commands, a walkable mark ring, and an isearch that counts matches and can be
+navigated without exiting.
+
+The destination-first commands live under a =jump= prefix on the leader (=C-c
+j=), with the ones worth a single chord also on =M-j= and the =M-g= goto map.
+
+** Why =C-c c j= needed a wrapper
+
+=consult-lsp-symbols= fires =workspace/symbol= from =minibuffer-setup=. Servers
+that do not implement it -- =nixd= and =harper-ls= among them -- make lsp-mode
+signal there, and the error surfaces as a misleading =Wrong type argument:
+overlayp, nil=: consult's async indicator never reached its own =setup=, so its
+overlay was still nil when teardown ran =delete-overlay=. The real message is
+lost, because the cleanup error is signalled last.
+
+=textDocument/documentSymbol= is far more widely implemented (nixd has it), so
+the key falls back to =consult-imenu= rather than failing.
+
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Navigation
+;;;
+;;;
+
+;; Repeats motion on the last key alone, for commands carrying a `repeat-map'
+;; property: M-g n n n, C-x [ [ [, C-x <left> <left>.  Not C-x o -- that is
+;; `ace-window', and only `other-window' has the repeat map.
+(repeat-mode 1)
+
+;; smartparens ships no repeat-map, so the C-M- sexp motions repeat only via
+;; this one.  `:repeat t' sets the property on every command in the map.
+(with-eval-after-load 'smartparens
+  (defvar-keymap bmg/sexp-repeat-map
+    :repeat t
+    "f" #'sp-forward-sexp
+    "b" #'sp-backward-sexp
+    "n" #'sp-next-sexp
+    "p" #'sp-previous-sexp
+    "u" #'sp-up-sexp
+    "d" #'sp-down-sexp
+    "a" #'sp-beginning-of-sexp
+    "e" #'sp-end-of-sexp))
+
+;; C-u C-SPC then bare C-SPC keeps walking back through `mark-ring'.
+(setopt set-mark-command-repeat-pop t)
+
+;; `isearch-allow-motion' rebinds M-< M-> C-v M-v inside a search to jump
+;; between matches instead of exiting it.
+(setopt isearch-lazy-count t
+        isearch-allow-motion t)
+
+;; `default-indent-new-line' keeps its identical C-M-j binding.
+(map! "M-j" #'avy-goto-char-timer)
+
+(with-eval-after-load 'avy
+  (setopt avy-all-windows t
+          avy-timeout-seconds 0.4))
+
+(map! "M-g a" #'avy-goto-line
+      "M-g o" #'consult-outline
+      "M-g m" #'consult-mark
+      "M-g M" #'consult-global-mark)
+
+;; `lsp--find-workspaces-for' is the same private gate `lsp--send-request-async'
+;; applies before signalling, so this predicate cannot disagree with it.
+(defun bmg/lsp-workspace-symbols-available-p ()
+  "Return non-nil if an attached server implements `workspace/symbol'."
+  (and (bound-and-true-p lsp-mode)
+       (fboundp 'lsp--find-workspaces-for)
+       (lsp--find-workspaces-for "workspace/symbol")))
+
+(defun bmg/lsp-symbols-dwim ()
+  "Jump to a symbol, workspace-wide when the server supports it.
+Falls back to `consult-imenu', which needs only
+`textDocument/documentSymbol'."
+  (interactive)
+  (call-interactively
+   (if (bmg/lsp-workspace-symbols-available-p)
+       #'consult-lsp-symbols
+     #'consult-imenu)))
+
+;; Bare :prefix "c" -- re-labelling Doom's would wipe every binding under it.
+(map! :leader
+      (:prefix "c"
+       :desc "Jump to symbol" "j" #'bmg/lsp-symbols-dwim))
+
+;; The leader IS C-c, so a global C-c j binding would be shadowed by
+;; `doom-leader-map'.  New prefix, so :prefix-map is safe here.
+(map! :leader
+      (:prefix-map ("j" . "jump")
+       :desc "Char (timer)"      "j" #'avy-goto-char-timer
+       :desc "Line"              "l" #'avy-goto-line
+       :desc "Word"              "w" #'avy-goto-word-1
+       :desc "Symbol"            "s" #'avy-goto-symbol-1
+       :desc "Visible link"      "L" #'link-hint-open-link
+       :desc "Outline heading"   "o" #'consult-outline
+       :desc "Symbol in buffer"  "i" #'consult-imenu
+       :desc "Symbol in project" "I" #'consult-imenu-multi
+       :desc "Mark ring"         "m" #'consult-mark
+       :desc "Global mark ring"  "M" #'consult-global-mark))
+
+;;;
+;;;
+;;; END_Navigation
+;;;
+;;;
+#+END_SRC
+
 * Map
 :PROPERTIES:
 :ID:       629b4ae3-039b-4729-b3f6-1ae18ed50d13
@@ -1709,6 +1823,35 @@ the input syntax.  PATHS and INITIAL are as there."
 ;;;
 ;;;
 ;;; END_Map
+;;;
+;;;
+#+END_SRC
+
+* Coach
+
+Watches which commands run and, when a slower route is used where a faster one
+exists, says so once. The implementation lives in its own file,
+[[file:coach.el]], for the same reason =elfeed-config.el= and
+=remarkable-config.el= do: the rule set grows, and it should not swell the
+literate config.
+
+The recorder is a =post-command-hook= that pushes one entry and returns
+(measured at 0.22 µs/call); every detector runs on an idle timer instead, so
+typing is never slowed and nudges land at a pause rather than mid-burst.
+
+#+BEGIN_SRC emacs-lisp
+;;;
+;;;
+;;; BEGIN_Coach
+;;;
+;;;
+
+(load! "coach.el")
+(coach-mode 1)
+
+;;;
+;;;
+;;; END_Coach
 ;;;
 ;;;
 #+END_SRC
