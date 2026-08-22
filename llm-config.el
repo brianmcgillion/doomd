@@ -29,7 +29,7 @@
 ;; Uses the existing GitHub Copilot subscription -- no separate API key;
 ;; authentication handled automatically via GitHub login.
 (with-eval-after-load 'gptel
-  (setopt gptel-model 'claude-opus-4.5
+  (setopt gptel-model 'claude-sonnet-4.6
          gptel-backend (gptel-make-gh-copilot "Copilot")))
 
 ;; Claude Agent via ACP (agent-shell + acp.el, driven by the claude-agent-acp

@@ -64,8 +64,12 @@
 ;; doom-dracula paints comments in `base5' (#6272a4): 3.03:1 on the #282a36
 ;; background, below WCAG AA (4.5:1) and barely over the 3:1 large-text floor.
 (custom-set-faces!
-  '(font-lock-comment-face           :foreground "#a1aac8")    ; 6.17:1 on #282a36
-  '(font-lock-comment-delimiter-face :foreground "#a1aac8"))   ; 6.17:1 on #282a36
+  '(font-lock-comment-face           :foreground "#b8c0dc")    ; 7.87:1 on #282a36
+  '(font-lock-comment-delimiter-face :foreground "#b8c0dc")    ; 7.87:1 on #282a36
+  ;; Doom sets `avy-background' t, so a jump repaints every visible character
+  ;; in this face; dracula leaves it at base5 (#6272a4), 3.03:1.  Dim enough
+  ;; against 13.36:1 body text to mark the mode, still over WCAG AA.
+  '(avy-background-face              :foreground "#9aa2c4"))   ; 5.65:1 on #282a36
 
 ;; Magit diff legibility.  `diff-refine-added' and `diff-refine-removed' ship
 ;; with `:inverse-video t', so foreground and background swap at render time:
@@ -1606,6 +1610,10 @@ Falls back to `consult-imenu', which needs only
 ;; C-. follows the path at point (ffap), mirroring M-. for definitions.
 ;; Doom's C-c s f stays bound; this is an additional key, not a move.
 (map! "C-." #'+lookup/file)
+
+;; Swaps Doom's M-? with the global M-/ `dabbrev-expand'.
+(map! "M-/" #'+lookup/references
+      "M-?" #'dabbrev-expand)
 
 ;; nixd never answers textDocument/formatting for documents over ~8 KiB (it
 ;; deadlocks piping to nixfmt), so format-on-save hung on every larger file.
